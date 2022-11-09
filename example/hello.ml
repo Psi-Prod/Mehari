@@ -1,1 +1,1 @@
-let () = Mehari.run (fun _ -> Mehari.gemini "Hello world")
+let () = Mehari.run (fun _ -> "20 text/gemini\r\nHello, world!")

@@ -1,3 +1,4 @@
 (library
  (name mehari)
- (libraries lwt lwt.unix))
+ (libraries lwt lwt.unix tls tls.lwt)
+ (preprocess (pps lwt_ppx)))
