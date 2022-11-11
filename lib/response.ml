@@ -10,6 +10,7 @@ and body = Text of string | Gemtext of Gemtext.t
 
 let text t = Text t
 let gemtext g = Gemtext g
+let lines = String.concat "\n"
 
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]

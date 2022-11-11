@@ -12,6 +12,7 @@ type gemtext = Gemtext.t
 
 val text : string -> body
 val gemtext : Gemtext.t -> body
+val lines : string list -> body
 val page : title:string -> string -> body
 
 (** {3 Mime} *)
