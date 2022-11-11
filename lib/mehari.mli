@@ -60,8 +60,9 @@ val with_mime : mime -> string -> mime
 
 (** {Routing} *)
 
-val route : string -> handler -> route
 val router : route list -> handler
+val route : string -> handler -> route
+val scope : string -> route list -> route
 
 (** {Entry point} *)
 

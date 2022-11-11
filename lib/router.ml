@@ -1,8 +1,9 @@
-type t = string * (Request.t -> Response.t Lwt.t)
+type t = (string * (Request.t -> Response.t Lwt.t)) list
 
-let route r handler = (r, handler)
+let route r handler = [ (r, handler) ]
 
 let router routes req =
+  let routes = List.concat routes in
   let url = Request.uri req |> Uri.path in
   let handler =
     List.fold_left
@@ -15,3 +16,6 @@ let router routes req =
   match handler with
   | None -> Response.(respond Status.not_found "")
   | Some h -> h req
+
+let scope prefix routes =
+  List.concat routes |> List.map (fun (r, h) -> (prefix ^ r, h))
