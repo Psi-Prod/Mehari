@@ -1,4 +1,6 @@
+type request = Request.t
 type response = Response.t
+type handler = request -> response Lwt.t
 type 'a status = 'a Response.status
 type mime = Response.mime
 type body = Response.body

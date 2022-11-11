@@ -1,6 +1,8 @@
 (** {1 Types} *)
 
+type request
 type response
+type handler = request -> response Lwt.t
 type 'a status
 type mime
 type body
@@ -39,15 +41,6 @@ val certificate_not_valid : string status
 (** {4 Entry point} *)
 
 val serve :
-  ?port:int ->
-  ?cert_file:string ->
-  ?key_file:string ->
-  (string -> response Lwt.t) ->
-  'a Lwt.t
+  ?port:int -> ?cert_file:string -> ?key_file:string -> handler -> 'a Lwt.t
 
-val run :
-  ?port:int ->
-  ?cert_file:string ->
-  ?key_file:string ->
-  (string -> response Lwt.t) ->
-  unit
+val run : ?port:int -> ?cert_file:string -> ?key_file:string -> handler -> unit

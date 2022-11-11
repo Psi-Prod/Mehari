@@ -39,10 +39,10 @@ let rec serve handler sock certchain =
   let* () = Tls_lwt.Unix.close_tls server in
   serve handler sock certchain
 
-let start_server ~cert ~port router =
+let start_server ~cert ~port callback =
   let handle_request ic oc =
     let* buff = read ic in
-    let* resp = router buff in
+    let* resp = callback (Request.make ~url:(Uri.of_string buff)) in
     write oc resp
   in
   let* sock = create_srv_socket Unix.inet_addr_loopback port in

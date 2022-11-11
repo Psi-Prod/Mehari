@@ -1,8 +1,9 @@
 type t = string
 
 type _ status =
-  | SlowDown : (int * int) -> string status
+  | Redirect : int -> Uri.t status
   | Success : (int * body) -> mime status
+  | SlowDown : (int * int) -> string status
   | Other : int -> string status
 
 and mime = { mime : string; charset : string option; lang : string option }
@@ -26,8 +27,9 @@ let validate code meta body =
 let to_string (type a) (s : a status) (info : a) =
   let code, (meta : string), body =
     match s with
-    | SlowDown (code, n) -> (code, Int.to_string n, None)
+    | Redirect code -> (code, Uri.to_string info, None)
     | Success (code, body) -> (code, string_of_mime info, Some body)
+    | SlowDown (code, n) -> (code, Int.to_string n, None)
     | Other code -> (code, info, None)
   in
   validate code meta body
