@@ -12,16 +12,14 @@ type gemtext = Gemtext.t
 
 val text : string -> body
 val gemtext : Gemtext.t -> body
+val page : title:string -> string -> body
 
 (** {3 Mime} *)
 
 val make_mime : ?charset:string -> ?lang:string -> ?mime:string -> unit -> mime
-
-
 val empty : mime
 val gemini : mime
 val text_mime : string -> mime
-
 val with_charset : mime -> string -> mime
 val with_lang : mime -> string -> mime
 val with_mime : mime -> string -> mime

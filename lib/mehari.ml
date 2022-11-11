@@ -8,11 +8,11 @@ type gemtext = Gemtext.t
 
 let text = Response.text
 let gemtext = Response.gemtext
+let page = Response.page
 
 include Mime
 
 let make_mime = Mime.make
-
 let response = Response.response
 let respond = Response.respond
 

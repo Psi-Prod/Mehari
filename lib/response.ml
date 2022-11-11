@@ -10,6 +10,10 @@ and body = Text of string | Gemtext of Gemtext.t
 
 let text t = Text t
 let gemtext g = Gemtext g
+
+let page ~title body =
+  gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
+
 let string_of_body = function Text t -> t | Gemtext _ -> failwith "todo"
 
 let validate code meta body =
@@ -27,7 +31,6 @@ let to_string (type a) (s : a status) (info : a) =
     | Other code -> (code, info, None)
   in
   validate code meta body
-
 
 module Status = struct
   let input = Other 10
