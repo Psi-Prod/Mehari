@@ -28,3 +28,7 @@ setup.log
 # Local OPAM switch
 _opam/
 .DS_Store
+
+# Certificates
+cert.pem
+key.pem
