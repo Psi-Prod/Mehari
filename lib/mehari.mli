@@ -38,4 +38,5 @@ val certificate_not_valid : string status
 
 (** {4 Entry point} *)
 
-val run : (string -> response Lwt.t) -> 'a
+val serve : (string -> response Lwt.t) -> 'a Lwt.t
+val run : (string -> response Lwt.t) -> unit

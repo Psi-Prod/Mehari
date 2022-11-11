@@ -50,3 +50,6 @@ let start_server callback =
   let* sock = create_srv_socket Unix.inet_addr_loopback 1965 in
   let* certchain = cert in
   serve handle_request sock certchain
+
+let serve = start_server
+let run callback = start_server callback |> Lwt_main.run |> ignore

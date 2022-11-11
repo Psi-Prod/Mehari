@@ -8,26 +8,29 @@ type _ status =
 and mime = { mime : string; charset : string option; lang : string option }
 and body = Text of string | Gemtext of Gemtext.t
 
+let string_of_mime m =
+  m.mime
+  ^ Option.fold m.charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
+  ^ Option.fold m.lang ~none:"" ~some:(Printf.sprintf "; lang=%s")
+
 let text t = Text t
 let gemtext g = Gemtext g
+let string_of_body = function Text t -> t | Gemtext _ -> failwith "todo"
 
-let validate code meta =
-  if Bytes.(of_string meta |> length) < 1024 then invalid_arg "too long header"
-  else Format.sprintf "%i %s\r\n" code meta
+let validate code meta body =
+  if Bytes.(of_string meta |> length) > 1024 then invalid_arg "too long header"
+  else
+    Option.fold body ~none:"" ~some:string_of_body
+    |> Format.sprintf "%i %s\r\n%s" code meta
 
 let to_string (type a) (s : a status) (info : a) =
-  let code, (meta : string) =
+  let code, (meta : string), body =
     match s with
-    | SlowDown (code, n) -> (code, Int.to_string n)
-    | Success (code, _) ->
-        ( code,
-          info.mime
-          ^ Option.fold info.charset ~none:""
-              ~some:(Printf.sprintf "; charset=%s")
-          ^ Option.fold info.lang ~none:"" ~some:(Printf.sprintf "; lang=%s") )
-    | Other code -> (code, info)
+    | SlowDown (code, n) -> (code, Int.to_string n, None)
+    | Success (code, body) -> (code, string_of_mime info, Some body)
+    | Other code -> (code, info, None)
   in
-  validate code meta
+  validate code meta body
 
 let make_mime ?charset ?lang ?(mime = "") () = { mime; charset; lang }
 let empty_mime = make_mime ~mime:"" ()

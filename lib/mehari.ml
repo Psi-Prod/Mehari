@@ -13,4 +13,5 @@ let make_mime = Response.make_mime
 
 include Response.Status
 
-let run callback = Lwt_main.run @@ Server.start_server callback
+let serve = Server.serve
+let run = Server.run
