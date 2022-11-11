@@ -28,21 +28,21 @@ let read ic =
   Lwt.return buff
 
 let rec serve handler sock certchain =
-  let* _, _, sock_cl = accept sock in
+  let* _, addr, sock_cl = accept sock in
   let* server =
     Tls_lwt.Unix.server_of_fd
       (Tls.Config.server ~certificates:(`Single certchain) ())
       sock_cl
   in
   let ic, oc = Tls_lwt.of_t server in
-  let* () = handler ic oc in
+  let* () = handler ic oc addr in
   let* () = Tls_lwt.Unix.close_tls server in
   serve handler sock certchain
 
 let start_server ~cert ~port callback =
-  let handle_request ic oc =
+  let handle_request ic oc addr =
     let* buff = read ic in
-    let* resp = callback (Request.make ~url:(Uri.of_string buff)) in
+    let* resp = callback (Request.make ~addr ~uri:(Uri.of_string buff)) in
     write oc resp
   in
   let* sock = create_srv_socket Unix.inet_addr_loopback port in

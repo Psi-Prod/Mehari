@@ -8,14 +8,20 @@ type mime
 type body
 type gemtext = Gemtext.t
 
-(** {2 Body} *)
+(** {2 Request} **)
+
+val uri : request -> Uri.t
+val addr : request -> Unix.inet_addr
+val port : request -> int
+
+(** {3 Body} *)
 
 val text : string -> body
 val gemtext : Gemtext.t -> body
 val lines : string list -> body
 val page : title:string -> string -> body
 
-(** {3 Mime} *)
+(** { Mime} *)
 
 val make_mime : ?charset:string -> ?lang:string -> ?mime:string -> unit -> mime
 val empty : mime
@@ -25,7 +31,7 @@ val with_charset : mime -> string -> mime
 val with_lang : mime -> string -> mime
 val with_mime : mime -> string -> mime
 
-(** {4 Responses} *)
+(** {4 Response} *)
 
 val response : 'a status -> 'a -> response
 val respond : 'a status -> 'a -> response Lwt.t
