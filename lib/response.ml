@@ -1,46 +1,41 @@
-type response = Gemtext of string | Text of string
+type t = string
 
-module Header = struct
-  type _ t =
-    | SlowDown : (int * int) -> string t
-    | Success : (int * string) -> meta_success t
-    | Other : int -> string t
+type _ status =
+  | SlowDown : (int * int) -> string status
+  | Success : (int * body) -> mime status
+  | Other : int -> string status
 
-  and meta_success = {
-    mime : string;
-    charset : string option;
-    lang : string option;
-  }
+and mime = { mime : string; charset : string option; lang : string option }
+and body = Text of string | Gemtext of Gemtext.t
 
-  let validate code meta =
-    if Bytes.(of_string meta |> length) < 1024 then
-      invalid_arg "too long header"
-    else Format.sprintf "%i %s\r\n" code meta
+let text t = Text t
+let gemtext g = Gemtext g
 
-  let to_string (type a) (t : a t) (info : a) =
-    let code, (meta : string) =
-      match t with
-      | SlowDown (code, n) -> (code, Int.to_string n)
-      | Success (code, _) ->
-          ( code,
-            info.mime
-            ^ Option.fold info.charset ~none:""
-                ~some:(Printf.sprintf "; charset=%s")
-            ^ Option.fold info.lang ~none:"" ~some:(Printf.sprintf "; lang=%s")
-          )
-      | Other code -> (code, info)
-    in
+let validate code meta =
+  if Bytes.(of_string meta |> length) < 1024 then invalid_arg "too long header"
+  else Format.sprintf "%i %s\r\n" code meta
 
-    validate code meta
-end
+let to_string (type a) (s : a status) (info : a) =
+  let code, (meta : string) =
+    match s with
+    | SlowDown (code, n) -> (code, Int.to_string n)
+    | Success (code, _) ->
+        ( code,
+          info.mime
+          ^ Option.fold info.charset ~none:""
+              ~some:(Printf.sprintf "; charset=%s")
+          ^ Option.fold info.lang ~none:"" ~some:(Printf.sprintf "; lang=%s") )
+    | Other code -> (code, info)
+  in
+  validate code meta
 
-module Resp = struct
-  open Header
+let make_mime ?charset ?lang ?(mime = "") () = { mime; charset; lang }
+let empty_mime = make_mime ~mime:"" ()
 
-  let default = { mime = ""; charset = None; lang = None }
+module Status = struct
   let input = Other 10
   let sensitive_input = Other 11
-  let sucess body = Success (20, body)
+  let success body = Success (20, body)
   let redirect_temp = Other 30
   let redirect_permanent = Other 31
   let temporary_failure = Other 40
@@ -58,4 +53,5 @@ module Resp = struct
   let certificate_not_valid = Other 62
 end
 
-let response status info = Header.to_string status info
+let response status info = to_string status info
+let respond status info = to_string status info |> Lwt.return

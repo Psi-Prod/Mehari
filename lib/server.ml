@@ -44,7 +44,8 @@ let rec serve handler sock certchain =
 let start_server callback =
   let handle_request ic oc =
     let* buff = read ic in
-    write oc @@ callback buff
+    let* resp = callback buff in
+    write oc resp
   in
   let* sock = create_srv_socket Unix.inet_addr_loopback 1965 in
   let* certchain = cert in

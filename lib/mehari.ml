@@ -1,1 +1,16 @@
+type response = Response.t
+type 'a status = 'a Response.status
+type mime = Response.mime
+type body = Response.body
+type gemtext = Gemtext.t
+
+let text = Response.text
+let gemtext = Response.gemtext
+let response = Response.response
+let respond = Response.respond
+let empty_mime = Response.empty_mime
+let make_mime = Response.make_mime
+
+include Response.Status
+
 let run callback = Lwt_main.run @@ Server.start_server callback
