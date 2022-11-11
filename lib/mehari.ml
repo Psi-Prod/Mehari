@@ -1,10 +1,11 @@
 type request = Request.t
 type response = Response.t
 type handler = request -> response Lwt.t
+type gemtext = Gemtext.t
+type route = Router.t
 type 'a status = 'a Response.status
 type mime = Mime.t
 type body = Response.body
-type gemtext = Gemtext.t
 
 let uri = Request.uri
 let addr = Request.addr
@@ -22,5 +23,7 @@ include Mime
 let make_mime = Mime.make
 let response = Response.response
 let respond = Response.respond
+let route = Router.route
+let router = Router.router
 let serve = Server.serve
 let run = Server.run

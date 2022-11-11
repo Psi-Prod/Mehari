@@ -3,6 +3,7 @@
 type request
 type response
 type handler = request -> response Lwt.t
+type route
 type 'a status
 type mime
 type body
@@ -56,6 +57,11 @@ val text_mime : string -> mime
 val with_charset : mime -> string -> mime
 val with_lang : mime -> string -> mime
 val with_mime : mime -> string -> mime
+
+(** {Routing} *)
+
+val route : string -> handler -> route
+val router : route list -> handler
 
 (** {Entry point} *)
 

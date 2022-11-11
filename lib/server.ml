@@ -22,10 +22,7 @@ let write oc buff =
   let* () = Lwt_io.write oc buff in
   Lwt_io.flush oc
 
-let read ic =
-  let* buff = Lwt_io.read ic ~count:2048 in
-  Printf.printf "%s%!" buff;
-  Lwt.return buff
+let read ic = Lwt_io.read ic ~count:2048
 
 let rec serve handler sock certchain =
   let* _, addr, sock_cl = accept sock in
@@ -41,8 +38,10 @@ let rec serve handler sock certchain =
 
 let start_server ~cert ~port callback =
   let handle_request ic oc addr =
-    let* buff = read ic in
-    let* resp = callback (Request.make ~addr ~uri:(Uri.of_string buff)) in
+    let* buf = read ic in
+    let uri = String.(sub buf 0 (length buf - 2)) |> Uri.of_string in
+    (* TODO: fix malformerd header *)
+    let* resp = callback (Request.make ~addr ~uri) in
     write oc resp
   in
   let* sock = create_srv_socket Unix.inet_addr_loopback port in
