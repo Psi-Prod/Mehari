@@ -8,12 +8,18 @@ type mime
 type body
 type gemtext = Gemtext.t
 
-(** {2 Body} *)
+(** {2 Request} **)
+
+val uri : request -> Uri.t
+val addr : request -> Unix.inet_addr
+val port : request -> int
+
+(** {3 Body} *)
 
 val text : string -> body
 val gemtext : Gemtext.t -> body
 
-(** {3 Responses} *)
+(** {4 Response} *)
 
 val response : 'a status -> 'a -> response
 val respond : 'a status -> 'a -> response Lwt.t
@@ -38,7 +44,7 @@ val client_certificate_required : string status
 val certificate_not_authorised : string status
 val certificate_not_valid : string status
 
-(** {4 Entry point} *)
+(** {5 Entry point} *)
 
 val serve :
   ?port:int -> ?cert_file:string -> ?key_file:string -> handler -> 'a Lwt.t

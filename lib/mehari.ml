@@ -6,6 +6,9 @@ type mime = Response.mime
 type body = Response.body
 type gemtext = Gemtext.t
 
+let uri = Request.uri
+let addr = Request.addr
+let port = Request.port
 let text = Response.text
 let gemtext = Response.gemtext
 let response = Response.response
