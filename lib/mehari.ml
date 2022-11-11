@@ -9,10 +9,12 @@ type gemtext = Gemtext.t
 let uri = Request.uri
 let addr = Request.addr
 let port = Request.port
+
+include Response.Status
+
 let text = Response.text
 let gemtext = Response.gemtext
 let lines = Response.lines
-
 let page = Response.page
 
 include Mime
@@ -20,8 +22,5 @@ include Mime
 let make_mime = Mime.make
 let response = Response.response
 let respond = Response.respond
-
-include Response.Status
-
 let serve = Server.serve
 let run = Server.run
