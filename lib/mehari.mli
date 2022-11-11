@@ -13,12 +13,23 @@ type gemtext = Gemtext.t
 val text : string -> body
 val gemtext : Gemtext.t -> body
 
-(** {3 Responses} *)
+(** {3 Mime} *)
+
+val make_mime : ?charset:string -> ?lang:string -> ?mime:string -> unit -> mime
+
+
+val empty : mime
+val gemini : mime
+val text_mime : string -> mime
+
+val with_charset : mime -> string -> mime
+val with_lang : mime -> string -> mime
+val with_mime : mime -> string -> mime
+
+(** {4 Responses} *)
 
 val response : 'a status -> 'a -> response
 val respond : 'a status -> 'a -> response Lwt.t
-val make_mime : ?charset:string -> ?lang:string -> ?mime:string -> unit -> mime
-val empty_mime : mime
 val input : string status
 val sensitive_input : string status
 val success : body -> mime status
@@ -38,7 +49,7 @@ val client_certificate_required : string status
 val certificate_not_authorised : string status
 val certificate_not_valid : string status
 
-(** {4 Entry point} *)
+(** {5 Entry point} *)
 
 val serve :
   ?port:int -> ?cert_file:string -> ?key_file:string -> handler -> 'a Lwt.t

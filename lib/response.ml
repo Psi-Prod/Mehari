@@ -2,17 +2,11 @@ type t = string
 
 type _ status =
   | Redirect : int -> Uri.t status
-  | Success : (int * body) -> mime status
+  | Success : (int * body) -> Mime.t status
   | SlowDown : (int * int) -> string status
   | Other : int -> string status
 
-and mime = { mime : string; charset : string option; lang : string option }
 and body = Text of string | Gemtext of Gemtext.t
-
-let string_of_mime m =
-  m.mime
-  ^ Option.fold m.charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
-  ^ Option.fold m.lang ~none:"" ~some:(Printf.sprintf "; lang=%s")
 
 let text t = Text t
 let gemtext g = Gemtext g
@@ -28,14 +22,12 @@ let to_string (type a) (s : a status) (info : a) =
   let code, (meta : string), body =
     match s with
     | Redirect code -> (code, Uri.to_string info, None)
-    | Success (code, body) -> (code, string_of_mime info, Some body)
+    | Success (code, body) -> (code, Mime.to_string info, Some body)
     | SlowDown (code, n) -> (code, Int.to_string n, None)
     | Other code -> (code, info, None)
   in
   validate code meta body
 
-let make_mime ?charset ?lang ?(mime = "") () = { mime; charset; lang }
-let empty_mime = make_mime ~mime:"" ()
 
 module Status = struct
   let input = Other 10
