@@ -1,7 +1,5 @@
 open Lwt.Syntax
 
-let cert = X509_lwt.private_of_pems ~cert:"./cert.pem" ~priv_key:"./key.pem"
-
 let init_socket addr port =
   let sockaddr = Unix.ADDR_INET (addr, port) in
   let socket = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
@@ -41,15 +39,21 @@ let rec serve handler sock certchain =
   let* () = Tls_lwt.Unix.close_tls server in
   serve handler sock certchain
 
-let start_server callback =
+let start_server ~cert ~port router =
   let handle_request ic oc =
     let* buff = read ic in
-    let* resp = callback buff in
+    let* resp = router buff in
     write oc resp
   in
-  let* sock = create_srv_socket Unix.inet_addr_loopback 1965 in
+  let* sock = create_srv_socket Unix.inet_addr_loopback port in
   let* certchain = cert in
   serve handle_request sock certchain
 
-let serve = start_server
-let run callback = start_server callback |> Lwt_main.run |> ignore
+let serve ?(port = 1965) ?(cert_file = "./cert.pem") ?(key_file = "./key.pem")
+    router =
+  let cert = X509_lwt.private_of_pems ~cert:cert_file ~priv_key:key_file in
+  start_server ~cert ~port router
+
+let run ?(port = 1965) ?(cert_file = "./cert.pem") ?(key_file = "./key.pem")
+    router =
+  serve ~port ~cert_file ~key_file router |> Lwt_main.run |> ignore
