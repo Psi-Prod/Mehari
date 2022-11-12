@@ -7,7 +7,6 @@ type route
 type 'a status
 type mime
 type body
-type gemtext = Gemtext.t
 
 (** {Request} **)
 
@@ -42,6 +41,27 @@ val certificate_not_authorised : string status
 val certificate_not_valid : string status
 
 (** {Body} *)
+
+module Gemtext : sig
+  type t = line list
+
+  and line =
+    | Text of string
+    | Link of { url : string; name : string option }
+    | Preformat of preformat
+    | Heading of [ `H1 | `H2 | `H3 ] * string
+    | ListItem of string
+    | Quote of string
+
+  and preformat = { alt : string option; text : string }
+
+  val text : string -> line
+  val link : ?name:string -> string -> line
+  val preformat : ?alt:string -> string -> line
+  val heading : [ `H1 | `H2 | `H3 ] -> string -> line
+  val list_item : string -> line
+  val quote : string -> line
+end
 
 val text : string -> body
 val gemtext : Gemtext.t -> body

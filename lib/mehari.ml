@@ -1,7 +1,6 @@
 type request = Request.t
 type response = Response.t
 type handler = request -> response Lwt.t
-type gemtext = Gemtext.t
 type route = Router.t
 type 'a status = 'a Response.status
 type mime = Mime.t
@@ -12,6 +11,7 @@ let addr = Request.addr
 let port = Request.port
 
 include Response.Status
+module Gemtext = Gemtext
 
 let text = Response.text
 let gemtext = Response.gemtext

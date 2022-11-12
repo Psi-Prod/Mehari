@@ -15,7 +15,7 @@ let lines l = String.concat "\n" l |> text
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
 
-let string_of_body = function Text t -> t | Gemtext _ -> failwith "todo"
+let string_of_body = function Text t -> t | Gemtext g -> Gemtext.to_string g
 
 let validate code meta body =
   if Bytes.(of_string meta |> length) > 1024 then invalid_arg "too long header"
