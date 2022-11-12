@@ -50,12 +50,14 @@ val page : title:string -> string -> body
 
 (** {Mime} *)
 
-val make_mime : ?charset:string -> ?lang:string -> ?mime:string -> unit -> mime
+val make_mime :
+  ?charset:string -> ?lang:string list -> ?mime:string -> unit -> mime
+
 val empty : mime
 val gemini : mime
 val text_mime : string -> mime
 val with_charset : mime -> string -> mime
-val with_lang : mime -> string -> mime
+val with_lang : mime -> string list -> mime
 val with_mime : mime -> string -> mime
 
 (** {Routing} *)
