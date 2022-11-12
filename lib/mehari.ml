@@ -23,6 +23,8 @@ include Mime
 let make_mime = Mime.make
 let response = Response.response
 let respond = Response.respond
+let respond_text = Response.respond_text
+let respond_gemtext = Response.respond_gemtext
 let router = Router.router
 let route = Router.route
 let scope = Router.scope

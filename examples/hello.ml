@@ -2,7 +2,7 @@ let () =
   let open Mehari in
   router
     [
-      route "/hello" (fun _ -> respond (success (text "Hello")) empty);
-      route "/world" (fun _ -> respond (success (text "World")) empty);
+      route "/hello" (fun _ -> respond_text "Hello");
+      route "/world" (fun _ -> respond_text "Word");
     ]
   |> run

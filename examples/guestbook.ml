@@ -28,17 +28,16 @@ let () =
     [
       route "/" (fun _ ->
           let home =
-            gemtext
-              Gemtext.
-                [
-                  heading `H1 "Guestbook";
-                  text "\n";
-                  link "/submit" ~name:"Submit a new entry";
-                  text "\n";
-                  text book#print;
-                ]
+            Gemtext.
+              [
+                heading `H1 "Guestbook";
+                text "\n";
+                link "/submit" ~name:"Submit a new entry";
+                text "\n";
+                text book#print;
+              ]
           in
-          respond (success home) gemini);
+          respond_gemtext home);
       route "/submit" (fun req ->
           match uri req |> Uri.verbatim_query with
           | None -> respond input "Enter your message"

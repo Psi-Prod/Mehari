@@ -56,3 +56,8 @@ end
 
 let response status info = to_string status info
 let respond status info = to_string status info |> Lwt.return
+
+let respond_text txt =
+  respond (Status.success (text txt)) (Mime.make ~mime:"text/plain" ())
+
+let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
