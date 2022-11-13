@@ -10,10 +10,11 @@ let () =
     [
       route "/" (fun _ ->
           respond_gemtext
-            [
-              Gemtext.Link { url = "/inc"; name = Some "Increment counter" };
-              Gemtext.Text (Printf.sprintf "Counter = %i" !counter);
-            ]);
-      route "/inc" ~mw:inc_count (fun _ -> respond redirect_temp "/");
+            Gemtext.
+              [
+                link "/incr" ~name:"Increment counter";
+                text (Printf.sprintf "Counter = %i" !counter);
+              ]);
+      route "/incr" ~mw:inc_count (fun _ -> respond redirect_temp "/");
     ]
   |> run
