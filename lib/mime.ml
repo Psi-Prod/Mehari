@@ -10,6 +10,9 @@ let make ?charset ?(lang = []) ?(mime = "") () =
     lang;
   }
 
+let from_filename ?charset ?(lang = []) fname =
+  make ~mime:(Magic_mime.lookup ~default:"text/gemini" fname) ~charset ~lang ()
+
 let empty = make ~mime:"" ()
 let text_mime text = make ~mime:("text/" ^ text) ()
 let gemini = make ~mime:"text/gemini" ()
