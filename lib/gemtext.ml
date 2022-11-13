@@ -32,4 +32,4 @@ let to_string lines =
       | ListItem text -> Printf.sprintf "* %s" text
       | Quote text -> Printf.sprintf ">%s" text)
     lines
-  |> String.concat ""
+  |> String.concat "\n"
