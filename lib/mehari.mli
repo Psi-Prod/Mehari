@@ -7,6 +7,7 @@ type route
 type 'a status
 type mime
 type body
+type middleware = handler -> handler
 
 (** {Gemtext}  *)
 
@@ -87,8 +88,8 @@ val with_mime : mime -> string -> mime
 (** {Routing} *)
 
 val router : route list -> handler
-val route : string -> handler -> route
-val scope : string -> route list -> route
+val route : ?mw:middleware -> string -> handler -> route
+val scope : ?mw:middleware -> string -> route list -> route
 
 (** {Entry point} *)
 

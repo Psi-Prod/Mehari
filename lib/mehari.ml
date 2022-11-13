@@ -5,6 +5,7 @@ type route = Router.t
 type 'a status = 'a Response.status
 type mime = Mime.t
 type body = Response.body
+type middleware = handler -> handler
 
 let uri = Request.uri
 let addr = Request.addr
