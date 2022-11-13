@@ -4,12 +4,12 @@ let route r handler = [ (r, handler) ]
 
 let router routes req =
   let routes = List.concat routes in
-  let url = Request.uri req |> Uri.path in
+  let uri = Request.uri req |> Uri.path in
   let handler =
     List.fold_left
       (fun acc (route, handler) ->
         match acc with
-        | None -> if String.equal url route then Some handler else None
+        | None -> if String.equal uri route then Some handler else None
         | Some _ -> acc)
       None routes
   in

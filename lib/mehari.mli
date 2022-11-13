@@ -43,6 +43,7 @@ val response : 'a status -> 'a -> response
 val respond : 'a status -> 'a -> response Lwt.t
 val respond_text : string -> response Lwt.t
 val respond_gemtext : Gemtext.t -> response Lwt.t
+val respond_document : ?mime:mime -> string -> response Lwt.t
 
 (** {Status} *)
 
@@ -77,6 +78,7 @@ val page : title:string -> string -> body
 val make_mime :
   ?charset:string -> ?lang:string list -> ?mime:string -> unit -> mime
 
+val from_filename : ?charset:string -> ?lang:string list -> string -> mime
 val empty : mime
 val gemini : mime
 val text_mime : string -> mime

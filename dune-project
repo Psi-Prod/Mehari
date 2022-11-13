@@ -23,6 +23,8 @@
  (depends
   (dune
    (>= 3.0))
+  (magic-mime
+   (>= 1.2.0))
   (lwt
    (>= 5.6.0))
   (lwt_ppx
