@@ -3,6 +3,6 @@ let () =
   router
     [
       route "/hello" (fun _ -> respond_text "Hello");
-      route "/world" (fun _ -> respond_text "Word");
+      route "/world" (fun _ -> respond_text "World");
     ]
   |> run
