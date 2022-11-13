@@ -1,6 +1,6 @@
 type t = (string * (Request.t -> Response.t Lwt.t)) list
 
-let route ?(mw = fun handler -> handler) r handler = [ (r, mw handler) ]
+let route ?(mw = Fun.id) r handler = [ (r, mw handler) ]
 
 let router routes req =
   let routes = List.concat routes in
@@ -17,5 +17,5 @@ let router routes req =
   | None -> Response.(respond Status.not_found "")
   | Some h -> h req
 
-let scope ?(mw = fun handler -> handler) prefix routes =
+let scope ?(mw = Fun.id) prefix routes =
   List.concat routes |> List.map (fun (r, h) -> (prefix ^ r, mw h))
