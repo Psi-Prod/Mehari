@@ -23,13 +23,13 @@ let validate code meta body =
     Option.fold body ~none:"" ~some:string_of_body
     |> Format.sprintf "%i %s\r\n%s" code meta
 
-let to_string (type a) (s : a status) (info : a) =
-  let code, (meta : string), body =
+let to_string (type a) (s : a status) (x : a) =
+  let code, meta, body =
     match s with
-    | Redirect code -> (code, Uri.to_string info, None)
-    | Success (code, body) -> (code, Mime.to_string info, Some body)
+    | Redirect code -> (code, Uri.to_string x, None)
+    | Success (code, body) -> (code, Mime.to_string x, Some body)
     | SlowDown (code, n) -> (code, Int.to_string n, None)
-    | Other code -> (code, info, None)
+    | Other code -> (code, x, None)
   in
   validate code meta body
 
