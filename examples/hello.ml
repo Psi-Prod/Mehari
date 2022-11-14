@@ -1,8 +1,7 @@
 let () =
-  let open Mehari in
-  router
+  Mehari.router
     [
-      route "/hello" (fun _ -> respond_text "Hello");
-      route "/world" (fun _ -> respond_text "World");
+      Mehari.route "/hello" (fun _ -> Mehari.respond_text "Hello");
+      Mehari.route "/world" (fun _ -> Mehari.respond_text "World");
     ]
-  |> run
+  |> Mehari.run
