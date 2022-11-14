@@ -45,12 +45,11 @@ let start_server ~cert ~port callback =
     write oc resp
   in
   let* sock = create_srv_socket Unix.inet_addr_loopback port in
-  let* certchain = cert in
-  serve handle_request sock certchain
+  serve handle_request sock cert
 
 let serve ?(port = 1965) ?(cert_file = "./cert.pem") ?(key_file = "./key.pem")
     router =
-  let cert = X509_lwt.private_of_pems ~cert:cert_file ~priv_key:key_file in
+  let* cert = X509_lwt.private_of_pems ~cert:cert_file ~priv_key:key_file in
   start_server ~cert ~port router
 
 let run ?(port = 1965) ?(cert_file = "./cert.pem") ?(key_file = "./key.pem")
