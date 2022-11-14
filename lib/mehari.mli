@@ -42,6 +42,7 @@ val port : request -> int
 
 val response : 'a status -> 'a -> response
 val respond : 'a status -> 'a -> response Lwt.t
+val respond_body : body -> mime -> response Lwt.t
 val respond_text : string -> response Lwt.t
 val respond_gemtext : Gemtext.t -> response Lwt.t
 val respond_document : ?mime:mime -> string -> response Lwt.t

@@ -58,6 +58,7 @@ open Lwt.Syntax
 
 let response status info = to_string status info
 let respond status info = to_string status info |> Lwt.return
+let respond_body body = respond (Status.success body)
 
 let respond_text txt =
   respond (Status.success (text txt)) (Mime.make ~mime:"text/plain" ())
