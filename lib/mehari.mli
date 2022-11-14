@@ -1,4 +1,4 @@
-(** {Types} *)
+(** {1 Types} *)
 
 type request
 type response
@@ -9,7 +9,7 @@ type mime
 type body
 type middleware = handler -> handler
 
-(** {Gemtext}  *)
+(** {1 Gemtext}  *)
 
 module Gemtext : sig
   type t = line list
@@ -32,13 +32,13 @@ module Gemtext : sig
   val quote : string -> line
 end
 
-(** {Request} **)
+(** {1 Request} *)
 
 val uri : request -> Uri.t
 val addr : request -> Unix.inet_addr
 val port : request -> int
 
-(** {Response} *)
+(** {1 Response} *)
 
 val response : 'a status -> 'a -> response
 val respond : 'a status -> 'a -> response Lwt.t
@@ -46,7 +46,7 @@ val respond_text : string -> response Lwt.t
 val respond_gemtext : Gemtext.t -> response Lwt.t
 val respond_document : ?mime:mime -> string -> response Lwt.t
 
-(** {Status} *)
+(** {1 Status} *)
 
 val input : string status
 val sensitive_input : string status
@@ -67,14 +67,14 @@ val client_certificate_required : string status
 val certificate_not_authorised : string status
 val certificate_not_valid : string status
 
-(** {Body} *)
+(** {1 Body} *)
 
 val text : string -> body
 val gemtext : Gemtext.t -> body
 val lines : string list -> body
 val page : title:string -> string -> body
 
-(** {Mime} *)
+(** {1 Mime} *)
 
 val make_mime :
   ?charset:string -> ?lang:string list -> ?mime:string -> unit -> mime
@@ -87,13 +87,13 @@ val with_charset : mime -> string -> mime
 val with_lang : mime -> string list -> mime
 val with_mime : mime -> string -> mime
 
-(** {Routing} *)
+(** {1 Routing} *)
 
 val router : route list -> handler
 val route : ?mw:middleware -> string -> handler -> route
 val scope : ?mw:middleware -> string -> route list -> route
 
-(** {Entry point} *)
+(** {1 Entry point} *)
 
 val run :
   ?port:int ->
@@ -101,3 +101,4 @@ val run :
   ?certchains:(string * string) list ->
   (request -> response Lwt.t) ->
   unit
+(** [certchains] must have at least one [(certificate, private_key)] entry, the last one is considered default. *)
