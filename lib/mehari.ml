@@ -27,6 +27,7 @@ let respond = Response.respond
 let respond_text = Response.respond_text
 let respond_gemtext = Response.respond_gemtext
 let respond_document = Response.respond_document
+let directory_listing = Response.directory_listing
 let router = Router.router
 let route = Router.route
 let scope = Router.scope

@@ -70,3 +70,17 @@ let respond_document ?mime path =
     let* content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
     respond (Status.success (text content)) mime
   else respond Status.not_found ""
+
+open Lwt.Syntax
+
+let directory_listing path =
+  let* exist = Lwt_unix.file_exists path in
+  if exist || Sys.is_directory path then
+    let dirs = Lwt_unix.files_of_directory path in
+    let* links =
+      Lwt_stream.fold
+        (fun p acc -> Gemtext.link (Filename.concat path p) :: acc)
+        dirs []
+    in
+    respond_gemtext (Gemtext.[ heading `H1 path; text "\n" ] @ links)
+  else respond Status.not_found ""

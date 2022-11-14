@@ -1,3 +1,3 @@
 (executables
- (names counter echo hello guestbook)
+ (names counter echo hello guestbook static)
  (libraries mehari uri))

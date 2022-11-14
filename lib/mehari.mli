@@ -45,6 +45,7 @@ val respond : 'a status -> 'a -> response Lwt.t
 val respond_text : string -> response Lwt.t
 val respond_gemtext : Gemtext.t -> response Lwt.t
 val respond_document : ?mime:mime -> string -> response Lwt.t
+val directory_listing : string -> response Lwt.t
 
 (** {Status} *)
 
