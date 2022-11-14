@@ -97,6 +97,7 @@ val scope : ?mw:middleware -> string -> route list -> route
 
 val run :
   ?port:int ->
+  ?addr:string ->
   ?certchains:(string * string) list ->
   (request -> response Lwt.t) ->
   unit

@@ -43,8 +43,7 @@ let rec serve handler sock certificates =
   let* () = Tls_lwt.Unix.close_tls server in
   serve handler sock certificates
 
-let start_server ?(address = Unix.inet_addr_loopback) ~port ~certchains callback
-    =
+let start_server ~address ~port ~certchains callback =
   let* certs = load_certs certchains in
   let handle_request ic oc addr =
     let* buf = read ic in
@@ -53,9 +52,16 @@ let start_server ?(address = Unix.inet_addr_loopback) ~port ~certchains callback
     let* resp = callback (Request.make ~addr ~uri) in
     write oc resp
   in
-  let* sock = create_srv_socket address port in
+  let* sock =
+    create_srv_socket
+      (Option.value ~default:Unix.inet_addr_loopback address)
+      port
+  in
   serve handle_request sock @@ `Multiple_default (List.hd certs, certs)
 
-let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) callback
-    =
-  start_server ~port ~certchains callback |> Lwt_main.run |> ignore
+let run ?(port = 1965) ?addr ?(certchains = [ ("./cert.pem", "./key.pem") ])
+    callback =
+  start_server ~port
+    ~address:(Option.map Unix.inet_addr_of_string addr)
+    ~certchains callback
+  |> Lwt_main.run |> ignore
