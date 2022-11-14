@@ -1,6 +1,5 @@
 let () =
-  let open Mehari in
-  run (fun req ->
-      match uri req |> Uri.verbatim_query with
-      | None -> respond_text ""
-      | Some msg -> respond_text msg)
+  Mehari.run (fun req ->
+      match Mehari.uri req |> Uri.verbatim_query with
+      | None -> Mehari.respond_text ""
+      | Some msg -> Mehari.respond_text msg)
