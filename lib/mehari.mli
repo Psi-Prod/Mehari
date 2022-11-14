@@ -95,7 +95,8 @@ val scope : ?mw:middleware -> string -> route list -> route
 
 (** {Entry point} *)
 
-val serve :
-  ?port:int -> ?cert_file:string -> ?key_file:string -> handler -> 'a Lwt.t
-
-val run : ?port:int -> ?cert_file:string -> ?key_file:string -> handler -> unit
+val run :
+  ?port:int ->
+  ?certchains:(string * string) list ->
+  (request -> response Lwt.t) ->
+  unit

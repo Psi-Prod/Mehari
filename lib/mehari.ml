@@ -30,5 +30,4 @@ let respond_document = Response.respond_document
 let router = Router.router
 let route = Router.route
 let scope = Router.scope
-let serve = Server.serve
 let run = Server.run
