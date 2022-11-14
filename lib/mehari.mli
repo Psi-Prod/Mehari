@@ -9,7 +9,7 @@ type mime
 type body
 type middleware = handler -> handler
 
-(** {Gemtext}  *)
+(** {Gemtext} *)
 
 module Gemtext : sig
   type t = line list
@@ -93,6 +93,11 @@ val with_mime : mime -> string -> mime
 val router : route list -> handler
 val route : ?mw:middleware -> string -> handler -> route
 val scope : ?mw:middleware -> string -> route list -> route
+
+(** {Rate limit}  *)
+
+val make_rate_limit :
+  ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> middleware
 
 (** {Entry point} *)
 

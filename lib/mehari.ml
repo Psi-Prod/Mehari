@@ -31,5 +31,6 @@ let directory_listing = Response.directory_listing
 let router = Router.router
 let route = Router.route
 let scope = Router.scope
+let make_rate_limit = Rate_limiter.make
 let serve = Server.serve
 let run = Server.run
