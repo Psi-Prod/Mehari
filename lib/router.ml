@@ -1,6 +1,6 @@
 type t = (string * (Request.t -> Response.t Lwt.t)) list
 
-let route ?(mw = Fun.id) r handler : t = [ (r, mw handler) ]
+let route ?(mw = Fun.id) r handler = [ (r, mw handler) ]
 
 let router routes req =
   let routes = List.concat routes in
