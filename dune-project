@@ -19,15 +19,22 @@
 
 (package
  (name mehari)
- (synopsis "A Mirage friendly Gemini server")
+ (synopsis "A Mirage OS friendly library for building Gemini servers.")
+ (description "Mehari is a Mirage OS friendly library for building Gemini servers.
+It fully implements the Gemini protocol specification and aims to expose a clean and simple API.
+It takes heavy inspiration from Dream, a tidy, feature-complete Web framework.")
  (depends
   (dune
    (>= 3.0))
+  (ocaml
+   (>= 4.13))
   (magic-mime
    (>= 1.3.0))
   (lwt
    (>= 5.6.0))
   (lwt_ppx
    (>= 2.1.0))
-  (ocaml
-   (>= 4.13))))
+  (uri
+   (>= 4.2.0))
+  (tls
+   (>= 0.15.3))))

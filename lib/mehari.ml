@@ -32,3 +32,4 @@ let router = Router.router
 let route = Router.route
 let scope = Router.scope
 let run = Server.run
+let run_lwt = Server.run_lwt
