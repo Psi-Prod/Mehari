@@ -186,6 +186,11 @@ val scope : ?mw:middleware -> string -> route list -> route
 (** [scope ~mw prefix routes] groups [routes] under the path [prefix]
     and [mw]. *)
 
+(** {1 Rate limit}  *)
+
+val make_rate_limit :
+  ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> middleware
+
 (** {1 Entry point} *)
 
 val run :
