@@ -1,5 +1,14 @@
 open Lwt.Syntax
 
+let load_certs certs =
+  let rec aux acc = function
+    | [] -> Lwt.return acc
+    | (cert, priv_key) :: tl ->
+        let* certchain = X509_lwt.private_of_pems ~cert ~priv_key in
+        aux (certchain :: acc) tl
+  in
+  aux [] certs
+
 let init_socket addr port =
   let sockaddr = Unix.ADDR_INET (addr, port) in
   let socket = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
@@ -12,31 +21,24 @@ let create_srv_socket addr port =
   Lwt_unix.listen socket 10;
   Lwt.return socket
 
-let accept sock =
-  let* sock_cl, addr = Lwt_unix.accept sock in
-  let ic = Lwt_io.of_fd ~close:Lwt.return ~mode:Lwt_io.input sock_cl in
-  let oc = Lwt_io.of_fd ~close:Lwt.return ~mode:Lwt_io.output sock_cl in
-  Lwt.return ((ic, oc), addr, sock_cl)
-
 let write oc buff =
   let* () = Lwt_io.write oc buff in
   Lwt_io.flush oc
 
 let read ic = Lwt_io.read ic ~count:2048
 
-let rec serve handler sock certchain =
-  let* _, addr, sock_cl = accept sock in
+let rec serve handler sock certificates =
+  let* sock_cl, addr = Lwt_unix.accept sock in
   let* server =
-    Tls_lwt.Unix.server_of_fd
-      (Tls.Config.server ~certificates:(`Single certchain) ())
-      sock_cl
+    Tls_lwt.Unix.server_of_fd (Tls.Config.server ~certificates ()) sock_cl
   in
   let ic, oc = Tls_lwt.of_t server in
   let* () = handler ic oc addr in
   let* () = Tls_lwt.Unix.close_tls server in
-  serve handler sock certchain
+  serve handler sock certificates
 
-let start_server ~cert ~port callback =
+let start_server ~address ~port ~certchains callback =
+  let* certs = load_certs certchains in
   let handle_request ic oc addr =
     let* buf = read ic in
     let uri = String.(sub buf 0 (length buf - 2)) |> Uri.of_string in
@@ -44,15 +46,20 @@ let start_server ~cert ~port callback =
     let* resp = callback (Request.make ~addr ~uri) in
     write oc resp
   in
-  let* sock = create_srv_socket Unix.inet_addr_loopback port in
-  let* certchain = cert in
-  serve handle_request sock certchain
+  let* sock =
+    create_srv_socket
+      (Option.value ~default:Unix.inet_addr_loopback address)
+      port
+  in
+  serve handle_request sock @@ `Multiple_default (List.hd certs, certs)
 
-let serve ?(port = 1965) ?(cert_file = "./cert.pem") ?(key_file = "./key.pem")
-    router =
-  let cert = X509_lwt.private_of_pems ~cert:cert_file ~priv_key:key_file in
-  start_server ~cert ~port router
+let run_lwt ?(port = 1965) ?addr ?(certchains = [ ("./cert.pem", "./key.pem") ])
+    callback =
+  start_server ~port
+    ~address:(Option.map Unix.inet_addr_of_string addr)
+    ~certchains callback
+  |> Lwt_main.run
 
-let run ?(port = 1965) ?(cert_file = "./cert.pem") ?(key_file = "./key.pem")
-    router =
-  serve ~port ~cert_file ~key_file router |> Lwt_main.run |> ignore
+let run ?(port = 1965) ?addr ?(certchains = [ ("./cert.pem", "./key.pem") ])
+    callback =
+  run_lwt ~port ?addr ~certchains callback

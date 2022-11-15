@@ -1,6 +1,6 @@
 type t = { mime : string; charset : string option; lang : string list }
 
-let make ?charset ?(lang = []) ?(mime = "") () =
+let make ?charset ?(lang = []) mime =
   {
     mime;
     charset =
@@ -11,11 +11,11 @@ let make ?charset ?(lang = []) ?(mime = "") () =
   }
 
 let from_filename ?charset ?(lang = []) fname =
-  make ~mime:(Magic_mime.lookup ~default:"text/gemini" fname) ~charset ~lang ()
+  make (Magic_mime.lookup ~default:"text/gemini" fname) ~charset ~lang
 
-let empty = make ~mime:"" ()
-let text_mime text = make ~mime:("text/" ^ text) ()
-let gemini = make ~mime:"text/gemini" ()
+let empty = make ""
+let text_mime text = make ("text/" ^ text)
+let gemini = make "text/gemini"
 let with_charset t c = { t with charset = Some c }
 let with_lang t l = { t with lang = l }
 let with_mime t mime = { t with mime }

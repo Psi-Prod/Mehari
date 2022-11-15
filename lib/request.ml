@@ -6,7 +6,7 @@ let make ~uri ~addr = { uri; addr; params = StringMap.empty }
 let uri { uri; _ } = uri
 
 let addr { addr; _ } =
-  match addr with Unix.ADDR_INET (addr, _) -> addr | _ -> failwith ""
+  match addr with Unix.ADDR_INET (addr, _) -> addr | _ -> assert false
 
 let port { addr; _ } =
-  match addr with Unix.ADDR_INET (_, port) -> port | _ -> failwith ""
+  match addr with Unix.ADDR_INET (_, port) -> port | _ -> assert false

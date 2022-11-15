@@ -56,8 +56,16 @@ end
 
 let response status info = to_string status info
 let respond status info = to_string status info |> Lwt.return
+let respond_body body = respond (Status.success body)
 
 let respond_text txt =
-  respond (Status.success (text txt)) (Mime.make ~mime:"text/plain" ())
+  respond (Status.success (text txt)) (Mime.text_mime "plain" )
 
 let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
+
+let respond_document ?mime path =
+  if%lwt Lwt_unix.file_exists path then
+    let mime = Option.value mime ~default:(Mime.from_filename path) in
+    let* content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
+    respond (Status.success (text content)) mime
+  else respond Status.not_found ""
