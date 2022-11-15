@@ -21,12 +21,6 @@ let create_srv_socket addr port =
   Lwt_unix.listen socket 10;
   Lwt.return socket
 
-let accept sock =
-  let* sock_cl, addr = Lwt_unix.accept sock in
-  let ic = Lwt_io.of_fd ~close:Lwt.return ~mode:Lwt_io.input sock_cl in
-  let oc = Lwt_io.of_fd ~close:Lwt.return ~mode:Lwt_io.output sock_cl in
-  Lwt.return ((ic, oc), addr, sock_cl)
-
 let write oc buff =
   let* () = Lwt_io.write oc buff in
   Lwt_io.flush oc
@@ -34,7 +28,7 @@ let write oc buff =
 let read ic = Lwt_io.read ic ~count:2048
 
 let rec serve handler sock certificates =
-  let* _, addr, sock_cl = accept sock in
+  let* sock_cl, addr = Lwt_unix.accept sock in
   let* server =
     Tls_lwt.Unix.server_of_fd (Tls.Config.server ~certificates ()) sock_cl
   in
