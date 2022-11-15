@@ -54,8 +54,6 @@ module Status = struct
   let certificate_not_valid = Other 62
 end
 
-open Lwt.Syntax
-
 let response status info = to_string status info
 let respond status info = to_string status info |> Lwt.return
 
@@ -63,24 +61,3 @@ let respond_text txt =
   respond (Status.success (text txt)) (Mime.make ~mime:"text/plain" ())
 
 let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
-
-let respond_document ?mime path =
-  if%lwt Lwt_unix.file_exists path then
-    let mime = Option.value mime ~default:Mime.gemini in
-    let* content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
-    respond (Status.success (text content)) mime
-  else respond Status.not_found ""
-
-open Lwt.Syntax
-
-let directory_listing path =
-  let* exist = Lwt_unix.file_exists path in
-  if exist || Sys.is_directory path then
-    let dirs = Lwt_unix.files_of_directory path in
-    let* links =
-      Lwt_stream.fold
-        (fun p acc -> Gemtext.link (Filename.concat path p) :: acc)
-        dirs []
-    in
-    respond_gemtext (Gemtext.[ heading `H1 path; text "\n" ] @ links)
-  else respond Status.not_found ""
