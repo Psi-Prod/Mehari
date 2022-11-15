@@ -59,9 +59,11 @@ let respond status info = to_string status info |> Lwt.return
 let respond_body body = respond (Status.success body)
 
 let respond_text txt =
-  respond (Status.success (text txt)) (Mime.text_mime "plain" )
+  respond (Status.success (text txt)) (Mime.text_mime "plain")
 
 let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
+
+open Lwt.Syntax
 
 let respond_document ?mime path =
   if%lwt Lwt_unix.file_exists path then
