@@ -1,28 +1,46 @@
 (** {1 Types} *)
 
 type request
+(** Gemini request. See {!section-request}. *)
+
 type response
+(** Gemini response. See {!section-response}. *)
+
 type handler = request -> response Lwt.t
+(** Handlers are asynchronous functions from {!type:request} to {!type:response}. *)
+
 type route
+(** Routes tell {!val:router} which handler to select for each request. See
+  {!section-routing}. *)
+
 type 'a status
+(** Status of a Gemini response. See {!section-status}. *)
+
 type mime
+(** Mime type of a document. See {!section-mime}. *)
+
 type body
+(** Body of Gemini response. See {!section-body}. *)
+
 type middleware = handler -> handler
+(** Middlewares take a {!type:handler}, and run some code before or after — producing
+    a “bigger” {!type:handler}. *)
 
-(** {1 Gemtext}  *)
+(** {1:gemtext Gemtext} *)
 
+(** Implementation of the Gemini own native response format. *)
 module Gemtext : sig
   type t = line list
 
   and line =
     | Text of string
     | Link of { url : string; name : string option }
-    | Preformat of preformat
+    | Preformat of { alt : string option; text : string }
     | Heading of [ `H1 | `H2 | `H3 ] * string
     | ListItem of string
     | Quote of string
 
-  and preformat = { alt : string option; text : string }
+  (** {1 Facilities} *)
 
   val text : string -> line
   val link : ?name:string -> string -> line
@@ -32,22 +50,46 @@ module Gemtext : sig
   val quote : string -> line
 end
 
-(** {1 Request} *)
+(** {1:request Request} *)
 
 val uri : request -> Uri.t
-val addr : request -> Unix.inet_addr
-val port : request -> int
+(** Request uri. *)
 
-(** {1 Response} *)
+val addr : request -> Unix.inet_addr
+(** Address of client sending the {!type:request}. *)
+
+val port : request -> int
+(** Port of client sending the {!type:request}. *)
+
+(** {1:response Response} *)
 
 val response : 'a status -> 'a -> response
-val respond : 'a status -> 'a -> response Lwt.t
-val respond_body : body -> mime -> response Lwt.t
-val respond_text : string -> response Lwt.t
-val respond_gemtext : Gemtext.t -> response Lwt.t
-val respond_document : ?mime:mime -> string -> response Lwt.t
+(** Creates a new {!type:response} with given {!type:status}. *)
 
-(** {1 Status} *)
+val respond : 'a status -> 'a -> response Lwt.t
+(** Same as {!val:response}, but the new {!type:response} is wrapped in a
+    [Lwt] promise. *)
+
+val respond_body : body -> mime -> response Lwt.t
+(** Same as {!val:respond} but respond with given {!type:body} and
+    use given {!type:mime} as mime type. *)
+
+val respond_text : string -> response Lwt.t
+(** Same as {!val:respond} but respond with given text and use [text/plain] as
+    {!type:mime} type. *)
+
+val respond_gemtext : Gemtext.t -> response Lwt.t
+(** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
+    [text/gemini] as {!type:mime} type. *)
+
+val respond_document : ?mime:mime -> string -> response Lwt.t
+(** Same as {!val:respond} but respond with content of given [filename] and use
+    given {!type:mime} as mime type.
+    If [filename] is not present on filesystem, responds with {!val:not_found}.
+    {!type:mime} type is chosen according to the filename extension by default.
+    If mime type inference failed, it uses [text/gemini; charset=utf-8]. *)
+
+(** {1:status Status} *)
 
 val input : string status
 val sensitive_input : string status
@@ -68,31 +110,68 @@ val client_certificate_required : string status
 val certificate_not_authorised : string status
 val certificate_not_valid : string status
 
-(** {1 Body} *)
+(** {1:body Body} *)
 
 val text : string -> body
+(** Creates a {!type:body} from given text. *)
+
 val gemtext : Gemtext.t -> body
+(** Creates a {!type:body} from a Gemtext document. *)
+
 val lines : string list -> body
+(** Creates a {!type:body} from Gemtext line as text. *)
+
 val page : title:string -> string -> body
+(** [page ~title content] creates a simple Gemtext {!type:body} of form:
 
-(** {1 Mime} *)
+{[
+  # title
 
-val make_mime :
-  ?charset:string -> ?lang:string list -> ?mime:string -> unit -> mime
+  content
+]}
+*)
+
+(** {1:mime Mime} *)
+
+val make_mime : ?charset:string -> ?lang:string list -> string -> mime
+(** [make_mime ~charset ~lang mime] creates a {!type:mime} type from given
+  [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
+  [text/]. *)
 
 val from_filename : ?charset:string -> ?lang:string list -> string -> mime
-val empty : mime
-val gemini : mime
-val text_mime : string -> mime
-val with_charset : mime -> string -> mime
-val with_lang : mime -> string list -> mime
-val with_mime : mime -> string -> mime
+(** [from_filename ~charset ~lang filename] creates a {!type:mime} type by
+    performing a mime lookup from [filename]. *)
 
-(** {1 Routing} *)
+val empty : mime
+(** The empty mime. *)
+
+val gemini : mime
+(** [text/gemini; charset=utf-8] *)
+
+val text_mime : string -> mime
+(** [text_mime type] returns [text/type; charset=utf-8]. *)
+
+val with_charset : mime -> string -> mime
+(** Changes charset of given {!type:mime}. *)
+
+val with_lang : mime -> string list -> mime
+(** Changes langs of given {!type:mime}. *)
+
+val with_mime : mime -> string -> mime
+(** Changes mime type of given {!type:mime}. *)
+
+(** {1:routing Routing} *)
 
 val router : route list -> handler
+(** Creates a router. If none of the routes match the {!type:request}, the router
+    returns {!val:not_found}. *)
+
 val route : ?mw:middleware -> string -> handler -> route
+(** [route ~mw path handler] forwards requests for [path] to [handler]. *)
+
 val scope : ?mw:middleware -> string -> route list -> route
+(** [scope ~mw prefix routes] groups [routes] under the path [prefix]
+    and [mw]. *)
 
 (** {1 Entry point} *)
 
@@ -100,6 +179,10 @@ val run :
   ?port:int ->
   ?addr:string ->
   ?certchains:(string * string) list ->
-  (request -> response Lwt.t) ->
+  handler ->
   unit
-(** [certchains] must have at least one [(certificate, private_key)] entry, the last one is considered default. *)
+(** [run ~port ~addr ~certchains handler] runs the server using [handler].
+    - [port] is the port to listen on. Defaults to [1965].
+    - [addr] is the address which socket is bound to.
+    - [certchains] is the list of form [[(cert_path, privatekey_path); ...]] and
+        must be non-empty, the last one is considered default. *)
