@@ -1,3 +1,10 @@
+(** Mehari is a {{:https://mirageos.org/ }Mirage OS} friendly library for building Gemini servers. It fully
+implements the {{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
+and aims to expose a clean and simple API.
+
+It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
+a tidy, feature-complete Web framework. *)
+
 (** {1 Types} *)
 
 type request
@@ -90,6 +97,12 @@ val respond_document : ?mime:mime -> string -> response Lwt.t
     If mime type inference failed, it uses [text/gemini; charset=utf-8]. *)
 
 (** {1:status Status} *)
+
+(** A wrapper around Gemini status codes.
+
+  @see < https://gemini.circumlunar.space/docs/specification.gmi >
+    Section "Appendix 1. Full two digit status codes" for a description of the
+    meaning of each code. *)
 
 val input : string status
 val sensitive_input : string status
@@ -185,4 +198,15 @@ val run :
     - [port] is the port to listen on. Defaults to [1965].
     - [addr] is the address which socket is bound to.
     - [certchains] is the list of form [[(cert_path, privatekey_path); ...]] and
-        must be non-empty, the last one is considered default. *)
+        must be non-empty, the last one is considered default.
+
+  @raise Failure if [addr] does not match the format [XXX.YYY.ZZZ.TTT]. *)
+
+val run_lwt :
+  ?port:int ->
+  ?addr:string ->
+  ?certchains:(string * string) list ->
+  handler ->
+  'a Lwt.t
+(** Same as {!val:run}, but returns a promise that does not resolve until the
+    server stops listening, instead of calling [Lwt_main.run]. *)
