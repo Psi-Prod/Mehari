@@ -51,7 +51,9 @@ let start_server ~address ~port ~certchains callback =
       (Option.value ~default:Unix.inet_addr_loopback address)
       port
   in
-  serve handle_request sock @@ `Multiple_default (List.hd certs, certs)
+  match certs with
+  | c :: _ -> `Multiple_default (c, certs) |> serve handle_request sock
+  | _ -> invalid_arg "start_server"
 
 let run_lwt ?(port = 1965) ?addr ?(certchains = [ ("./cert.pem", "./key.pem") ])
     callback =

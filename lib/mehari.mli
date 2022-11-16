@@ -217,10 +217,11 @@ val run :
 (** [run ~port ~addr ~certchains handler] runs the server using [handler].
     - [port] is the port to listen on. Defaults to [1965].
     - [addr] is the address which socket is bound to.
-    - [certchains] is the list of form [[(cert_path, privatekey_path); ...]] and
-        must be non-empty, the last one is considered default.
+    - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
+      the last one is considered default.
 
-  @raise Failure if [addr] does not match the format [XXX.YYY.ZZZ.TTT]. *)
+  @raise Failure if [addr] does not match the format [XXX.YYY.ZZZ.TTT].
+  @raise Invalid_argument if [certchains] is empty. *)
 
 val run_lwt :
   ?port:int ->
