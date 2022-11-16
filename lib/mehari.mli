@@ -33,6 +33,9 @@ type middleware = handler -> handler
 (** Middlewares take a {!type:handler}, and run some code before or after — producing
     a “bigger” {!type:handler}. *)
 
+type rate_limiter
+(** Rate limiter. See {!section-rate_limit}. *)
+
 (** {1:gemtext Gemtext} *)
 
 (** Implementation of the Gemini own native response format. *)
@@ -179,17 +182,29 @@ val router : route list -> handler
 (** Creates a router. If none of the routes match the {!type:request}, the router
     returns {!val:not_found}. *)
 
-val route : ?mw:middleware -> string -> handler -> route
-(** [route ~mw path handler] forwards requests for [path] to [handler]. *)
+val route :
+  ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
+(** [route ~rate_limit ~mw path handler] forwards requests for [path] to
+    [handler]. If rate limit is in effect, [handler] is not executed and a
+    respond with {!type:status} {!val:slow_down} is sended. *)
 
-val scope : ?mw:middleware -> string -> route list -> route
-(** [scope ~mw prefix routes] groups [routes] under the path [prefix]
-    and [mw]. *)
+val scope :
+  ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+(** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
+  [prefix], [rate_limit] and [mw]. *)
 
-(** {1 Rate limit}  *)
+(** {1:rate_limit Rate limit}  *)
 
 val make_rate_limit :
-  ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> middleware
+  ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+(** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
+    limits client to [n] request per [period * unit].
+
+    For example,
+  {[
+make_rate_limit ~period:2 5 `Hour
+  ]}
+limits client to 5 requests every 2 hours. *)
 
 (** {1 Entry point} *)
 

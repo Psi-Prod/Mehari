@@ -11,7 +11,9 @@ type t = {
   mutable history : int AddrMap.t;
 }
 
-let reset t = t.next_timestamp <- Unix.time () +. Int.to_float t.period
+let reset t =
+  t.next_timestamp <- Unix.time () +. Int.to_float t.period;
+  t.history <- AddrMap.empty
 
 let check t req =
   let time_left = t.next_timestamp -. Unix.time () in
@@ -27,9 +29,6 @@ let check t req =
     Response.(respond (Status.slow_down seconds) msg) |> Option.some
   else None
 
-let to_middleware rl handler req =
-  match check rl req with None -> handler req | Some resp -> resp
-
 let make ?(period = 1) requests duration =
   let period =
     period
@@ -42,4 +41,4 @@ let make ?(period = 1) requests duration =
   in
   let t = { requests; period; next_timestamp = 0.; history = AddrMap.empty } in
   reset t;
-  to_middleware t
+  t
