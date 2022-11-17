@@ -151,13 +151,25 @@ module type S = sig
   (** {1:mime Mime} *)
 
   val make_mime : ?charset:string -> ?lang:string list -> string -> mime
-  (** [make_mime ~charset ~lang mime] creates a {!type:mime} type from given
+  (** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
   [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
   [text/]. *)
 
-  val from_filename : ?charset:string -> ?lang:string list -> string -> mime
-  (** [from_filename ~charset ~lang filename] creates a {!type:mime} type by
-    performing a mime lookup from [filename]. *)
+  val from_filename :
+    ?lookup:[ `Ext | `Content | `Both ] ->
+    ?charset:string ->
+    ?lang:string list ->
+    string ->
+    mime Lwt.t
+  (** [from_filename ?lookup_into ?charset ?lang fname] creates a
+    {!type:mime} type by performing a mime lookup depending of the value of
+    [lookup]:
+    - [`Ext]: performs a lookup based on file extension of [fname];
+    - [`Content]: performs a lookup based on content of [fname];
+    - [`Both]: performs successivly a lookup on content and extension.
+
+    Returns [make_mime ?charset ?lang "text/gemini"] if one of the previous
+    lookup fails.*)
 
   val empty : mime
   (** The empty mime. *)
@@ -185,20 +197,20 @@ module type S = sig
 
   val route :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
-  (** [route ~rate_limit ~mw path handler] forwards requests for [path] to
+  (** [route ?rate_limit ?mw path handler] forwards requests for [path] to
     [handler]. If rate limit is in effect, [handler] is not executed and a
     respond with {!type:status} {!val:slow_down} is sended. *)
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
-  (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
+  (** [scope ?rate_limit ?mw prefix routes] groups [routes] under the path
   [prefix], [rate_limit] and [mw]. *)
 
   (** {1:rate_limit Rate limit}  *)
 
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
+  (** [make_rate_limit ?period n unit] creates a {!type:rate_limiter} which
     limits client to [n] request per [period * unit].
 
     For example,
@@ -215,7 +227,7 @@ limits client to 5 requests every 2 hours. *)
     ?certchains:(string * string) list ->
     handler ->
     unit
-  (** [run ~port ~addr ~certchains handler] runs the server using [handler].
+  (** [run ?port ?addr ?certchains handler] runs the server using [handler].
     - [port] is the port to listen on. Defaults to [1965].
     - [addr] is the address which socket is bound to.
     - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],

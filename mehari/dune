@@ -2,6 +2,8 @@
  (name mehari)
  (public_name mehari)
  (libraries
+  conan-database.light
+  conan.string
   lwt
   lwt.unix
   magic-mime

@@ -60,7 +60,14 @@ module type S = sig
   val lines : string list -> body
   val page : title:string -> string -> body
   val make_mime : ?charset:string -> ?lang:string list -> string -> mime
-  val from_filename : ?charset:string -> ?lang:string list -> string -> mime
+
+  val from_filename :
+    ?lookup:[ `Ext | `Content | `Both ] ->
+    ?charset:string ->
+    ?lang:string list ->
+    string ->
+    mime Lwt.t
+
   val empty : mime
   val gemini : mime
   val text_mime : string -> mime
