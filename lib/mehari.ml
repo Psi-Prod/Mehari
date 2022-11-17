@@ -11,6 +11,7 @@ type rate_limiter = Rate_limiter.t
 let uri = Request.uri
 let addr = Request.addr
 let port = Request.port
+let sni = Request.sni
 
 include Response.Status
 module Gemtext = Gemtext
