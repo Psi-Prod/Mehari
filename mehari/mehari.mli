@@ -72,6 +72,9 @@ module type S = sig
   val port : request -> int
   (** Port of client sending the {!type:request}. *)
 
+  val sni : request -> string option
+  (** Server name indication TLS extension. *)
+
   (** {1:response Response} *)
 
   val response : 'a status -> 'a -> response

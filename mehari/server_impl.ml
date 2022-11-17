@@ -40,17 +40,25 @@ struct
       Tls_lwt.Unix.server_of_fd (Tls.Config.server ~certificates ()) sock_cl
     in
     let ic, oc = Tls_lwt.of_t server in
-    let* () = handler ic oc addr in
+    let* () = Tls_lwt.Unix.epoch server |> handler ic oc addr in
     let* () = Tls_lwt.Unix.close_tls server in
     serve handler sock certificates
 
   let start_server ~address ~port ~certchains callback =
     let* certs = load_certs certchains in
-    let handle_request ic oc addr =
+    let handle_request ic oc addr ep =
       let* buf = read ic in
       let uri = String.(sub buf 0 (length buf - 2)) |> Uri.of_string in
       (* TODO: fix malformerd header *)
-      let* resp = callback (Request.make ~addr ~uri) in
+      let* resp =
+        callback
+          (Request.make ~addr ~uri
+             ~sni:
+               (match ep with
+               | Ok data ->
+                   Option.map Domain_name.to_string data.Tls.Core.own_name
+               | Error () -> assert false))
+      in
       write oc resp
     in
     let* sock =

@@ -31,6 +31,7 @@ module type S = sig
   val uri : request -> Uri.t
   val addr : request -> Unix.inet_addr
   val port : request -> int
+  val sni : request -> string option
   val response : 'a status -> 'a -> response
   val respond : 'a status -> 'a -> response Lwt.t
   val respond_body : body -> mime -> response Lwt.t
@@ -114,6 +115,7 @@ module Make
   let uri = Request.uri
   let addr = Request.addr
   let port = Request.port
+  let sni = Request.sni
 
   include Response.Status
   module Gemtext = Gemtext
