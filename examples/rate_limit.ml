@@ -1,3 +1,5 @@
+module Mehari = Mehari_unix
+
 let low_limit = Mehari.make_rate_limit 5 `Minute
 let hight_limit = Mehari.make_rate_limit ~period:10 2 `Second
 

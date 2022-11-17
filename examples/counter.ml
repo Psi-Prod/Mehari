@@ -5,7 +5,7 @@ let inc_count handler req =
   handler req
 
 let () =
-  let open Mehari in
+  let open Mehari_unix in
   router
     [
       route "/" (fun _ ->

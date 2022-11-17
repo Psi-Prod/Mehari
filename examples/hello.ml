@@ -1,3 +1,5 @@
+module Mehari = Mehari_unix
+
 let () =
   Mehari.router
     [

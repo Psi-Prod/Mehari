@@ -23,7 +23,7 @@ let book =
   end
 
 let () =
-  let open Mehari in
+  let open Mehari_unix in
   router
     [
       route "/" (fun _ ->
