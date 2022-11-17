@@ -6,7 +6,7 @@ build:
 	dune build
 
 doc:
-	dune build @doc-private
+	dune build @doc
 
 clean:
 	dune clean
