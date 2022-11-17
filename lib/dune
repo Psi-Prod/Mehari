@@ -1,5 +1,0 @@
-(library
- (name mehari)
- (libraries lwt lwt.unix magic-mime tls tls.lwt uri)
- (preprocess
-  (pps lwt_ppx)))
