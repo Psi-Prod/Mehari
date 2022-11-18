@@ -25,11 +25,13 @@ let book =
       Buffer.contents buf
   end
 
+module MIO = Mehari_unix
+
 let () =
-  let open Mehari_unix in
-  router
+  let open Mehari in
+  MIO.router
     [
-      route "/" (fun _ ->
+      MIO.route "/" (fun _ ->
           let home =
             Gemtext.
               [
@@ -41,7 +43,7 @@ let () =
               ]
           in
           respond_gemtext home);
-      route "/submit" (fun req ->
+      MIO.route "/submit" (fun req ->
           match uri req |> Uri.verbatim_query with
           | None -> respond input "Enter your message"
           | Some msg ->
@@ -49,4 +51,4 @@ let () =
               book#add_entry ~timestamp ~addr:(ip req) msg;
               respond redirect_temp "/");
     ]
-  |> run
+  |> MIO.run

@@ -15,11 +15,8 @@ module type S = sig
   (** Gemini response. See {!section-response}. *)
 
   type handler = request -> response Lwt.t
-  (** Handlers are asynchronous functions from {!type:request} to {!type:response}. *)
-
-  type route
-  (** Routes tell {!val:router} which handler to select for each request. See
-  {!section-routing}. *)
+  (** Handlers are asynchronous functions from {!type:request} to
+    {!type:response}. *)
 
   type 'a status
   (** Status of a Gemini response. See {!section-status}. *)
@@ -29,15 +26,6 @@ module type S = sig
 
   type body
   (** Body of Gemini response. See {!section-body}. *)
-
-  type middleware = handler -> handler
-  (** Middlewares take a {!type:handler}, and run some code before or after — producing
-    a “bigger” {!type:handler}. *)
-
-  type rate_limiter
-  (** Rate limiter. See {!section-rate_limit}. *)
-
-  type stack
 
   (** {1:gemtext Gemtext} *)
 
@@ -80,7 +68,7 @@ module type S = sig
   (** {1:response Response} *)
 
   val response : 'a status -> 'a -> response
-  (** Creates a new {!type:response} with given {!type:status}. *)
+  (** Creates a new {!type:response} with given {!type:Mehari.status}. *)
 
   val respond : 'a status -> 'a -> response Lwt.t
   (** Same as {!val:response}, but the new {!type:response} is wrapped in a
@@ -181,50 +169,60 @@ module type S = sig
 
   val with_mime : mime -> string -> mime
   (** Changes mime type of given {!type:mime}. *)
+end
+
+include S
+
+(** {1 IO} *)
+
+module type IO = sig
+  type handler
+
+  type middleware = handler -> handler
+  (** Middlewares take a {!type:Mehari.handler}, and run some code before or
+    after — producing a “bigger” {!type:Mehari.handler}. *)
+
+  type route
+  (** Routes tell {!val:router} which handler to select for each request. See
+  {!section-routing}. *)
+
+  type stack
+  (** Tcpip stack. *)
+
+  (** {1:rate_limit Rate limit}  *)
+
+  type rate_limiter
+  (** Rate limiter. *)
+
+  val make_rate_limit :
+    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
+      limits client to [n] request per [period * unit].
+
+      For example,
+    {[
+  make_rate_limit ~period:2 5 `Hour
+    ]}
+      limits client to 5 requests every 2 hours. *)
 
   (** {1:routing Routing} *)
 
   val router : route list -> handler
-  (** Creates a router. If none of the routes match the {!type:request}, the router
-    returns {!val:not_found}. *)
+  (** Creates a router. If none of the routes match the {!type:Mehari.request},
+    the router returns {!val:Mehari.not_found}. *)
 
   val route :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
   (** [route ~rate_limit ~mw path handler] forwards requests for [path] to
     [handler]. If rate limit is in effect, [handler] is not executed and a
-    respond with {!type:status} {!val:slow_down} is sended. *)
+    respond with {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
   (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
-  [prefix], [rate_limit] and [mw]. *)
-
-  (** {1:rate_limit Rate limit}  *)
-
-  val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
-    limits client to [n] request per [period * unit].
-
-    For example,
-  {[
-make_rate_limit ~period:2 5 `Hour
-  ]}
-limits client to 5 requests every 2 hours. *)
+   [prefix], [rate_limit] and [mw]. *)
 
   (** {1 Entry point} *)
-
-  val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
-  (** [run ~port ~addr ~certchains stack handler] runs the server using
-    [handler].
-    - [port] is the port to listen on. Defaults to [1965].
-    - [addr] is the address which socket is bound to.
-    - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
-      the last one is considered default.
-
-  @raise Failure if [addr] does not match the format [XXX.YYY.ZZZ.TTT].
-  @raise Invalid_argument if [certchains] is empty. *)
 
   val run_lwt :
     ?port:int ->
@@ -232,12 +230,18 @@ limits client to 5 requests every 2 hours. *)
     stack ->
     handler ->
     unit Lwt.t
-  (** Same as {!val:run}, but returns a promise that does not resolve until the
-    server stops listening, instead of calling [Lwt_main.run]. *)
+  (** [run ?port ?certchains stack handler] runs the server using
+    [handler].
+    - [port] is the port to listen on. Defaults to [1965].
+    - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
+      the last one is considered default.
+
+  @raise Invalid_argument if [certchains] is empty. *)
 end
+with type handler := handler
 
 module Make : functor
   (Clock : Mirage_clock.PCLOCK)
   (KV : Mirage_kv.RO)
   (Stack : Tcpip.Stack.V4V6)
-  -> S with type stack = Stack.TCP.t
+  -> IO with type stack = Stack.TCP.t

@@ -1,10 +1,20 @@
+module type S = sig
+  type stack
+
+  val run :
+    ?port:int ->
+    ?certchains:(string * string) list ->
+    stack ->
+    Handler.t ->
+    unit Lwt.t
+
+end
+
 module Make
     (Clock : Mirage_clock.PCLOCK)
     (KV : Mirage_kv.RO)
-    (Stack : Tcpip.Stack.V4V6) =
-struct
+    (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.TCP.t = struct
   module TLS = Tls_mirage.Make (Stack.TCP)
-  module X509 = Tls_mirage.X509 (KV) (Clock)
   open Lwt.Syntax
 
   let load_certs certs =
@@ -61,11 +71,7 @@ struct
       (serve (Tls.Config.server ~certificates ()) handle_request)
     |> Lwt.return
 
-  let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
+  let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
       stack callback =
     start_server ~port ~certchains ~stack callback
-
-  let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
-      callback =
-    run_lwt ~port ~certchains stack callback |> Lwt_main.run
 end

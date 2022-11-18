@@ -1,9 +1,9 @@
-module Mehari = Mehari_unix
+module MIO = Mehari_unix
 
 let () =
-  Mehari.router
+  MIO.router
     [
-      Mehari.route "/hello" (fun _ -> Mehari.respond_text "Hello");
-      Mehari.route "/world" (fun _ -> Mehari.respond_text "World");
+      MIO.route "/hello" (fun _ -> Mehari.respond_text "Hello");
+      MIO.route "/world" (fun _ -> Mehari.respond_text "World");
     ]
-  |> Mehari.run
+  |> MIO.run

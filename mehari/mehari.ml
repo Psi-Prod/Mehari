@@ -2,13 +2,9 @@ module type S = sig
   type request
   type response
   type handler = request -> response Lwt.t
-  type route
   type 'a status
   type mime
   type body
-  type middleware = handler -> handler
-  type rate_limiter
-  type stack
 
   module Gemtext : sig
     type t = line list
@@ -69,6 +65,48 @@ module type S = sig
   val with_charset : mime -> string -> mime
   val with_lang : mime -> string list -> mime
   val with_mime : mime -> string -> mime
+end
+
+let uri = Request.uri
+let ip = Request.ip
+let port = Request.port
+let sni = Request.sni
+
+include Response.Status
+module Gemtext = Gemtext
+
+let text = Response.text
+let gemtext = Response.gemtext
+let lines = Response.lines
+let page = Response.page
+
+include Mime
+
+let make_mime = Mime.make
+let response = Response.response
+let respond = Response.respond
+let respond_body = Response.respond_body
+let respond_text = Response.respond_text
+let respond_gemtext = Response.respond_gemtext
+let respond_document = Response.respond_document
+
+type request = Request.t
+type response = Response.t
+type handler = Handler.t
+type 'a status = 'a Response.status
+type mime = Mime.t
+type body = Response.body
+
+module type IO = sig
+  type handler
+  type middleware = Handler.t -> Handler.t
+  type route
+  type stack
+  type rate_limiter
+
+  val make_rate_limit :
+    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+
   val router : route list -> handler
 
   val route :
@@ -77,65 +115,31 @@ module type S = sig
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 
-  val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-
-  val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
-
   val run_lwt :
     ?port:int ->
     ?certchains:(string * string) list ->
     stack ->
-    handler ->
+    Handler.t ->
     unit Lwt.t
 end
+with type handler := handler
 
 module Make
     (Clock : Mirage_clock.PCLOCK)
     (KV : Mirage_kv.RO)
-    (Stack : Tcpip.Stack.V4V6) : S with type stack = Stack.TCP.t = struct
+    (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.TCP.t = struct
   module RateLimiter = Rate_limiter_impl.Make (Clock)
   module Router = Router_impl.Make (RateLimiter)
   module Server = Server_impl.Make (Clock) (KV) (Stack)
 
-  type request = Request.t
-  type response = Response.t
-  type handler = Handler.t
-  type route = Router.t
-  type 'a status = 'a Response.status
-  type mime = Mime.t
-  type body = Response.body
   type middleware = handler -> handler
+  type route = Router.t
   type rate_limiter = RateLimiter.t
   type stack = Stack.TCP.t
 
-  let uri = Request.uri
-  let ip = Request.ip
-  let port = Request.port
-  let sni = Request.sni
-
-  include Response.Status
-  module Gemtext = Gemtext
-
-  let text = Response.text
-  let gemtext = Response.gemtext
-  let lines = Response.lines
-  let page = Response.page
-
-  include Mime
-
-  let make_mime = Mime.make
-  let response = Response.response
-  let respond = Response.respond
-  let respond_body = Response.respond_body
-  let respond_text = Response.respond_text
-  let respond_gemtext = Response.respond_gemtext
-  let respond_document = Response.respond_document
   let router = Router.router
   let route = Router.route
   let scope = Router.scope
   let make_rate_limit = RateLimiter.make
-  let run = Server.run
-  let run_lwt = Server.run_lwt
+  let run_lwt = Server.run
 end
