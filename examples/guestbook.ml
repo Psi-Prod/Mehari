@@ -1,4 +1,8 @@
-type entry = { timestamp : Unix.tm; addr : (Ipaddr.V4.t, Ipaddr.V6.t) Ipaddr.v4v6; message : string }
+type entry = {
+  timestamp : Unix.tm;
+  addr : (Ipaddr.V4.t, Ipaddr.V6.t) Ipaddr.v4v6;
+  message : string;
+}
 
 let book =
   object
@@ -14,8 +18,7 @@ let book =
           Printf.sprintf "%i-%i-%i %i:%i:%i - %s: %s\n"
             (e.timestamp.tm_year + 1900)
             (e.timestamp.tm_mon + 1) e.timestamp.tm_mday e.timestamp.tm_hour
-            e.timestamp.tm_min e.timestamp.tm_sec
-            (Ipaddr.to_string e.addr)
+            e.timestamp.tm_min e.timestamp.tm_sec (Ipaddr.to_string e.addr)
             (Uri.pct_decode e.message)
           |> Buffer.add_string buf)
         entries;

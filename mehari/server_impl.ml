@@ -50,8 +50,7 @@ struct
                    Option.map Domain_name.to_string data.Tls.Core.own_name
                | Error () -> assert false))
       in
-      Cstruct.of_string resp |>
-      write flow
+      Cstruct.of_string resp |> write flow
     in
     let certificates =
       match certs with
@@ -59,7 +58,7 @@ struct
       | _ -> invalid_arg "start_server"
     in
     Stack.TCP.listen stack ~port
-         (serve (Tls.Config.server ~certificates ()) handle_request)
+      (serve (Tls.Config.server ~certificates ()) handle_request)
     |> Lwt.return
 
   let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])

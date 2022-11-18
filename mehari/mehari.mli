@@ -215,11 +215,7 @@ limits client to 5 requests every 2 hours. *)
   (** {1 Entry point} *)
 
   val run :
-    ?port:int ->
-    ?certchains:(string * string) list ->
-    stack ->
-    handler ->
-    unit
+    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
   (** [run ~port ~addr ~certchains stack handler] runs the server using
     [handler].
     - [port] is the port to listen on. Defaults to [1965].
