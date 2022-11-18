@@ -2,6 +2,7 @@
  (name mehari_unix)
  (public_name mehari.unix)
  (libraries
+  lwt
   mehari
   mirage-clock-unix
   mirage-kv-unix

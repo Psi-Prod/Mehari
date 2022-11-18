@@ -218,10 +218,11 @@ limits client to 5 requests every 2 hours. *)
     ?port:int ->
     ?addr:string ->
     ?certchains:(string * string) list ->
-    stack:stack ->
+    stack ->
     handler ->
     unit
-  (** [run ~port ~addr ~certchains handler] runs the server using [handler].
+  (** [run ~port ~addr ~certchains stack handler] runs the server using
+    [handler].
     - [port] is the port to listen on. Defaults to [1965].
     - [addr] is the address which socket is bound to.
     - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
@@ -232,9 +233,8 @@ limits client to 5 requests every 2 hours. *)
 
   val run_lwt :
     ?port:int ->
-    ?addr:string ->
     ?certchains:(string * string) list ->
-    stack:stack ->
+    stack ->
     handler ->
     'a Lwt.t
   (** Same as {!val:run}, but returns a promise that does not resolve until the
@@ -245,4 +245,4 @@ module Make : functor
   (Clock : Mirage_clock.PCLOCK)
   (KV : Mirage_kv.RO)
   (Stack : Tcpip.Stack.V4V6)
-  -> S
+  -> S with type stack := Stack.TCP.t

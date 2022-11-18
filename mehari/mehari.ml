@@ -81,16 +81,10 @@ module type S = sig
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
   val run :
-    ?port:int ->
-    ?addr:string ->
-    ?certchains:(string * string) list ->
-    stack ->
-    handler ->
-    unit
+    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
 
   val run_lwt :
     ?port:int ->
-    ?addr:string ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
@@ -100,7 +94,7 @@ end
 module Make
     (Clock : Mirage_clock.PCLOCK)
     (KV : Mirage_kv.RO)
-    (Stack : Tcpip.Stack.V4V6) : S = struct
+    (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.TCP.t = struct
   module RateLimiter = Rate_limiter_impl.Make (Clock)
   module Router = Router_impl.Make (RateLimiter)
   module Server = Server_impl.Make (Clock) (KV) (Stack)
@@ -114,7 +108,6 @@ module Make
   type body = Response.body
   type middleware = handler -> handler
   type rate_limiter = RateLimiter.t
-  type stack = Stack.TCP.t
 
   let uri = Request.uri
   let ip = Request.ip

@@ -62,10 +62,10 @@ struct
          (serve (Tls.Config.server ~certificates ()) handle_request)
 
   let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
-      ~stack callback =
+      stack callback =
     start_server ~port ~certchains ~stack callback |> Lwt_main.run
 
   let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
       callback =
-    run_lwt ~port ~certchains ~stack callback
+    run_lwt ~port ~certchains stack callback
 end
