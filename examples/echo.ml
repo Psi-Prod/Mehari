@@ -1,5 +1,7 @@
 let () =
-  Mehari.run (fun req ->
-      match Mehari.uri req |> Uri.verbatim_query with
-      | None -> Mehari.respond_text ""
-      | Some msg -> Mehari.respond_text msg)
+  Mehari.router
+    [
+      Mehari.route "/echo/:text" (fun req ->
+          Mehari.param req "text" |> Mehari.respond_text);
+    ]
+  |> Mehari.run

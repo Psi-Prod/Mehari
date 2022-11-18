@@ -12,6 +12,7 @@ let uri = Request.uri
 let addr = Request.addr
 let port = Request.port
 let sni = Request.sni
+let param = Request.param
 
 include Response.Status
 module Gemtext = Gemtext
