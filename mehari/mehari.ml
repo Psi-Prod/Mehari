@@ -8,6 +8,7 @@ module type S = sig
   type body
   type middleware = handler -> handler
   type rate_limiter
+  type stack
 
   module Gemtext : sig
     type t = line list
@@ -83,6 +84,7 @@ module type S = sig
     ?port:int ->
     ?addr:string ->
     ?certchains:(string * string) list ->
+    stack ->
     handler ->
     unit
 
@@ -90,6 +92,7 @@ module type S = sig
     ?port:int ->
     ?addr:string ->
     ?certchains:(string * string) list ->
+    stack ->
     handler ->
     'a Lwt.t
 end

@@ -57,7 +57,6 @@ struct
       | c :: _ -> `Multiple_default (c, certs)
       | _ -> invalid_arg "start_server"
     in
-    (*let* socket = Stack.TCP.connect  in*)
     Lwt.return
     @@ Stack.TCP.listen stack ~port
          (serve (Tls.Config.server ~certificates ()) handle_request)
