@@ -7,7 +7,7 @@ end
 
 module Make (Clock : Mirage_clock.PCLOCK) = struct
   module AddrMap = Map.Make (struct
-    type t = Unix.inet_addr
+    type t = Ipaddr.t
 
     let compare = Stdlib.compare
   end)
@@ -28,7 +28,7 @@ module Make (Clock : Mirage_clock.PCLOCK) = struct
     let now, _ = Clock.now_d_ps () in
     let time_left = t.next_timestamp - now in
     if time_left < 0 then reset t;
-    let addr = Request.addr req in
+    let addr = Request.ip req in
     let n =
       match AddrMap.find_opt addr t.history with None -> 1 | Some n -> n + 1
     in

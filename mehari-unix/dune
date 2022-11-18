@@ -1,4 +1,9 @@
 (library
  (name mehari_unix)
  (public_name mehari.unix)
- (libraries mehari mirage-clock-unix mirage-kv-unix tcpip.stack-socket))
+ (libraries
+  mehari
+  mirage-clock-unix
+  mirage-kv-unix
+  mirage-flow-unix
+  tcpip.stack-socket))

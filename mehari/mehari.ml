@@ -29,7 +29,7 @@ module type S = sig
   end
 
   val uri : request -> Uri.t
-  val addr : request -> Unix.inet_addr
+  val ip : request -> Ipaddr.t
   val port : request -> int
   val sni : request -> string option
   val response : 'a status -> 'a -> response
@@ -111,9 +111,10 @@ module Make
   type body = Response.body
   type middleware = handler -> handler
   type rate_limiter = RateLimiter.t
+  type stack = S.TCP.t
 
   let uri = Request.uri
-  let addr = Request.addr
+  let ip = Request.ip
   let port = Request.port
   let sni = Request.sni
 

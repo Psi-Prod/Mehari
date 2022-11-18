@@ -37,6 +37,8 @@ module type S = sig
   type rate_limiter
   (** Rate limiter. See {!section-rate_limit}. *)
 
+  type stack
+
   (** {1:gemtext Gemtext} *)
 
   (** Implementation of the Gemini own native response format. *)
@@ -66,7 +68,7 @@ module type S = sig
   val uri : request -> Uri.t
   (** Request uri. *)
 
-  val addr : request -> Unix.inet_addr
+  val ip : request -> Ipaddr.t
   (** Address of client sending the {!type:request}. *)
 
   val port : request -> int
@@ -216,6 +218,7 @@ limits client to 5 requests every 2 hours. *)
     ?port:int ->
     ?addr:string ->
     ?certchains:(string * string) list ->
+    stack:stack ->
     handler ->
     unit
   (** [run ~port ~addr ~certchains handler] runs the server using [handler].
@@ -231,6 +234,7 @@ limits client to 5 requests every 2 hours. *)
     ?port:int ->
     ?addr:string ->
     ?certchains:(string * string) list ->
+    stack:stack ->
     handler ->
     'a Lwt.t
   (** Same as {!val:run}, but returns a promise that does not resolve until the

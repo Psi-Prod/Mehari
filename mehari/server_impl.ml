@@ -16,38 +16,29 @@ struct
     in
     aux [] certs
 
-  let init_socket addr port =
-    let sockaddr = Unix.ADDR_INET (addr, port) in
-    let socket = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-    Lwt_unix.setsockopt socket Unix.SO_REUSEADDR true;
-    let* () = Lwt_unix.bind socket sockaddr in
-    Lwt.return socket
+  let write flow buff =
+    let* result = TLS.write flow buff in
+    match result with Ok () -> Lwt.return_unit | Error _ -> failwith "writing"
 
-  let create_srv_socket addr port =
-    let* socket = init_socket addr port in
-    Lwt_unix.listen socket 10;
-    Lwt.return socket
+  let read flow =
+    let* result = TLS.read flow in
+    match result with
+    | Ok (`Data buffer) -> Lwt.return @@ Cstruct.to_string buffer
+    | Ok `Eof -> failwith "eof"
+    | Error _ -> failwith "reading"
 
-  let write oc buff =
-    let* () = Lwt_io.write oc buff in
-    Lwt_io.flush oc
-
-  let read ic = Lwt_io.read ic ~count:2048
-
-  let rec serve handler sock certificates =
-    let* sock_cl, addr = Lwt_unix.accept sock in
-    let* server =
-      Tls_lwt.Unix.server_of_fd (Tls.Config.server ~certificates ()) sock_cl
+  let serve conf handler flow =
+    let* server_r = TLS.server_of_flow conf flow in
+    let server =
+      match server_r with Ok s -> s | Error _ -> failwith "i hate god"
     in
-    let ic, oc = Tls_lwt.of_t server in
-    let* () = Tls_lwt.Unix.epoch server |> handler ic oc addr in
-    let* () = Tls_lwt.Unix.close_tls server in
-    serve handler sock certificates
+    let* () = TLS.epoch server |> handler server (Stack.TCP.dst flow) in
+    TLS.close server
 
-  let start_server ~address ~port ~certchains callback =
+  let start_server ~port ~certchains ~stack callback =
     let* certs = load_certs certchains in
-    let handle_request ic oc addr ep =
-      let* buf = read ic in
+    let handle_request flow addr ep =
+      let* buf = read flow in
       let uri = String.(sub buf 0 (length buf - 2)) |> Uri.of_string in
       (* TODO: fix malformerd header *)
       let* resp =
@@ -59,25 +50,23 @@ struct
                    Option.map Domain_name.to_string data.Tls.Core.own_name
                | Error () -> assert false))
       in
-      write oc resp
+      write flow resp
     in
-    let* sock =
-      create_srv_socket
-        (Option.value ~default:Unix.inet_addr_loopback address)
-        port
+    let certificates =
+      match certs with
+      | c :: _ -> `Multiple_default (c, certs)
+      | _ -> invalid_arg "start_server"
     in
-    match certs with
-    | c :: _ -> `Multiple_default (c, certs) |> serve handle_request sock
-    | _ -> invalid_arg "start_server"
+    (*let* socket = Stack.TCP.connect  in*)
+    Lwt.return
+    @@ Stack.TCP.listen stack ~port
+         (serve (Tls.Config.server ~certificates ()) handle_request)
 
-  let run_lwt ?(port = 1965) ?addr
-      ?(certchains = [ ("./cert.pem", "./key.pem") ]) callback =
-    start_server ~port
-      ~address:(Option.map Unix.inet_addr_of_string addr)
-      ~certchains callback
-    |> Lwt_main.run
+  let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
+      stack callback =
+    start_server ~port ~certchains ~stack callback |> Lwt_main.run
 
-  let run ?(port = 1965) ?addr ?(certchains = [ ("./cert.pem", "./key.pem") ])
+  let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
       callback =
-    run_lwt ~port ?addr ~certchains callback
+    run_lwt ~port ~certchains ~stack callback
 end
