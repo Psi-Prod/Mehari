@@ -169,7 +169,10 @@ module type S = sig
     - [`Both]: performs successivly a lookup on content and extension.
 
     Returns [make_mime ?charset ?lang "text/gemini"] if one of the previous
-    lookup fails.*)
+    lookup fails.
+
+    @raise Unix.Unix_error if a lookup based on content is performed and
+      reading of [fname] fails *)
 
   val empty : mime
   (** The empty mime. *)
