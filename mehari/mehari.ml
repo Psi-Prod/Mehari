@@ -111,7 +111,7 @@ module Make
   type body = Response.body
   type middleware = handler -> handler
   type rate_limiter = RateLimiter.t
-  type stack = S.TCP.t
+  type stack = Stack.TCP.t
 
   let uri = Request.uri
   let ip = Request.ip
