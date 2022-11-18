@@ -50,22 +50,23 @@ struct
                    Option.map Domain_name.to_string data.Tls.Core.own_name
                | Error () -> assert false))
       in
-      write flow resp
+      Cstruct.of_string resp |>
+      write flow
     in
     let certificates =
       match certs with
       | c :: _ -> `Multiple_default (c, certs)
       | _ -> invalid_arg "start_server"
     in
-    Lwt.return
-    @@ Stack.TCP.listen stack ~port
+    Stack.TCP.listen stack ~port
          (serve (Tls.Config.server ~certificates ()) handle_request)
+    |> Lwt.return
 
   let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
       stack callback =
-    start_server ~port ~certchains ~stack callback |> Lwt_main.run
+    start_server ~port ~certchains ~stack callback
 
   let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
       callback =
-    run_lwt ~port ~certchains stack callback
+    run_lwt ~port ~certchains stack callback |> Lwt_main.run
 end

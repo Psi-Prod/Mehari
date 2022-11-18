@@ -1,4 +1,4 @@
-type entry = { timestamp : Unix.tm; addr : Unix.inet_addr; message : string }
+type entry = { timestamp : Unix.tm; addr : (Ipaddr.V4.t, Ipaddr.V6.t) Ipaddr.v4v6; message : string }
 
 let book =
   object
@@ -15,7 +15,7 @@ let book =
             (e.timestamp.tm_year + 1900)
             (e.timestamp.tm_mon + 1) e.timestamp.tm_mday e.timestamp.tm_hour
             e.timestamp.tm_min e.timestamp.tm_sec
-            (Unix.string_of_inet_addr e.addr)
+            (Ipaddr.to_string e.addr)
             (Uri.pct_decode e.message)
           |> Buffer.add_string buf)
         entries;
@@ -43,7 +43,7 @@ let () =
           | None -> respond input "Enter your message"
           | Some msg ->
               let timestamp = Unix.time () |> Unix.gmtime in
-              book#add_entry ~timestamp ~addr:(addr req) msg;
+              book#add_entry ~timestamp ~addr:(ip req) msg;
               respond redirect_temp "/");
     ]
   |> run

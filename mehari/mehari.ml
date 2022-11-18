@@ -88,7 +88,7 @@ module type S = sig
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    'a Lwt.t
+    unit Lwt.t
 end
 
 module Make

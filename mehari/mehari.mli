@@ -216,7 +216,6 @@ limits client to 5 requests every 2 hours. *)
 
   val run :
     ?port:int ->
-    ?addr:string ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
@@ -236,7 +235,7 @@ limits client to 5 requests every 2 hours. *)
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    'a Lwt.t
+    unit Lwt.t
   (** Same as {!val:run}, but returns a promise that does not resolve until the
     server stops listening, instead of calling [Lwt_main.run]. *)
 end
