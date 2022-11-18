@@ -240,4 +240,4 @@ module Make : functor
   (Clock : Mirage_clock.PCLOCK)
   (KV : Mirage_kv.RO)
   (Stack : Tcpip.Stack.V4V6)
-  -> S with type stack := Stack.TCP.t
+  -> S with type stack = Stack.TCP.t

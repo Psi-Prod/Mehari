@@ -9,3 +9,7 @@ let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
     callback =
   let* stack = stack in
   run_lwt ~port ~certchains stack callback
+
+let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) callback
+    =
+  run_lwt ~port ~certchains callback |> Lwt_main.run
