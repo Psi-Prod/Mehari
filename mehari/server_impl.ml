@@ -7,7 +7,6 @@ module type S = sig
     stack ->
     Handler.t ->
     unit Lwt.t
-
 end
 
 module Make
@@ -71,7 +70,7 @@ module Make
       (serve (Tls.Config.server ~certificates ()) handle_request)
     |> Lwt.return
 
-  let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
-      stack callback =
+  let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
+      callback =
     start_server ~port ~certchains ~stack callback
 end

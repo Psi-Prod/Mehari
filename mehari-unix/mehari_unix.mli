@@ -7,6 +7,8 @@ val run_lwt :
   ?certchains:(string * string) list ->
   Mehari.handler ->
   unit Lwt.t
+(** See {!val:Mehari.IO.run_lwt}. *)
 
 val run :
   ?port:int -> ?certchains:(string * string) list -> Mehari.handler -> unit
+(** Like {!val:Mehari.IO.run_lwt} but calls [Lwt_main.run] internally. *)

@@ -8,8 +8,8 @@
   mirage-clock
   mirage-kv
   tcpip
-  tls-mirage
   tls.lwt
+  tls-mirage
   uri)
  (preprocess
   (pps lwt_ppx)))

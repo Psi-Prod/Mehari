@@ -27,6 +27,8 @@
    (>= 3.0))
   (ocaml
    (>= 4.14))
+  (lwt
+   (>= 5.6.1))
   (magic-mime
    (>= 1.3.0))
   (mirage-clock
@@ -34,7 +36,7 @@
   (mirage-kv
    (>= 5.0.0))
   (lwt
-   (>= 5.6.0))
+   (>= 5.6.1))
   (lwt_ppx
    (>= 2.1.0))
   (tcpip
@@ -51,5 +53,13 @@
  (synopsis "Mehari implementation for Unix and Windows using Lwt")
  (depends
   mehari
+  (lwt
+   (>= 5.6.1))
   (mirage-clock-unix
-   (>= 4.2.0))))
+   (>= 4.2.0))
+  (mirage-flow-unix
+   (>= 3.0.0))
+  (mirage-kv-unix
+   (>= 2.1.0))
+  (tcpip
+   (>= 7.1.2))))

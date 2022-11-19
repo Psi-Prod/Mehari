@@ -5,6 +5,6 @@
   lwt
   mehari
   mirage-clock-unix
-  mirage-kv-unix
   mirage-flow-unix
+  mirage-kv-unix
   tcpip.stack-socket))
