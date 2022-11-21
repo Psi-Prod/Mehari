@@ -34,7 +34,7 @@
   (mirage-clock
    (>= 4.2.0))
   (mirage-kv
-   (>= 5.0.0))
+   (>= 4.0.1))
   (lwt
    (>= 5.6.1))
   (lwt_ppx
