@@ -27,6 +27,10 @@
    (>= 3.0))
   (ocaml
    (>= 4.14))
+  (conan-database
+   (>= 0.0.2))
+  (conan
+   (>= 0.0.2))
   (lwt
    (>= 5.6.1))
   (magic-mime
