@@ -1,4 +1,17 @@
-(** Mehari implementation for Unix and Windows using Lwt. *)
+(** An IO module Mehari implementation for Unix and Windows. Contains also
+    extra features based on Unix. *)
+
+include Mehari.IO
+
+(** {1 Response} *)
+
+val respond_document : ?mime:Mehari.mime -> string -> Mehari.response Lwt.t
+(** Same as {!val:Mehari.respond} but respond with content of given [filename]
+    and use given {!type:Mehari.mime} as mime type.
+    If [filename] is not present on filesystem, responds with
+    {!val:Mehari.not_found}. {!type:Mehari.mime} type is chosen according to
+    the filename extension by default. If mime type inference failed, it uses
+    [text/gemini; charset=utf-8]. *)
 
 include Mehari.IO
 

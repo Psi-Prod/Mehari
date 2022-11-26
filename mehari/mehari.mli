@@ -3,12 +3,13 @@ building Gemini servers. It fully implements the
 {{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
 and aims to expose a clean and simple API.
 
-This module provides the core abstraction, it does not depend on any platform
-code, and does not interact with the environment. Input and output are provided
-by {!Mehari_unix}.
 
 It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
-a tidy, feature-complete Web framework. *)
+a tidy, feature-complete Web framework.
+
+This module provides the core abstraction, it does not depend on any platform
+code, and does not interact with the environment. Input and output are provided
+by {!Mehari_unix}. *)
 
 (** {1 Types} *)
 
@@ -192,7 +193,7 @@ val with_mime : mime -> string -> mime
 (** {1 IO} *)
 
 (** Module type containing all environment-dependent functions. An
-    implementation is provided by {!Mehari_unix}. *)
+    implementation for Unix is provided by {!Mehari_unix}. *)
 module type IO = sig
   type middleware = handler -> handler
   (** Middlewares take a {!type:Mehari.handler}, and run some code before or
@@ -255,17 +256,19 @@ module type IO = sig
   @raise Invalid_argument if [certchains] is empty. *)
 end
 
-(** A functor building an IO implementation. Mainly for compatibility with
-    Mirage OS. *)
-module Make : functor
-  (Clock : Mirage_clock.PCLOCK)
-  (KV : Mirage_kv.RO)
-  (Stack : Tcpip.Stack.V4V6)
-  -> IO with type stack = Stack.TCP.t
+(** Mirage OS compatiblity. *)
+module Mirage : sig
+  (** A functor building an IO module. *)
+  module Make : functor
+    (Clock : Mirage_clock.PCLOCK)
+    (KV : Mirage_kv.RO)
+    (Stack : Tcpip.Stack.V4V6)
+    -> IO with type stack = Stack.TCP.t
 
-(** Temporary: DO NOT TOUCH *)
-module TempMake : functor
-  (Clock : Mirage_clock.PCLOCK)
-  (KV : Mirage_kv.RO)
-  (Stack : Tcpip.Stack.V4V6)
-  -> IO with type stack = string
+  (** Temporary: DO NOT TOUCH *)
+  module TempMake : functor
+    (Clock : Mirage_clock.PCLOCK)
+    (KV : Mirage_kv.RO)
+    (Stack : Tcpip.Stack.V4V6)
+    -> IO with type stack = string
+end
