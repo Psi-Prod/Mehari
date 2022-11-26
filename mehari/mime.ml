@@ -1,3 +1,5 @@
+open Lwt.Syntax
+
 type t = { mime : string; charset : string option; lang : string list }
 
 let make ?charset ?(lang = []) mime =
@@ -10,8 +12,33 @@ let make ?charset ?(lang = []) mime =
     lang;
   }
 
-let from_filename ?charset ?(lang = []) fname =
-  make (Magic_mime.lookup ~default:"text/gemini" fname) ~charset ~lang
+let database = Conan.Process.database ~tree:Conan_light.tree
+
+let lookup_ext fname =
+  Magic_mime.lookup ~default:"text/gemini" fname |> Lwt.return
+
+let lookup_content fname =
+  let* content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
+  Lwt.return
+  @@
+  match Conan_string.run ~database content with
+  | Ok meta -> Conan.Metadata.mime meta
+  | Error _ -> None
+
+let from_filename ?(lookup = `Ext) ?charset ?(lang = []) fname =
+  let* mime =
+    match lookup with
+    | `Ext -> lookup_ext fname
+    | `Content -> (
+        match%lwt lookup_content fname with
+        | None -> Lwt.return "text/gemini"
+        | Some m -> Lwt.return m)
+    | `Both -> (
+        match%lwt lookup_content fname with
+        | None -> lookup_ext fname
+        | Some m -> Lwt.return m)
+  in
+  make mime ~charset ~lang |> Lwt.return
 
 let empty = make ""
 let text_mime text = make ("text/" ^ text)
