@@ -36,9 +36,9 @@ let () =
             Gemtext.
               [
                 heading `H1 "Guestbook";
-                text "";
+                newline;
                 link "/submit" ~name:"Submit a new entry";
-                text "";
+                newline;
                 text book#print;
               ]
           in
