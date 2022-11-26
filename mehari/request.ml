@@ -15,7 +15,6 @@ let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
 
 let param t p =
-  Printf.printf "%S\n" p;
   match List.assoc_opt p t.params with
   | None -> invalid_arg "Request.param"
   | Some p -> p
