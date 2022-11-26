@@ -1,7 +1,7 @@
 let () =
-  Mehari.router
+  Mehari_unix.router
     [
-      Mehari.route "/echo/:text" (fun req ->
+      Mehari_unix.route "/echo/:text" (fun req ->
           Mehari.param req "text" |> Mehari.respond_text);
     ]
-  |> Mehari.run
+  |> Mehari_unix.run

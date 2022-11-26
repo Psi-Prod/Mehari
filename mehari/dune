@@ -1,0 +1,16 @@
+(library
+ (name mehari)
+ (public_name mehari)
+ (libraries
+  lwt
+  lwt.unix
+  magic-mime
+  mirage-clock
+  mirage-kv
+  re
+  tcpip
+  tls.lwt
+  tls-mirage
+  uri)
+ (preprocess
+  (pps lwt_ppx)))

@@ -1,6 +1,11 @@
-(** Mehari is a {{:https://mirageos.org/ }Mirage OS} friendly library for building Gemini servers. It fully
-implements the {{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
+(** Mehari is a {{:https://mirageos.org/ }Mirage OS} friendly library for
+building Gemini servers. It fully implements the
+{{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
 and aims to expose a clean and simple API.
+
+This module provides the core abstraction, it does not depend on any platform
+code, and does not interact with the environment. Input and output are provided
+by {!Mehari_unix}.
 
 It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
 a tidy, feature-complete Web framework. *)
@@ -14,11 +19,8 @@ type response
 (** Gemini response. See {!section-response}. *)
 
 type handler = request -> response Lwt.t
-(** Handlers are asynchronous functions from {!type:request} to {!type:response}. *)
-
-type route
-(** Routes tell {!val:router} which handler to select for each request. See
-  {!section-routing}. *)
+(** Handlers are asynchronous functions from {!type:request} to
+    {!type:response}. *)
 
 type 'a status
 (** Status of a Gemini response. See {!section-status}. *)
@@ -28,13 +30,6 @@ type mime
 
 type body
 (** Body of Gemini response. See {!section-body}. *)
-
-type middleware = handler -> handler
-(** Middlewares take a {!type:handler}, and run some code before or after — producing
-    a “bigger” {!type:handler}. *)
-
-type rate_limiter
-(** Rate limiter. See {!section-rate_limit}. *)
 
 (** {1:gemtext Gemtext} *)
 
@@ -70,7 +65,7 @@ end
 val uri : request -> Uri.t
 (** Request uri. *)
 
-val addr : request -> Unix.inet_addr
+val ip : request -> Ipaddr.t
 (** Address of client sending the {!type:request}. *)
 
 val port : request -> int
@@ -87,7 +82,7 @@ val param : request -> string -> string
 (** {1:response Response} *)
 
 val response : 'a status -> 'a -> response
-(** Creates a new {!type:response} with given {!type:status}. *)
+(** Creates a new {!type:response} with given {!type:Mehari.status}. *)
 
 val respond : 'a status -> 'a -> response Lwt.t
 (** Same as {!val:response}, but the new {!type:response} is wrapped in a
@@ -164,8 +159,8 @@ val page : title:string -> string -> body
 
 val make_mime : ?charset:string -> ?lang:string list -> string -> mime
 (** [make_mime ~charset ~lang mime] creates a {!type:mime} type from given
-  [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
-  [text/]. *)
+    [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
+    [text/]. *)
 
 val from_filename : ?charset:string -> ?lang:string list -> string -> mime
 (** [from_filename ~charset ~lang filename] creates a {!type:mime} type by
@@ -189,58 +184,76 @@ val with_lang : mime -> string list -> mime
 val with_mime : mime -> string -> mime
 (** Changes mime type of given {!type:mime}. *)
 
-(** {1:routing Routing} *)
+(** {1 IO} *)
 
-val router : route list -> handler
-(** Creates a router. If none of the routes match the {!type:request}, the router
-    returns {!val:not_found}. *)
+(** Module type containing all environment-dependent functions. An
+    implementation is provided by {!Mehari_unix}. *)
+module type IO = sig
+  type middleware = handler -> handler
+  (** Middlewares take a {!type:Mehari.handler}, and run some code before or
+      after — producing a “bigger” {!type:Mehari.handler}. *)
 
-val route :
-  ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
-(** [route ~rate_limit ~mw path handler] forwards requests for [path] to
-    [handler]. If rate limit is in effect, [handler] is not executed and a
-    respond with {!type:status} {!val:slow_down} is sended. *)
+  type route
+  (** Routes tell {!val:router} which handler to select for each request. See
+      {!section-routing}. *)
 
-val scope :
-  ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
-(** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
-  [prefix], [rate_limit] and [mw]. *)
+  type stack
+  (** Tcpip stack. *)
 
-(** {1:rate_limit Rate limit}  *)
+  (** {1:rate_limit Rate limit} *)
 
-val make_rate_limit :
-  ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-(** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
-    limits client to [n] request per [period * unit].
+  type rate_limiter
+  (** Rate limiter. *)
 
-    For example,
-  {[
-make_rate_limit ~period:2 5 `Hour
-  ]}
-limits client to 5 requests every 2 hours. *)
+  val make_rate_limit :
+    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
+      limits client to [n] request per [period * unit].
 
-(** {1 Entry point} *)
+      For example,
+      {[
+  make_rate_limit ~period:2 5 `Hour
+      ]}
+      limits client to 5 requests every 2 hours. *)
 
-val run :
-  ?port:int ->
-  ?addr:string ->
-  ?certchains:(string * string) list ->
-  handler ->
-  unit
-(** [run ~port ~addr ~certchains handler] runs the server using [handler].
-    - [port] is the port to listen on. Defaults to [1965].
-    - [addr] is the address which socket is bound to.
-    - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
-      the last one is considered default.
+  (** {1:routing Routing} *)
 
-  @raise Failure if [addr] does not match the format [XXX.YYY.ZZZ.TTT].
+  val router : route list -> handler
+  (** Creates a router. If none of the routes match the {!type:Mehari.request},
+      the router returns {!val:Mehari.not_found}. *)
+
+  val route :
+    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
+  (** [route ~rate_limit ~mw path handler] forwards requests for [path] to
+      [handler]. If rate limit is in effect, [handler] is not executed and a
+      respond with {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
+
+  val scope :
+    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+  (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
+      [prefix], [rate_limit] and [mw]. *)
+
+  (** {1 Entry point} *)
+
+  val run_lwt :
+    ?port:int ->
+    ?certchains:(string * string) list ->
+    stack ->
+    handler ->
+    unit Lwt.t
+  (** [run ?port ?certchains stack handler] runs the server using
+      [handler].
+      - [port] is the port to listen on. Defaults to [1965].
+      - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
+        the last one is considered default.
+
   @raise Invalid_argument if [certchains] is empty. *)
+end
 
-val run_lwt :
-  ?port:int ->
-  ?addr:string ->
-  ?certchains:(string * string) list ->
-  handler ->
-  'a Lwt.t
-(** Same as {!val:run}, but returns a promise that does not resolve until the
-    server stops listening, instead of calling [Lwt_main.run]. *)
+(** A functor building an IO implementation. Mainly for compatibility with
+    Mirage OS. *)
+module Make : functor
+  (Clock : Mirage_clock.PCLOCK)
+  (KV : Mirage_kv.RO)
+  (Stack : Tcpip.Stack.V4V6)
+  -> IO with type stack = Stack.TCP.t

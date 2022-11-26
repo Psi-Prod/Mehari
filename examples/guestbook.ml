@@ -1,4 +1,8 @@
-type entry = { timestamp : Unix.tm; addr : Unix.inet_addr; message : string }
+type entry = {
+  timestamp : Unix.tm;
+  addr : (Ipaddr.V4.t, Ipaddr.V6.t) Ipaddr.v4v6;
+  message : string;
+}
 
 let book =
   object
@@ -14,19 +18,20 @@ let book =
           Printf.sprintf "%i-%i-%i %i:%i:%i - %s: %s\n"
             (e.timestamp.tm_year + 1900)
             (e.timestamp.tm_mon + 1) e.timestamp.tm_mday e.timestamp.tm_hour
-            e.timestamp.tm_min e.timestamp.tm_sec
-            (Unix.string_of_inet_addr e.addr)
+            e.timestamp.tm_min e.timestamp.tm_sec (Ipaddr.to_string e.addr)
             (Uri.pct_decode e.message)
           |> Buffer.add_string buf)
         entries;
       Buffer.contents buf
   end
 
+module MIO = Mehari_unix
+
 let () =
   let open Mehari in
-  router
+  MIO.router
     [
-      route "/" (fun _ ->
+      MIO.route "/" (fun _ ->
           let home =
             Gemtext.
               [
@@ -38,12 +43,12 @@ let () =
               ]
           in
           respond_gemtext home);
-      route "/submit" (fun req ->
+      MIO.route "/submit" (fun req ->
           match uri req |> Uri.verbatim_query with
           | None -> respond input "Enter your message"
           | Some msg ->
               let timestamp = Unix.time () |> Unix.gmtime in
-              book#add_entry ~timestamp ~addr:(addr req) msg;
+              book#add_entry ~timestamp ~addr:(ip req) msg;
               respond redirect_temp "/");
     ]
-  |> run
+  |> MIO.run

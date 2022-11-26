@@ -1,5 +1,5 @@
 type t = {
-  addr : Lwt_unix.sockaddr;
+  addr : Ipaddr.t * int;
   uri : Uri.t;
   sni : string option;
   params : (string * string) list;
@@ -9,13 +9,8 @@ let make ~uri ~addr ~sni = { uri; addr; sni; params = [] }
 let attach_params t params = { t with params }
 let set_uri t uri = { t with uri = Uri.of_string uri }
 let uri { uri; _ } = uri
-
-let addr { addr; _ } =
-  match addr with Unix.ADDR_INET (addr, _) -> addr | _ -> assert false
-
-let port { addr; _ } =
-  match addr with Unix.ADDR_INET (_, port) -> port | _ -> assert false
-
+let ip { addr = ip, _; _ } = ip
+let port { addr = _, port; _ } = port
 let sni { sni; _ } = sni
 
 let param t p =
