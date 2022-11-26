@@ -67,9 +67,7 @@ open Lwt.Syntax
 
 let respond_document ?mime path =
   if%lwt Lwt_unix.file_exists path then
-    let* mime =
-      Option.fold mime ~none:(Mime.from_filename path) ~some:Lwt.return
-    in
+    let mime = Option.value ~default:(Mime.from_filename path) mime in
     let* content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
     respond (Status.success (text content)) mime
   else respond Status.not_found ""

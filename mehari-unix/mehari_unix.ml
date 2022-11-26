@@ -1,8 +1,22 @@
-(*
 open Lwt.Syntax
+
+let from_filename ?(lookup = `Ext) ?charset ?lang fname =
+  match lookup with
+  | `Ext -> Mehari.from_filename ?charset ?lang fname |> Lwt.return
+  | `Content ->
+      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
+      Mehari.from_content ?charset ?lang content
+      |> Option.value ~default:Mehari.gemini
+  | `Both ->
+      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
+      Mehari.from_content ?charset ?lang content
+      |> Option.value ~default:(Mehari.from_filename ?charset ?lang fname)
+
+include Mehari.TempMake (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
+
+(*
 include Mehari.Make (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
 *)
-include Mehari.TempMake (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
 
 (*let stack ~v4 ~v6 =
     Tcpip_stack_socket.V4V6.TCP.connect
