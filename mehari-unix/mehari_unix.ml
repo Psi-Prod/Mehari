@@ -1,13 +1,4 @@
 open Lwt.Syntax
-include Mehari.TempMake (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
-
-let respond_document ?mime path =
-  let open Mehari in
-  if%lwt Lwt_unix.file_exists path then
-    let mime = Option.value ~default:(from_filename path) mime in
-    let* content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
-    respond (success (text content)) mime
-  else respond not_found ""
 
 include
   Mehari.Mirage.TempMake (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)

@@ -13,18 +13,6 @@ val respond_document : ?mime:Mehari.mime -> string -> Mehari.response Lwt.t
     the filename extension by default. If mime type inference failed, it uses
     [text/gemini; charset=utf-8]. *)
 
-include Mehari.IO
-
-(** {1 Response} *)
-
-val respond_document : ?mime:Mehari.mime -> string -> Mehari.response Lwt.t
-(** Same as {!val:Mehari.respond} but respond with content of given [filename]
-    and use given {!type:Mehari.mime} as mime type.
-    If [filename] is not present on filesystem, responds with
-    {!val:Mehari.not_found}. {!type:Mehari.mime} type is chosen according to
-    the filename extension by default. If mime type inference failed, it uses
-    [text/gemini; charset=utf-8]. *)
-
 (** {1 Mime} *)
 
 val from_filename :
