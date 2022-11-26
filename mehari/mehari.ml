@@ -74,3 +74,17 @@ module Make
   let make_rate_limit = RateLimiter.make
   let run_lwt = Server.run
 end
+
+module TempMake
+    (Clock : Mirage_clock.PCLOCK)
+    (KV : Mirage_kv.RO)
+    (Stack : Tcpip.Stack.V4V6) : IO with type stack = string = struct
+  module RateLimiter = Rate_limiter_impl.Make (Clock)
+  module Router = Router_impl.Make (RateLimiter)
+  module Server = Server_impl.TempServer
+  include Make (Clock) (KV) (Stack)
+
+  type stack = string
+
+  let run_lwt = Server.run
+end

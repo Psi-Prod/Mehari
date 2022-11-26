@@ -53,6 +53,7 @@ module Gemtext : sig
   (** {1 Facilities} *)
 
   val text : string -> line
+
   val newline : line
   (** [newline is [text ""]. *)
 
@@ -163,18 +164,18 @@ val page : title:string -> string -> body
 
 (** {1:mime Mime} *)
 
-  val make_mime : ?charset:string -> ?lang:string list -> string -> mime
-  (** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
+val make_mime : ?charset:string -> ?lang:string list -> string -> mime
+(** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
   [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
   [text/]. *)
 
-  val from_filename :
-    ?lookup:[ `Ext | `Content | `Both ] ->
-    ?charset:string ->
-    ?lang:string list ->
-    string ->
-    mime Lwt.t
-  (** [from_filename ?lookup_into ?charset ?lang fname] creates a
+val from_filename :
+  ?lookup:[ `Ext | `Content | `Both ] ->
+  ?charset:string ->
+  ?lang:string list ->
+  string ->
+  mime Lwt.t
+(** [from_filename ?lookup_into ?charset ?lang fname] creates a
     {!type:mime} type by performing a mime lookup depending of the value of
     [lookup]:
     - [`Ext]: performs a lookup based on file extension of [fname];
@@ -278,3 +279,10 @@ module Make : functor
   (KV : Mirage_kv.RO)
   (Stack : Tcpip.Stack.V4V6)
   -> IO with type stack = Stack.TCP.t
+
+(** Temporary: DO NOT TOUCH *)
+module TempMake : functor
+  (Clock : Mirage_clock.PCLOCK)
+  (KV : Mirage_kv.RO)
+  (Stack : Tcpip.Stack.V4V6)
+  -> IO with type stack = string
