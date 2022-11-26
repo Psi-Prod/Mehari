@@ -11,6 +11,7 @@ and line =
 and preformat = { alt : string option; text : string }
 
 let text t = Text t
+let newline = Text ""
 let link ?name url = Link { url; name }
 let preformat ?alt text = Preformat { alt; text }
 let heading h text = Heading (h, text)

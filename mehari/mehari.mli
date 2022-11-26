@@ -53,6 +53,9 @@ module Gemtext : sig
   (** {1 Facilities} *)
 
   val text : string -> line
+  val newline : line
+  (** [newline is [text ""]. *)
+
   val link : ?name:string -> string -> line
   val preformat : ?alt:string -> string -> line
   val heading : [ `H1 | `H2 | `H3 ] -> string -> line
