@@ -17,6 +17,7 @@ let port { addr; _ } =
   match addr with Unix.ADDR_INET (_, port) -> port | _ -> assert false
 
 let sni { sni; _ } = sni
+let query { uri; _ } = Uri.verbatim_query uri
 
 let param t p =
   Printf.printf "%S\n" p;

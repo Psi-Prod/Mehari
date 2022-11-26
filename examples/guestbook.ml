@@ -39,7 +39,7 @@ let () =
           in
           respond_gemtext home);
       route "/submit" (fun req ->
-          match uri req |> Uri.verbatim_query with
+          match Mehari.query req with
           | None -> respond input "Enter your message"
           | Some msg ->
               let timestamp = Unix.time () |> Unix.gmtime in
