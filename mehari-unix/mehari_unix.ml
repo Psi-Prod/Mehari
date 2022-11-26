@@ -1,4 +1,13 @@
 open Lwt.Syntax
+include Mehari.TempMake (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
+
+let respond_document ?mime path =
+  let open Mehari in
+  if%lwt Lwt_unix.file_exists path then
+    let mime = Option.value ~default:(from_filename path) mime in
+    let* content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
+    respond (success (text content)) mime
+  else respond not_found ""
 
 let from_filename ?(lookup = `Ext) ?charset ?lang fname =
   match lookup with
@@ -11,8 +20,6 @@ let from_filename ?(lookup = `Ext) ?charset ?lang fname =
       let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
       Mehari.from_content ?charset ?lang content
       |> Option.value ~default:(Mehari.from_filename ?charset ?lang fname)
-
-include Mehari.TempMake (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
 
 (*
 include Mehari.Make (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)

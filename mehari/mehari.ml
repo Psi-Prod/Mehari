@@ -28,7 +28,6 @@ let respond = Response.respond
 let respond_body = Response.respond_body
 let respond_text = Response.respond_text
 let respond_gemtext = Response.respond_gemtext
-let respond_document = Response.respond_document
 
 module type IO = sig
   type middleware = handler -> handler

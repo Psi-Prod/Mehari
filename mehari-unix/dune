@@ -7,4 +7,6 @@
   mirage-clock-unix
   mirage-flow-unix
   mirage-kv-unix
-  tcpip.stack-socket))
+  tcpip.stack-socket)
+ (preprocess
+  (pps lwt_ppx)))

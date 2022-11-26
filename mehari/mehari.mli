@@ -107,13 +107,6 @@ val respond_gemtext : Gemtext.t -> response Lwt.t
 (** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
     [text/gemini] as {!type:mime} type. *)
 
-val respond_document : ?mime:mime -> string -> response Lwt.t
-(** Same as {!val:respond} but respond with content of given [filename] and use
-    given {!type:mime} as mime type.
-    If [filename] is not present on filesystem, responds with {!val:not_found}.
-    {!type:mime} type is chosen according to the filename extension by default.
-    If mime type inference failed, it uses [text/gemini; charset=utf-8]. *)
-
 (** {1:status Status} *)
 
 (** A wrapper around Gemini status codes.
