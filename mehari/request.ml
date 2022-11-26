@@ -12,6 +12,7 @@ let uri { uri; _ } = uri
 let ip { addr = ip, _; _ } = ip
 let port { addr = _, port; _ } = port
 let sni { sni; _ } = sni
+let query { uri; _ } = Uri.verbatim_query uri
 
 let param t p =
   Printf.printf "%S\n" p;

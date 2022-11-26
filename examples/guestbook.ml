@@ -36,15 +36,15 @@ let () =
             Gemtext.
               [
                 heading `H1 "Guestbook";
-                text "\n";
+                text "";
                 link "/submit" ~name:"Submit a new entry";
-                text "\n";
+                text "";
                 text book#print;
               ]
           in
           respond_gemtext home);
       MIO.route "/submit" (fun req ->
-          match uri req |> Uri.verbatim_query with
+          match query req with
           | None -> respond input "Enter your message"
           | Some msg ->
               let timestamp = Unix.time () |> Unix.gmtime in

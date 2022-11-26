@@ -9,6 +9,7 @@ let uri = Request.uri
 let ip = Request.ip
 let port = Request.port
 let sni = Request.sni
+let query = Request.query
 let param = Request.param
 
 include Response.Status

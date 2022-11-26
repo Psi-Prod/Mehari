@@ -74,6 +74,9 @@ val port : request -> int
 val sni : request -> string option
 (** Server name indication TLS extension. *)
 
+val query : request -> string option
+(** User uri query. *)
+
 val param : request -> string -> string
 (** [param req p] retrieves the path parameter named [p].
 
