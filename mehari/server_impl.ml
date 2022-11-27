@@ -12,7 +12,8 @@ end
 module Make
     (Clock : Mirage_clock.PCLOCK)
     (KV : Mirage_kv.RO)
-    (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.TCP.t = struct
+    (Stack : Tcpip.Stack.V4V6)
+    (Logger : Logger_impl.S) : S with type stack := Stack.TCP.t = struct
   module TLS = Tls_mirage.Make (Stack.TCP)
   open Lwt.Syntax
 
@@ -75,7 +76,7 @@ module Make
     start_server ~port ~certchains ~stack callback
 end
 
-module TempServer : S with type stack := string = struct
+module TempServer (Logger : Logger_impl.S)  : S with type stack := string = struct
   open Lwt.Syntax
 
   let load_certs certs =

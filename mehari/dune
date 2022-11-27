@@ -4,6 +4,9 @@
  (libraries
   conan-database.light
   conan.string
+  fmt.tty
+  logs
+  logs.fmt
   lwt
   lwt.unix
   magic-mime

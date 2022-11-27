@@ -222,6 +222,14 @@ module type IO = sig
       ]}
       limits client to 5 requests every 2 hours. *)
 
+  (** {1 Logging} *)
+
+  val init_log : Logs.level -> unit
+  (** Initializes Mehari's log with the given settings. *)
+
+  val logger : middleware
+  (** Logs and times requests. *)
+
   (** {1:routing Routing} *)
 
   val router : route list -> handler

@@ -38,6 +38,8 @@ module type IO = sig
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
+  val init_log : Logs.level -> unit
+  val logger : Handler.t -> Handler.t
   val router : route list -> handler
 
   val route :
@@ -61,13 +63,16 @@ module Mirage = struct
       (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.TCP.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.Make (Clock) (KV) (Stack)
+    module Logger = Logger_impl.Make (Clock)
+    module Server = Server_impl.Make (Clock) (KV) (Stack) (Logger)
 
     type middleware = handler -> handler
     type route = Router.t
     type rate_limiter = RateLimiter.t
     type stack = Stack.TCP.t
 
+    let init_log lvl = Logger.init lvl
+    let logger = Logger.logger
     let router = Router.router
     let route = Router.route
     let scope = Router.scope
@@ -81,11 +86,13 @@ module Mirage = struct
       (Stack : Tcpip.Stack.V4V6) : IO with type stack = string = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.TempServer
+    module Logger = Logger_impl.Make (Clock)
+    module Server = Server_impl.TempServer (Logger)
     include Make (Clock) (KV) (Stack)
 
     type stack = string
 
+    let logger = Logger.logger
     let run_lwt = Server.run
   end
 end
