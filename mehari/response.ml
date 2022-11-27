@@ -5,7 +5,7 @@ type 'a status = int * 'a typ
 and _ typ =
   | Success : body -> Mime.t typ
   | SlowDown : int -> string typ
-  | Other : string typ
+  | Meta : string typ
 
 and body = Text of string | Gemtext of Gemtext.t
 
@@ -29,29 +29,29 @@ let to_string (type a) ((code, status) : a status) (m : a) =
     match status with
     | Success body -> (Mime.to_string m, Some body)
     | SlowDown n -> (Int.to_string n, None)
-    | Other -> (m, None)
+    | Meta -> (m, None)
   in
   validate code meta body
 
 module Status = struct
-  let input = (10, Other)
-  let sensitive_input = (11, Other)
+  let input = (10, Meta)
+  let sensitive_input = (11, Meta)
   let success body = (20, Success body)
-  let redirect_temp = (30, Other)
-  let redirect_permanent = (31, Other)
-  let temporary_failure = (40, Other)
-  let server_unavailable = (41, Other)
-  let cgi_error = (42, Other)
-  let proxy_error = (43, Other)
+  let redirect_temp = (30, Meta)
+  let redirect_perm = (31, Meta)
+  let temporary_failure = (40, Meta)
+  let server_unavailable = (41, Meta)
+  let cgi_error = (42, Meta)
+  let proxy_error = (43, Meta)
   let slow_down n = (44, SlowDown n)
-  let permanent_failure = (50, Other)
-  let not_found = (51, Other)
-  let gone = (52, Other)
-  let proxy_request_refused = (53, Other)
-  let bad_request = (59, Other)
-  let client_certificate_required = (60, Other)
-  let certificate_not_authorised = (61, Other)
-  let certificate_not_valid = (62, Other)
+  let perm_failure = (50, Meta)
+  let not_found = (51, Meta)
+  let gone = (52, Meta)
+  let proxy_request_refused = (53, Meta)
+  let bad_request = (59, Meta)
+  let client_cert_req = (60, Meta)
+  let cert_not_authorised = (61, Meta)
+  let cert_not_valid = (62, Meta)
 end
 
 let response status info = to_string status info

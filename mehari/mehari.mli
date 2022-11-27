@@ -120,20 +120,20 @@ val input : string status
 val sensitive_input : string status
 val success : body -> mime status
 val redirect_temp : string status
-val redirect_permanent : string status
+val redirect_perm : string status
 val temporary_failure : string status
 val server_unavailable : string status
 val cgi_error : string status
 val proxy_error : string status
 val slow_down : int -> string status
-val permanent_failure : string status
+val perm_failure : string status
 val not_found : string status
 val gone : string status
 val proxy_request_refused : string status
 val bad_request : string status
-val client_certificate_required : string status
-val certificate_not_authorised : string status
-val certificate_not_valid : string status
+val client_cert_req : string status
+val cert_not_authorised : string status
+val cert_not_valid : string status
 
 (** {1:body Body} *)
 
