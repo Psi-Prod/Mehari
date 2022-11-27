@@ -1,10 +1,11 @@
 type t = string
 
-type _ status =
-  | Redirect : int -> Uri.t status
-  | Success : (int * body) -> Mime.t status
-  | SlowDown : (int * int) -> string status
-  | Other : int -> string status
+type 'a status = int * 'a typ
+
+and _ typ =
+  | Success : body -> Mime.t typ
+  | SlowDown : int -> string typ
+  | Other : string typ
 
 and body = Text of string | Gemtext of Gemtext.t
 
@@ -23,35 +24,34 @@ let validate code meta body =
     Option.fold body ~none:"" ~some:string_of_body
     |> Format.sprintf "%i %s\r\n%s" code meta
 
-let to_string (type a) (s : a status) (x : a) =
-  let code, meta, body =
-    match s with
-    | Redirect code -> (code, Uri.to_string x, None)
-    | Success (code, body) -> (code, Mime.to_string x, Some body)
-    | SlowDown (code, n) -> (code, Int.to_string n, None)
-    | Other code -> (code, x, None)
+let to_string (type a) ((code, status) : a status) (m : a) =
+  let meta, body =
+    match status with
+    | Success body -> (Mime.to_string m, Some body)
+    | SlowDown n -> (Int.to_string n, None)
+    | Other -> (m, None)
   in
   validate code meta body
 
 module Status = struct
-  let input = Other 10
-  let sensitive_input = Other 11
-  let success body = Success (20, body)
-  let redirect_temp = Other 30
-  let redirect_permanent = Other 31
-  let temporary_failure = Other 40
-  let server_unavailable = Other 41
-  let cgi_error = Other 42
-  let proxy_error = Other 43
-  let slow_down n = SlowDown (44, n)
-  let permanent_failure = Other 50
-  let not_found = Other 51
-  let gone = Other 52
-  let proxy_request_refused = Other 53
-  let bad_request = Other 59
-  let client_certificate_required = Other 60
-  let certificate_not_authorised = Other 61
-  let certificate_not_valid = Other 62
+  let input = (10, Other)
+  let sensitive_input = (11, Other)
+  let success body = (20, Success body)
+  let redirect_temp = (30, Other)
+  let redirect_permanent = (31, Other)
+  let temporary_failure = (40, Other)
+  let server_unavailable = (41, Other)
+  let cgi_error = (42, Other)
+  let proxy_error = (43, Other)
+  let slow_down n = (44, SlowDown n)
+  let permanent_failure = (50, Other)
+  let not_found = (51, Other)
+  let gone = (52, Other)
+  let proxy_request_refused = (53, Other)
+  let bad_request = (59, Other)
+  let client_certificate_required = (60, Other)
+  let certificate_not_authorised = (61, Other)
+  let certificate_not_valid = (62, Other)
 end
 
 let response status info = to_string status info
