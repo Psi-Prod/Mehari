@@ -65,5 +65,10 @@ let respond_text txt =
   respond (Status.success (text txt)) (Mime.text_mime "plain")
 
 let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
-let raw_response code ~meta ~body = to_string (code, MetaBody (text body)) meta
-let raw_respond code ~meta ~body = raw_response code ~meta ~body |> Lwt.return
+
+let raw_response raw =
+  match raw with
+  | `Body b -> b
+  | `Full (code, meta, body) -> to_string (code, MetaBody (text body)) meta
+
+let raw_respond raw = raw_response raw |> Lwt.return

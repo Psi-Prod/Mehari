@@ -90,7 +90,9 @@ val param : request -> string -> string
 (** {1:response Response} *)
 
 val response : 'a status -> 'a -> response
-(** Creates a new {!type:response} with given {!type:Mehari.status}. *)
+(** Creates a new {!type:response} with given {!type:Mehari.status}.
+
+    @raise Invalid_argument if [meta] is more than 1024 bytes. *)
 
 val respond : 'a status -> 'a -> response Lwt.t
 (** Same as {!val:response}, but the new {!type:response} is wrapped in a
@@ -108,11 +110,16 @@ val respond_gemtext : Gemtext.t -> response Lwt.t
 (** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
     [text/gemini] as {!type:mime} type. *)
 
-val raw_response : int -> meta:string -> body:string -> response
-(** Creates a new {!type:response} with given status code and meta. No check is
-    verification is performed on given arguments. *)
+val raw_response :
+  [ `Body of string | `Full of int * string * string ] -> response
+(** [raw_response raw] creates a new {!type:response} depending of the value of
+    [raw]:.
+    - [`Body body]: creates a {!val:respond} with [body].
+      No check is performed on bytes-length of header;
+    - [`Full (code, meta, body)]: creates a {!val:respond} with given arguments. *)
 
-val raw_respond : int -> meta:string -> body:string -> response Lwt.t
+val raw_respond :
+  [ `Body of string | `Full of int * string * string ] -> response Lwt.t
 (** Same as {!val:raw_response}, but the new {!type:response} is wrapped in a
     [Lwt] promise. *)
 
