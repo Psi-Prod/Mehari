@@ -9,14 +9,18 @@ let chunk_size = 16384
 exception Exited
 
 let read_body (proc : Lwt_process.process_in) =
-  Lwt_stream.from (fun () ->
-      let* data = Lwt_io.read ~count:chunk_size proc#stdout in
-      if String.length data = chunk_size then Lwt.return_some data
+  Lwt_seq.unfold_lwt
+    (fun finished ->
+      if finished then Lwt.return_none
       else
-        match proc#state with
-        | Running -> Lwt.return_some data
-        | Exited (WEXITED 0) -> Lwt.return_none
-        | _ -> Lwt.fail Exited)
+        let* data = Lwt_io.read ~count:chunk_size proc#stdout in
+        if String.length data = chunk_size then Lwt.return_some (data, true)
+        else
+          match proc#state with
+          | Running -> Lwt.return_some (data, true)
+          | Exited (WEXITED 0) -> Lwt.return_some (data, false)
+          | _ -> Lwt.fail Exited)
+    false
 
 let meta = Re.compile Re.(seq [ group (rep1 digit); space; group (rep any) ])
 let ( let$ ) opt f = match opt with None -> Lwt.return_none | Some x -> f x
@@ -44,12 +48,12 @@ let run_cgi ?(nph = false) path =
       (* TODO: Better stream handler. *)
       try%lwt
         if nph then
-          let* chunks = read_body proc |> Lwt_stream.to_list in
+          let* chunks = read_body proc |> Lwt_seq.to_list in
           `Body (String.concat "" chunks) |> Mehari.raw_respond
         else
           match%lwt parse_header proc#stdout with
           | None -> Mehari.respond Mehari.cgi_error ""
           | Some (code, meta) ->
-              let* chunks = read_body proc |> Lwt_stream.to_list in
+              let* chunks = read_body proc |> Lwt_seq.to_list in
               Mehari.raw_respond (`Full (code, meta, String.concat "" chunks))
       with Exited -> Mehari.respond Mehari.cgi_error "")
