@@ -108,6 +108,14 @@ val respond_gemtext : Gemtext.t -> response Lwt.t
 (** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
     [text/gemini] as {!type:mime} type. *)
 
+val raw_response : int -> meta:string -> body:string -> response
+(** Creates a new {!type:response} with given status code and meta. No check is
+    verification is performed on given arguments. *)
+
+val raw_respond : int -> meta:string -> body:string -> response Lwt.t
+(** Same as {!val:raw_response}, but the new {!type:response} is wrapped in a
+    [Lwt] promise. *)
+
 (** {1:status Status} *)
 
 (** A wrapper around Gemini status codes.
@@ -134,6 +142,9 @@ val bad_request : string status
 val client_cert_req : string status
 val cert_not_authorised : string status
 val cert_not_valid : string status
+
+val code_of_status : 'a status -> int
+(** [code_of_status s] is status code associated with status [s]. *)
 
 (** {1:body Body} *)
 

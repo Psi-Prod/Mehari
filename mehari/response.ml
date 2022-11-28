@@ -6,6 +6,7 @@ and _ typ =
   | Success : body -> Mime.t typ
   | SlowDown : int -> string typ
   | Meta : string typ
+  | MetaBody : body -> string typ
 
 and body = Text of string | Gemtext of Gemtext.t
 
@@ -30,6 +31,7 @@ let to_string (type a) ((code, status) : a status) (m : a) =
     | Success body -> (Mime.to_string m, Some body)
     | SlowDown n -> (Int.to_string n, None)
     | Meta -> (m, None)
+    | MetaBody b -> (m, Some b)
   in
   validate code meta body
 
@@ -52,6 +54,7 @@ module Status = struct
   let client_cert_req = (60, Meta)
   let cert_not_authorised = (61, Meta)
   let cert_not_valid = (62, Meta)
+  let code_of_status (c, _) = c
 end
 
 let response status info = to_string status info
@@ -62,3 +65,5 @@ let respond_text txt =
   respond (Status.success (text txt)) (Mime.text_mime "plain")
 
 let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
+let raw_response code ~meta ~body = to_string (code, MetaBody (text body)) meta
+let raw_respond code ~meta ~body = raw_response code ~meta ~body |> Lwt.return
