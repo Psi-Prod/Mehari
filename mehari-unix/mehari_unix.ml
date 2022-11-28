@@ -23,6 +23,8 @@ let from_filename ?(lookup = `Ext) ?charset ?lang fname =
       Mehari.from_content ?charset ?lang content
       |> Option.value ~default:(Mehari.from_filename ?charset ?lang fname)
 
+let run_cgi = Cgi.run_cgi
+
 (*
 include Mehari.Make (Pclock) (Mirage_kv_unix) (Tcpip_stack_socket.V4V6)
 *)
