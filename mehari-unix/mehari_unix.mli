@@ -1,6 +1,8 @@
 (** An IO module Mehari implementation for Unix and Windows. Contains also
     extra features based on Unix such as {!section-cgi}. *)
 
+(** {1 IO} *)
+
 include Mehari.IO
 
 (** {1 Response} *)
@@ -58,8 +60,8 @@ val run_cgi :
     stdout by script. Responds with {!val:Mehari.cgi_error} in case of error or
     in case of error or [timeout] exceeding.
 
-    @param timeout It defaults to [5.0].
-    @param nph decide if CGI NonParsedHeader is enable [5.0]. *)
+    [timeout] defaults to [5.0].
+    [nph] decides if NPH (Non-Parsed Header) is enable. Defaults to [false]. *)
 
 (** {1 Entry point} *)
 
