@@ -26,9 +26,13 @@ module Make
     aux [] certs
 
   let write flow buf =
-    match%lwt TLS.write flow buf with
+    match%lwt Cstruct.of_string buf |> TLS.write flow with
     | Ok () -> Lwt.return_unit
     | Error _ -> failwith "writing"
+
+  let write_resp flow = function
+    | Response.Immediate buf -> write flow buf
+    | Stream stream -> Lwt_stream.iter_s (write flow) stream
 
   let read flow =
     match%lwt TLS.read flow with
@@ -57,7 +61,7 @@ module Make
         | Error () -> assert false
       in
       let* resp = callback (Request.make ~addr ~uri ~sni) in
-      Cstruct.of_string resp |> write flow
+      write_resp flow resp
     in
     let certificates =
       match certs with

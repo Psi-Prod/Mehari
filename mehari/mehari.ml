@@ -18,6 +18,7 @@ module Gemtext = Gemtext
 let text = Response.text
 let gemtext = Response.gemtext
 let lines = Response.lines
+let stream = Response.stream
 let page = Response.page
 
 include Mime

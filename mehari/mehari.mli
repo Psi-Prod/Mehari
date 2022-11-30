@@ -146,6 +146,9 @@ val gemtext : Gemtext.t -> body
 val lines : string list -> body
 (** Creates a {!type:body} from Gemtext line as text. *)
 
+val stream : string Lwt_stream.t -> body
+(** Creates a {!type:body} from a stream. *)
+
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
 
