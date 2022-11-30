@@ -25,21 +25,22 @@ module Make
     in
     aux [] certs
 
-  let write flow buff =
-    let* result = TLS.write flow buff in
-    match result with Ok () -> Lwt.return_unit | Error _ -> failwith "writing"
+  let write flow buf =
+    match%lwt TLS.write flow buf with
+    | Ok () -> Lwt.return_unit
+    | Error _ -> failwith "writing"
 
   let read flow =
-    let* result = TLS.read flow in
-    match result with
-    | Ok (`Data buffer) -> Lwt.return @@ Cstruct.to_string buffer
+    match%lwt TLS.read flow with
+    | Ok (`Data buffer) -> Cstruct.to_string buffer |> Lwt.return
     | Ok `Eof -> failwith "eof"
     | Error _ -> failwith "reading"
 
   let serve conf handler flow =
-    let* server_r = TLS.server_of_flow conf flow in
-    let server =
-      match server_r with Ok s -> s | Error _ -> failwith "i hate god"
+    let* server =
+      match%lwt TLS.server_of_flow conf flow with
+      | Ok s -> Lwt.return s
+      | Error _ -> failwith "i hate god"
     in
     let* () = TLS.epoch server |> handler server (Stack.TCP.dst flow) in
     TLS.close server
@@ -50,15 +51,12 @@ module Make
       let* buf = read flow in
       let uri = String.(sub buf 0 (length buf - 2)) |> Uri.of_string in
       (* TODO: fix malformerd header *)
-      let* resp =
-        callback
-          (Request.make ~addr ~uri
-             ~sni:
-               (match ep with
-               | Ok data ->
-                   Option.map Domain_name.to_string data.Tls.Core.own_name
-               | Error () -> assert false))
+      let sni =
+        match ep with
+        | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
+        | Error () -> assert false
       in
+      let* resp = callback (Request.make ~addr ~uri ~sni) in
       Cstruct.of_string resp |> write flow
     in
     let certificates =
@@ -66,8 +64,8 @@ module Make
       | c :: _ -> `Multiple_default (c, certs)
       | _ -> invalid_arg "start_server"
     in
-    Stack.TCP.listen (Stack.tcp stack) ~port
-      (serve (Tls.Config.server ~certificates ()) handle_request);
+    serve (Tls.Config.server ~certificates ()) handle_request
+    |> Stack.TCP.listen (Stack.tcp stack) ~port;
     Stack.listen stack
 
   let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
