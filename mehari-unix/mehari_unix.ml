@@ -4,9 +4,12 @@ include Mehari.Mirage.Make (Pclock) (Mirage_kv_unix) (Stack)
 
 let read_chunks ?(chunk_size = 16384) path =
   let+ ic = Lwt_io.open_file path ~mode:Input in
+  (* Why there's no Lwt_stream unfold *)
   let ended = ref false in
   Lwt_stream.from (fun () ->
-      if !ended then Lwt.return_none
+      if !ended then
+        let* () = Lwt_io.close ic in
+        Lwt.return_none
       else
         let* chunk = Lwt_io.read ~count:chunk_size ic in
         if String.length chunk = chunk_size then Lwt.return_some chunk
