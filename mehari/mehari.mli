@@ -263,12 +263,5 @@ module Mirage : sig
     (Clock : Mirage_clock.PCLOCK)
     (KV : Mirage_kv.RO)
     (Stack : Tcpip.Stack.V4V6)
-    -> IO with type stack = Stack.TCP.t
-
-  (** Temporary: DO NOT TOUCH *)
-  module TempMake : functor
-    (Clock : Mirage_clock.PCLOCK)
-    (KV : Mirage_kv.RO)
-    (Stack : Tcpip.Stack.V4V6)
-    -> IO with type stack = string
+    -> IO with type stack = Stack.t
 end

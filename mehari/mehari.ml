@@ -58,7 +58,7 @@ module Mirage = struct
   module Make
       (Clock : Mirage_clock.PCLOCK)
       (KV : Mirage_kv.RO)
-      (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.TCP.t = struct
+      (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter)
     module Server = Server_impl.Make (Clock) (KV) (Stack)
@@ -66,26 +66,12 @@ module Mirage = struct
     type middleware = handler -> handler
     type route = Router.t
     type rate_limiter = RateLimiter.t
-    type stack = Stack.TCP.t
+    type stack = Stack.t
 
     let router = Router.router
     let route = Router.route
     let scope = Router.scope
     let make_rate_limit = RateLimiter.make
-    let run_lwt = Server.run
-  end
-
-  module TempMake
-      (Clock : Mirage_clock.PCLOCK)
-      (KV : Mirage_kv.RO)
-      (Stack : Tcpip.Stack.V4V6) : IO with type stack = string = struct
-    module RateLimiter = Rate_limiter_impl.Make (Clock)
-    module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.TempServer
-    include Make (Clock) (KV) (Stack)
-
-    type stack = string
-
     let run_lwt = Server.run
   end
 end
