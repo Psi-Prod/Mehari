@@ -82,10 +82,11 @@ val sni : request -> string option
 val query : request -> string option
 (** User uri query. *)
 
-val param : request -> string -> string
-(** [param req p] retrieves the path parameter named [p].
+val param : request -> int -> string
+(** [param req n] retrieves the [n]-th path parameter of [req].
 
-    @raise Invalid_argument if [p] is missing: the program is buggy. *)
+    @raise Invalid_argument if [n] is not a positive integer or path does not
+      contain any parameters in which case the program is buggy. *)
 
 (** {1:response Response} *)
 
@@ -226,10 +227,17 @@ module type IO = sig
       the router returns {!val:Mehari.not_found}. *)
 
   val route :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
-  (** [route ~rate_limit ~mw path handler] forwards requests for [path] to
-      [handler]. If rate limit is in effect, [handler] is not executed and a
-      respond with {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
+    ?rate_limit:rate_limiter ->
+    ?mw:middleware ->
+    ?typ:[ `Raw | `Regex ] ->
+    string ->
+    handler ->
+    route
+  (** [route ~rate_limit ~mw ~typ path handler] forwards requests for [path] to
+      [handler]. [path] can be a string literal or a regex in Perl style
+      depending of [typ].
+      If rate limit is in effect, [handler] is not executed and a respond with
+      {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route

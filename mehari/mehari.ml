@@ -39,13 +39,8 @@ module type IO = sig
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
-  val router : route list -> handler
-
-  val route :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
-
-  val scope :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+  include
+    Router_impl.S with type t := route and type rate_limiter := rate_limiter
 
   val run_lwt :
     ?port:int ->
