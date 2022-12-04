@@ -179,19 +179,13 @@ val empty : mime
 (** The empty mime. *)
 
 val gemini : mime
-(** [text/gemini; charset=utf-8] *)
+(** [gemini] is [text/gemini; charset=utf-8] *)
 
 val text_mime : string -> mime
-(** [text_mime type] returns [text/type; charset=utf-8]. *)
+(** [text_mime type] is [text/type; charset=utf-8]. *)
 
 val with_charset : mime -> string -> mime
 (** Changes charset of given {!type:mime}. *)
-
-val with_lang : mime -> string list -> mime
-(** Changes langs of given {!type:mime}. *)
-
-val with_mime : mime -> string -> mime
-(** Changes mime type of given {!type:mime}. *)
 
 (** {1 IO} *)
 
