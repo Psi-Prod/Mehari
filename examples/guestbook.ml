@@ -8,7 +8,8 @@ let book =
   object
     val mutable entries = []
 
-    method add_entry ~timestamp ~addr message =
+    method add_entry ~addr message =
+      let timestamp = Unix.time () |> Unix.gmtime in
       entries <- { timestamp; addr; message } :: entries
 
     method print =
@@ -28,12 +29,11 @@ let book =
 module MIO = Mehari_unix
 
 let () =
-  let open Mehari in
   MIO.router
     [
       MIO.route "/" (fun _ ->
           let home =
-            Gemtext.
+            Mehari.Gemtext.
               [
                 heading `H1 "Guestbook";
                 newline;
@@ -42,13 +42,12 @@ let () =
                 text book#print;
               ]
           in
-          respond_gemtext home);
+          Mehari.respond_gemtext home);
       MIO.route "/submit" (fun req ->
-          match query req with
-          | None -> respond input "Enter your message"
+          match Mehari.query req with
+          | None -> Mehari.(respond input "Enter your message")
           | Some msg ->
-              let timestamp = Unix.time () |> Unix.gmtime in
-              book#add_entry ~timestamp ~addr:(ip req) msg;
-              respond redirect_temp "/");
+              book#add_entry ~addr:(Mehari.ip req) msg;
+              Mehari.(respond redirect_temp "/"));
     ]
   |> MIO.run
