@@ -230,6 +230,11 @@ module type IO = sig
   val logger : middleware
   (** Logs and times requests. *)
 
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
+
   (** {1:routing Routing} *)
 
   val router : route list -> handler

@@ -40,6 +40,10 @@ module type IO = sig
 
   val init_log : Logs.level -> unit
   val logger : Handler.t -> Handler.t
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
   val router : route list -> handler
 
   val route :
@@ -62,7 +66,7 @@ module Mirage = struct
       (KV : Mirage_kv.RO)
       (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.TCP.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
-    module Router = Router_impl.Make (RateLimiter)
+    module Router = Router_impl.Make (RateLimiter) (Clock)
     module Logger = Logger_impl.Make (Clock)
     module Server = Server_impl.Make (Clock) (KV) (Stack) (Logger)
 
@@ -71,7 +75,10 @@ module Mirage = struct
     type rate_limiter = RateLimiter.t
     type stack = Stack.TCP.t
 
-    let init_log lvl = Logger.init lvl
+    let init_log = Logger.init
+
+    include Logger
+
     let logger = Logger.logger
     let router = Router.router
     let route = Router.route

@@ -1,18 +1,10 @@
-type wrapper = {
-  error : 'a. 'a cond_log;
-  warning : 'a. 'a cond_log;
-  info : 'a. 'a cond_log;
-  debug : 'a. 'a cond_log;
-}
-
-and 'a cond_log =
-  ((('a, Stdlib.Format.formatter, unit, unit) Stdlib.format4 -> 'a) -> unit) ->
-  unit
-
 module type S = sig
   val init : Logs.level -> unit
   val logger : Handler.t -> Handler.t
-  val sub_log : ?level:Logs.level -> string -> wrapper
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
 end
 
 module Make (Clock : Mirage_clock.PCLOCK) : S = struct
@@ -20,9 +12,14 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
 
   module Log = (val Logs.src_log src)
 
+  let debug = Log.debug
+  let info = Log.info
+  let warning = Log.warn
+  let error = Log.err
+
   let init lvl =
     Logs.Src.set_level src (Some lvl);
-    Logs.set_reporter (Logs_fmt.reporter ())
+    Logs.set_reporter (Logs.reporter ())
 
   let now () = Clock.now_d_ps () |> fst
 
@@ -66,19 +63,8 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
           backtrace;
         Lwt.fail exn)
 
-  let forward (dest : _ Logs.log) k =
-    dest (fun log ->
-        k (fun fmt_args ->
-            log ~tags:Logs.Tag.(empty |> add timestamp ()) fmt_args))
-
-  let sub_log ?(level = Logs.Debug) name =
-    let src = Logs.Src.create name in
-    Logs.Src.set_level src (Some level);
-    let module Log = (val Logs.src_log src) in
-    {
-      error = (fun k -> forward Log.err k);
-      warning = (fun k -> forward Log.warn k);
-      info = (fun k -> forward Log.info k);
-      debug = (fun k -> forward Log.debug k);
-    }
+  (* let forward (dest : _ Logs.log) k =
+     dest (fun log ->
+         k (fun fmt_args ->
+             log ~tags:Logs.Tag.(empty |> add timestamp ()) fmt_args)) *)
 end

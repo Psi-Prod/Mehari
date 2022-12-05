@@ -19,7 +19,10 @@ module type S = sig
     route list
 end
 
-module Make (RateLimiter : Rate_limiter_impl.S) = struct
+module Make (RateLimiter : Rate_limiter_impl.S) (Clock : Mirage_clock.PCLOCK) =
+struct
+  module Logger = Logger_impl.Make (Clock)
+
   type t = route list
 
   and route = {
@@ -50,12 +53,24 @@ module Make (RateLimiter : Rate_limiter_impl.S) = struct
         None routes
     in
     match route with
-    | None -> Response.(respond Status.not_found "")
-    | Some (handler, None) -> handler req
-    | Some (handler, Some limiter) -> (
-        match RateLimiter.check limiter req with
+    | None ->
+        Logger.info (fun log ->
+            log "respond not found for path '%a' to '%a'." Uri.pp
+              (Request.uri req) Ipaddr.pp (Request.ip req));
+        Response.(respond Status.not_found "")
+    | Some (handler, limit_opt) -> (
+        Logger.info (fun log ->
+            log "serve '%a' for '%a'" Uri.pp (Request.uri req) Ipaddr.pp
+              (Request.ip req));
+        match limit_opt with
         | None -> handler req
-        | Some resp -> resp)
+        | Some limiter -> (
+            match RateLimiter.check limiter req with
+            | None ->
+                Logger.info (fun log ->
+                    log "'%a' is rate limited." Ipaddr.pp (Request.ip req));
+                handler req
+            | Some resp -> resp))
 
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes
