@@ -20,8 +20,10 @@ let to_string { mime; charset; lang } =
     Option.fold charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
   in
   let lang =
-    if mime = "text/gemini" then ""
-    else match lang with [] -> "" | l -> "; lang=" ^ String.concat "," l
+    match lang with
+    | [] -> ""
+    | l when mime = "text/gemini" -> "; lang=" ^ String.concat "," l
+    | _ -> ""
   in
   mime ^ charset ^ lang
 
