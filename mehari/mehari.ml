@@ -51,13 +51,11 @@ module type IO = sig
 end
 
 module Mirage = struct
-  module Make
-      (Clock : Mirage_clock.PCLOCK)
-      (KV : Mirage_kv.RO)
-      (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.t = struct
+  module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
+    IO with type stack = Stack.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.Make (Clock) (KV) (Stack)
+    module Server = Server_impl.Make (Clock) (Stack)
 
     type middleware = handler -> handler
     type route = Router.t

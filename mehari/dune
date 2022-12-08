@@ -8,7 +8,6 @@
   lwt.unix
   magic-mime
   mirage-clock
-  mirage-kv
   re
   tcpip
   tls.lwt

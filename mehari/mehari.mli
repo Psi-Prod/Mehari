@@ -266,7 +266,6 @@ module Mirage : sig
   (** A functor building an IO module. *)
   module Make : functor
     (Clock : Mirage_clock.PCLOCK)
-    (KV : Mirage_kv.RO)
     (Stack : Tcpip.Stack.V4V6)
     -> IO with type stack = Stack.t
 end
