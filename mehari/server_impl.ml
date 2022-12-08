@@ -9,8 +9,7 @@ module type S = sig
     unit Lwt.t
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  S with type stack := Stack.t = struct
+module Make (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.t = struct
   module TLS = Tls_mirage.Make (Stack.TCP)
   open Lwt.Syntax
 

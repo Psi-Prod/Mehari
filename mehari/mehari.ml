@@ -55,7 +55,7 @@ module Mirage = struct
     IO with type stack = Stack.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.Make (Clock) (Stack)
+    module Server = Server_impl.Make (Stack)
 
     type middleware = handler -> handler
     type route = Router.t

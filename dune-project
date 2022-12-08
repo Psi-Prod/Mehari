@@ -31,8 +31,6 @@
    (>= 0.0.2))
   (conan
    (>= 0.0.2))
-  (lwt
-   (>= 5.6.1))
   (magic-mime
    (>= 1.3.0))
   (mirage-clock
