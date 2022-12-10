@@ -46,26 +46,33 @@ module Make (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.t = struct
     let* () = TLS.epoch server |> handler server (Stack.TCP.dst flow) in
     TLS.close server
 
+  let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
+
+  let handle_request callback flow addr ep =
+    let* buf = read flow in
+    let* resp =
+      match Re.exec_opt client_req buf with
+      | None -> Response.(respond Status.bad_request) ""
+      | Some grp ->
+          let uri = Re.Group.get grp 1 |> Uri.of_string in
+          let sni =
+            match ep with
+            | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
+            | Error () -> assert false
+          in
+          Request.make ~addr ~uri ~sni |> callback
+    in
+    write_resp flow resp
+
   let start_server ~port ~certchains ~stack callback =
     let* certs = load_certs certchains in
-    let handle_request flow addr ep =
-      let* buf = read flow in
-      let uri = String.(sub buf 0 (length buf - 2)) |> Uri.of_string in
-      (* TODO: fix malformerd header *)
-      let sni =
-        match ep with
-        | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
-        | Error () -> assert false
-      in
-      let* resp = callback (Request.make ~addr ~uri ~sni) in
-      write_resp flow resp
-    in
     let certificates =
       match certs with
       | c :: _ -> `Multiple_default (c, certs)
       | _ -> invalid_arg "start_server"
     in
-    serve (Tls.Config.server ~certificates ()) handle_request
+    handle_request callback
+    |> serve (Tls.Config.server ~certificates ())
     |> Stack.TCP.listen (Stack.tcp stack) ~port;
     Stack.listen stack
 
