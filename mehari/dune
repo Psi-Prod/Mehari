@@ -4,10 +4,12 @@
  (libraries
   conan-database.light
   conan.string
+  logs
   lwt
   lwt.unix
   magic-mime
   mirage-clock
+  mirage-logs
   re
   tcpip
   tls.lwt

@@ -20,7 +20,7 @@ module type S = sig
     t
 end
 
-module Make (RateLimiter : Rate_limiter_impl.S) :
+module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   S with type rate_limiter := RateLimiter.t = struct
   type t = route list
 
@@ -54,12 +54,25 @@ module Make (RateLimiter : Rate_limiter_impl.S) :
         None routes
     in
     match route with
-    | None -> Response.(respond Status.not_found "")
-    | Some (handler, None, p) -> Request.attach_params req p |> handler
-    | Some (handler, Some limiter, p) -> (
-        match Request.attach_params req p |> RateLimiter.check limiter with
+    | None ->
+        Logger.info (fun log ->
+            log "respond not found for path '%a' to '%a'." Uri.pp
+              (Request.uri req) Ipaddr.pp (Request.ip req));
+        Response.(respond Status.not_found "")
+    | Some (handler, limit_opt, params) -> (
+        let req = Request.attach_params req params in
+        Logger.info (fun log ->
+            log "serve '%a' for '%a'" Uri.pp (Request.uri req) Ipaddr.pp
+              (Request.ip req));
+        match limit_opt with
         | None -> handler req
-        | Some resp -> resp)
+        | Some limiter -> (
+            match RateLimiter.check limiter req with
+            | None ->
+                Logger.info (fun log ->
+                    log "'%a' is rate limited." Ipaddr.pp (Request.ip req));
+                handler req
+            | Some resp -> resp))
 
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes

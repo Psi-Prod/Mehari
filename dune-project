@@ -35,6 +35,8 @@
    (>= 1.3.0))
   (mirage-clock
    (>= 4.2.0))
+  (mirage-logs
+   (>= 1.2.0))
   (lwt
    (>= 5.6.1))
   (lwt_ppx

@@ -4,4 +4,4 @@ let () =
       Mehari_unix.route ~typ:`Regex "/echo/(.*)" (fun req ->
           Mehari.param req 1 |> Mehari.respond_text);
     ]
-  |> Mehari_unix.run
+  |> Mehari_unix.logger |> Mehari_unix.run
