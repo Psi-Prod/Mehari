@@ -1,64 +1,81 @@
 module type S = sig
   type t
-  type route
   type rate_limiter
 
+  val router : t list -> Handler.t
+
   val route :
-    ?rate_limiter:rate_limiter ->
+    ?rate_limit:rate_limiter ->
     ?mw:(Handler.t -> Handler.t) ->
+    ?typ:[ `Raw | `Regex ] ->
     string ->
     Handler.t ->
-    route
-
-  val router : route list -> Request.t -> t
+    t
 
   val scope :
     ?rate_limit:rate_limiter ->
     ?mw:(Handler.t -> Handler.t) ->
     string ->
-    route list
+    t list ->
+    t
 end
 
-module Make (RateLimiter : Rate_limiter_impl.S) = struct
+module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
+  S with type rate_limiter := RateLimiter.t = struct
   type t = route list
 
   and route = {
-    path : string;
-    handler : Request.t -> Response.t Lwt.t;
+    route : [ `Raw | `Regex ] * string;
+    handler : Handler.t;
     rate_limit : RateLimiter.t option;
   }
 
-  let route ?rate_limit ?(mw = Fun.id) path handler =
-    [
-      {
-        path = Uri.of_string path |> Uri.to_string;
-        handler = mw handler;
-        rate_limit;
-      };
-    ]
+  let route ?rate_limit ?(mw = Fun.id) ?(typ = `Raw) r handler =
+    [ { route = (typ, r); handler = mw handler; rate_limit } ]
+
+  let match_ (typ, route) path =
+    match typ with
+    | `Raw -> `Bool (String.equal (Uri.of_string route |> Uri.to_string) path)
+    | `Regex -> `Grp (Re.exec_opt (Re.Perl.re route |> Re.Perl.compile) path)
 
   let router routes req =
     let routes = List.concat routes in
     let uri = Request.uri req |> Uri.path in
     let route =
       List.fold_left
-        (fun acc { path; handler; rate_limit } ->
+        (fun acc { route; handler; rate_limit } ->
           match acc with
-          | None ->
-              if String.equal uri path then Some (handler, rate_limit) else None
+          | None -> (
+              match match_ route uri with
+              | `Bool true -> Some (handler, rate_limit, None)
+              | `Grp (Some _ as g) -> Some (handler, rate_limit, g)
+              | `Bool false | `Grp None -> None)
           | Some _ -> acc)
         None routes
     in
     match route with
-    | None -> Response.(respond Status.not_found "")
-    | Some (handler, None) -> handler req
-    | Some (handler, Some limiter) -> (
-        match RateLimiter.check limiter req with
+    | None ->
+        Logger.info (fun log ->
+            log "respond not found for path '%a' to '%a'." Uri.pp
+              (Request.uri req) Ipaddr.pp (Request.ip req));
+        Response.(respond Status.not_found "")
+    | Some (handler, limit_opt, params) -> (
+        let req = Request.attach_params req params in
+        Logger.info (fun log ->
+            log "serve '%a' for '%a'" Uri.pp (Request.uri req) Ipaddr.pp
+              (Request.ip req));
+        match limit_opt with
         | None -> handler req
-        | Some resp -> resp)
+        | Some limiter -> (
+            match RateLimiter.check limiter req with
+            | None ->
+                Logger.info (fun log ->
+                    log "'%a' is rate limited." Ipaddr.pp (Request.ip req));
+                handler req
+            | Some resp -> resp))
 
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes
-    |> List.map (fun { path; handler; _ } ->
-           { path = prefix ^ path; handler = mw handler; rate_limit })
+    |> List.map (fun { route = typ, r; handler; _ } ->
+           { route = (typ, prefix ^ r); handler = mw handler; rate_limit })
 end

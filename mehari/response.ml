@@ -1,4 +1,4 @@
-type t = string
+type t = Immediate of string | Stream of string Lwt_stream.t
 
 type 'a status = int * 'a typ
 
@@ -8,24 +8,30 @@ and _ typ =
   | Meta : string typ
   | MetaBody : body -> string typ
 
-and body = Text of string | Gemtext of Gemtext.t
+and body =
+  | Text of string
+  | Gemtext of Gemtext.t
+  | Stream of string Lwt_stream.t
 
 let text t = Text t
 let gemtext g = Gemtext g
 let lines l = String.concat "\n" l |> text
+let stream stream = Stream stream
 
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
 
-let string_of_body = function Text t -> t | Gemtext g -> Gemtext.to_string g
-
 let validate code meta body =
   if Bytes.(of_string meta |> length) > 1024 then invalid_arg "too long header"
   else
-    Option.fold body ~none:"" ~some:string_of_body
-    |> Format.sprintf "%i %s\r\n%s" code meta
+    let meta = Printf.sprintf "%i %s\r\n" code meta in
+    match body with
+    | None -> Immediate meta
+    | Some (Text t) -> Immediate (meta ^ t)
+    | Some (Gemtext g) -> Immediate (meta ^ Gemtext.to_string g)
+    | Some (Stream body) -> Stream Lwt_stream.(append (of_list [ meta ]) body)
 
-let to_string (type a) ((code, status) : a status) (m : a) =
+let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =
     match status with
     | Success body -> (Mime.to_string m, Some body)
@@ -57,8 +63,8 @@ module Status = struct
   let code_of_status (c, _) = c
 end
 
-let response status info = to_string status info
-let respond status info = to_string status info |> Lwt.return
+let response status info = to_response status info
+let respond status info = to_response status info |> Lwt.return
 let respond_body body = respond (Status.success body)
 
 let respond_text txt =

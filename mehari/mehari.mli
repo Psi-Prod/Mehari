@@ -82,10 +82,11 @@ val sni : request -> string option
 val query : request -> string option
 (** User uri query. *)
 
-val param : request -> string -> string
-(** [param req p] retrieves the path parameter named [p].
+val param : request -> int -> string
+(** [param req n] retrieves the [n]-th path parameter of [req].
 
-    @raise Invalid_argument if [p] is missing: the program is buggy. *)
+    @raise Invalid_argument if [n] is not a positive integer or path does not
+      contain any parameters in which case the program is buggy. *)
 
 (** {1:response Response} *)
 
@@ -164,6 +165,9 @@ val gemtext : Gemtext.t -> body
 val lines : string list -> body
 (** Creates a {!type:body} from Gemtext line as text. *)
 
+val stream : string Lwt_stream.t -> body
+(** Creates a {!type:body} from a stream. *)
+
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
 
@@ -194,19 +198,13 @@ val empty : mime
 (** The empty mime. *)
 
 val gemini : mime
-(** [text/gemini; charset=utf-8] *)
+(** [gemini] is [text/gemini; charset=utf-8] *)
 
 val text_mime : string -> mime
-(** [text_mime type] returns [text/type; charset=utf-8]. *)
+(** [text_mime type] is [text/type; charset=utf-8]. *)
 
 val with_charset : mime -> string -> mime
 (** Changes charset of given {!type:mime}. *)
-
-val with_lang : mime -> string list -> mime
-(** Changes langs of given {!type:mime}. *)
-
-val with_mime : mime -> string -> mime
-(** Changes mime type of given {!type:mime}. *)
 
 (** {1 IO} *)
 
@@ -240,6 +238,19 @@ module type IO = sig
       ]}
       limits client to 5 requests every 2 hours. *)
 
+  (** {1 Logging} *)
+
+  val set_log_lvl : Logs.level -> unit
+  (** Set Mehari's logger to the given log level. *)
+
+  val logger : middleware
+  (** Logs and times requests. *)
+
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
+
   (** {1:routing Routing} *)
 
   val router : route list -> handler
@@ -247,10 +258,17 @@ module type IO = sig
       the router returns {!val:Mehari.not_found}. *)
 
   val route :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
-  (** [route ~rate_limit ~mw path handler] forwards requests for [path] to
-      [handler]. If rate limit is in effect, [handler] is not executed and a
-      respond with {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
+    ?rate_limit:rate_limiter ->
+    ?mw:middleware ->
+    ?typ:[ `Raw | `Regex ] ->
+    string ->
+    handler ->
+    route
+  (** [route ~rate_limit ~mw ~typ path handler] forwards requests for [path] to
+      [handler]. [path] can be a string literal or a regex in Perl style
+      depending of [typ].
+      If rate limit is in effect, [handler] is not executed and a respond with
+      {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
@@ -279,14 +297,6 @@ module Mirage : sig
   (** A functor building an IO module. *)
   module Make : functor
     (Clock : Mirage_clock.PCLOCK)
-    (KV : Mirage_kv.RO)
     (Stack : Tcpip.Stack.V4V6)
-    -> IO with type stack = Stack.TCP.t
-
-  (** Temporary: DO NOT TOUCH *)
-  module TempMake : functor
-    (Clock : Mirage_clock.PCLOCK)
-    (KV : Mirage_kv.RO)
-    (Stack : Tcpip.Stack.V4V6)
-    -> IO with type stack = string
+    -> IO with type stack = Stack.t
 end

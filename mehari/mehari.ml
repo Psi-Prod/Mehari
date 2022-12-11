@@ -18,6 +18,7 @@ module Gemtext = Gemtext
 let text = Response.text
 let gemtext = Response.gemtext
 let lines = Response.lines
+let stream = Response.stream
 let page = Response.page
 
 include Mime
@@ -40,13 +41,15 @@ module type IO = sig
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
-  val router : route list -> handler
+  val set_log_lvl : Logs.level -> unit
+  val logger : Handler.t -> Handler.t
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
 
-  val route :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> handler -> route
-
-  val scope :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+  include
+    Router_impl.S with type t := route and type rate_limiter := rate_limiter
 
   val run_lwt :
     ?port:int ->
@@ -57,37 +60,27 @@ module type IO = sig
 end
 
 module Mirage = struct
-  module Make
-      (Clock : Mirage_clock.PCLOCK)
-      (KV : Mirage_kv.RO)
-      (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.TCP.t = struct
+  module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
+    IO with type stack = Stack.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
-    module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.Make (Clock) (KV) (Stack)
+    module Logger = Logger_impl.Make (Clock)
+    module Router = Router_impl.Make (RateLimiter) (Logger)
+    module Server = Server_impl.Make (Stack) (Logger)
 
     type middleware = handler -> handler
     type route = Router.t
     type rate_limiter = RateLimiter.t
-    type stack = Stack.TCP.t
+    type stack = Stack.t
 
+    let set_log_lvl = Logger.set_level
+
+    include Logger
+
+    let logger = Logger.logger
     let router = Router.router
     let route = Router.route
     let scope = Router.scope
     let make_rate_limit = RateLimiter.make
-    let run_lwt = Server.run
-  end
-
-  module TempMake
-      (Clock : Mirage_clock.PCLOCK)
-      (KV : Mirage_kv.RO)
-      (Stack : Tcpip.Stack.V4V6) : IO with type stack = string = struct
-    module RateLimiter = Rate_limiter_impl.Make (Clock)
-    module Router = Router_impl.Make (RateLimiter)
-    module Server = Server_impl.TempServer
-    include Make (Clock) (KV) (Stack)
-
-    type stack = string
-
     let run_lwt = Server.run
   end
 end
