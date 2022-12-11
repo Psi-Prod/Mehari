@@ -31,14 +31,10 @@
    (>= 0.0.2))
   (conan
    (>= 0.0.2))
-  (lwt
-   (>= 5.6.1))
   (magic-mime
    (>= 1.3.0))
   (mirage-clock
    (>= 4.2.0))
-  (mirage-kv
-   (>= 4.0.1))
   (mirage-logs
    (>= 1.2.0))
   (lwt
@@ -67,7 +63,5 @@
    (>= 4.2.0))
   (mirage-flow-unix
    (>= 3.0.0))
-  (mirage-kv-unix
-   (>= 2.1.0))
   (tcpip
    (>= 7.1.2))))

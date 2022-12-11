@@ -14,13 +14,18 @@ let empty = make ""
 let text_mime text = make ("text/" ^ text)
 let gemini = make "text/gemini"
 let with_charset t c = { t with charset = Some c }
-let with_lang t l = { t with lang = l }
-let with_mime t mime = { t with mime }
 
-let to_string t =
-  t.mime
-  ^ Option.fold t.charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
-  ^ match t.lang with [] -> "" | l -> "; lang=" ^ String.concat "," l
+let to_string { mime; charset; lang } =
+  let charset =
+    Option.fold charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
+  in
+  let lang =
+    match lang with
+    | [] -> ""
+    | l when mime = "text/gemini" -> "; lang=" ^ String.concat "," l
+    | _ -> ""
+  in
+  mime ^ charset ^ lang
 
 let from_filename ?charset ?(lang = []) fname =
   let mime = Magic_mime.lookup ~default:"text/gemini" fname in
