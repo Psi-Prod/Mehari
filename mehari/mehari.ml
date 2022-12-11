@@ -29,6 +29,8 @@ let respond = Response.respond
 let respond_body = Response.respond_body
 let respond_text = Response.respond_text
 let respond_gemtext = Response.respond_gemtext
+let raw_response = Response.raw_response
+let raw_respond = Response.raw_respond
 
 module type IO = sig
   type middleware = handler -> handler

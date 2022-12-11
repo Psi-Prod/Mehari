@@ -91,7 +91,9 @@ val param : request -> int -> string
 (** {1:response Response} *)
 
 val response : 'a status -> 'a -> response
-(** Creates a new {!type:response} with given {!type:Mehari.status}. *)
+(** Creates a new {!type:response} with given {!type:Mehari.status}.
+
+    @raise Invalid_argument if [meta] is more than 1024 bytes. *)
 
 val respond : 'a status -> 'a -> response Lwt.t
 (** Same as {!val:response}, but the new {!type:response} is wrapped in a
@@ -108,6 +110,19 @@ val respond_text : string -> response Lwt.t
 val respond_gemtext : Gemtext.t -> response Lwt.t
 (** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
     [text/gemini] as {!type:mime} type. *)
+
+val raw_response :
+  [ `Body of string | `Full of int * string * string ] -> response
+(** [raw_response raw] creates a new {!type:response} depending of the value of
+    [raw]:.
+    - [`Body body]: creates a {!val:respond} with [body].
+      No check is performed on bytes-length of header;
+    - [`Full (code, meta, body)]: creates a {!val:respond} with given arguments. *)
+
+val raw_respond :
+  [ `Body of string | `Full of int * string * string ] -> response Lwt.t
+(** Same as {!val:raw_response}, but the new {!type:response} is wrapped in a
+    [Lwt] promise. *)
 
 (** {1:status Status} *)
 
@@ -135,6 +150,9 @@ val bad_request : string status
 val client_cert_req : string status
 val cert_not_authorised : string status
 val cert_not_valid : string status
+
+val code_of_status : 'a status -> int
+(** [code_of_status s] is status code associated with status [s]. *)
 
 (** {1:body Body} *)
 
