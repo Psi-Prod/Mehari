@@ -76,7 +76,8 @@ module Make
     start_server ~port ~certchains ~stack callback
 end
 
-module TempServer (Logger : Logger_impl.S)  : S with type stack := string = struct
+module TempServer (Logger : Logger_impl.S) : S with type stack := string =
+struct
   open Lwt.Syntax
 
   let load_certs certs =

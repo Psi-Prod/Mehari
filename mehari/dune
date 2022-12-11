@@ -10,6 +10,7 @@
   magic-mime
   mirage-clock
   mirage-kv
+  mirage-logs
   re
   tcpip
   tls.lwt

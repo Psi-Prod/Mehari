@@ -1,3 +1,3 @@
 (executables
- (names counter echo hello guestbook rate_limit)
- (libraries mehari mehari.unix uri))
+ (names counter echo hello guestbook log rate_limit)
+ (libraries mehari mehari.unix mirage-clock-unix logs uri))

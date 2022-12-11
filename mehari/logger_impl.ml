@@ -16,25 +16,7 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
   let info = Log.info
   let warning = Log.warn
   let error = Log.err
-
-  let init lvl =
-    Logs.Src.set_level src (Some lvl);
-    Logs.set_reporter (Logs.reporter ())
-
-  let now () = Clock.now_d_ps () |> fst
-
-  let timestamp =
-    Logs.Tag.def "timestamp" (fun fmt () -> Format.fprintf fmt "%i" (now ()))
-
-  let level = Logs.Tag.def "level" (fun fmt -> Format.fprintf fmt "%s")
-
-  let pp_lvl l =
-    Option.fold l ~none:"" ~some:(function
-      | Logs.App -> "     "
-      | Error -> "ERROR"
-      | Warning -> " WARN"
-      | Info -> " INFO"
-      | Debug -> "DEBUG")
+  let init lvl = Logs.Src.set_level src (Some lvl)
 
   let iter_backtrace f backtrace =
     backtrace |> String.split_on_char '\n'
@@ -46,12 +28,7 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
       (fun () -> handler req)
       (fun resp ->
         Log.info (fun log ->
-            let tags =
-              Logs.Tag.(
-                empty |> add timestamp ()
-                |> add level (Logs.Src.level src |> pp_lvl))
-            in
-            log ~tags "%s %s"
+            log "%s %s"
               (Request.uri req |> Uri.path_and_query)
               (Request.ip req |> Ipaddr.to_string));
         Lwt.return resp)
@@ -62,9 +39,4 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
           (fun line -> Log.warn (fun log -> log "%s" line))
           backtrace;
         Lwt.fail exn)
-
-  (* let forward (dest : _ Logs.log) k =
-     dest (fun log ->
-         k (fun fmt_args ->
-             log ~tags:Logs.Tag.(empty |> add timestamp ()) fmt_args)) *)
 end
