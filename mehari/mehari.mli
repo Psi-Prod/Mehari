@@ -222,8 +222,8 @@ module type IO = sig
 
   (** {1 Logging} *)
 
-  val init_log : Logs.level -> unit
-  (** Initializes Mehari's log with the given settings. *)
+  val set_log_lvl : Logs.level -> unit
+  (** Set Mehari's logger to the given log level. *)
 
   val logger : middleware
   (** Logs and times requests. *)

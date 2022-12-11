@@ -1,5 +1,5 @@
 module type S = sig
-  val init : Logs.level -> unit
+  val set_level : Logs.level -> unit
   val logger : Handler.t -> Handler.t
   val debug : 'a Logs.log
   val info : 'a Logs.log
@@ -16,7 +16,7 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
   let info = Log.info
   let warning = Log.warn
   let error = Log.err
-  let init lvl = Logs.Src.set_level src (Some lvl)
+  let set_level lvl = Logs.Src.set_level src (Some lvl)
 
   let iter_backtrace f backtrace =
     backtrace |> String.split_on_char '\n'

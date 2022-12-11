@@ -28,8 +28,6 @@ let book =
 
 module MIO = Mehari_unix
 
-let () = Mehari_unix.init_log Debug
-
 let () =
   MIO.router
     [

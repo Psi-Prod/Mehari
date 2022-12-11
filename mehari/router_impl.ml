@@ -20,10 +20,8 @@ module type S = sig
     t
 end
 
-module Make (RateLimiter : Rate_limiter_impl.S) (Clock : Mirage_clock.PCLOCK) 
+module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   S with type rate_limiter := RateLimiter.t = struct
-  module Logger = Logger_impl.Make (Clock)
-  
   type t = route list
 
   and route = {
@@ -61,7 +59,8 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Clock : Mirage_clock.PCLOCK)
             log "respond not found for path '%a' to '%a'." Uri.pp
               (Request.uri req) Ipaddr.pp (Request.ip req));
         Response.(respond Status.not_found "")
-    | Some (handler, limit_opt) -> (
+    | Some (handler, limit_opt, params) -> (
+        let req = Request.attach_params req params in
         Logger.info (fun log ->
             log "serve '%a' for '%a'" Uri.pp (Request.uri req) Ipaddr.pp
               (Request.ip req));
