@@ -211,6 +211,8 @@ val with_charset : mime -> string -> mime
 (** Module type containing all environment-dependent functions. An
     implementation for Unix is provided by {!Mehari_unix}. *)
 module type IO = sig
+  type 'a t
+
   type middleware = handler -> handler
   (** Middlewares take a {!type:Mehari.handler}, and run some code before or
       after — producing a “bigger” {!type:Mehari.handler}. *)
@@ -277,12 +279,12 @@ module type IO = sig
 
   (** {1 Entry point} *)
 
-  val run_lwt :
+  val run :
     ?port:int ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    unit Lwt.t
+    unit t
   (** [run ?port ?certchains stack handler] runs the server using
       [handler].
       - [port] is the port to listen on. Defaults to [1965].
@@ -298,5 +300,5 @@ module Mirage : sig
   module Make : functor
     (Clock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    -> IO with type stack = Stack.t
+    -> IO with type 'a t = 'a Lwt.t and type stack = Stack.t
 end

@@ -61,7 +61,7 @@ let run_lwt ?port ?certchains ?v4 ?v6 callback =
     in
     stack ~v4 ~v6:(Option.map Ipaddr.V6.Prefix.of_string_exn v6)
   in
-  run_lwt ?port ?certchains stack callback
+  run ?port ?certchains stack callback
 
 let run ?port ?certchains ?v4 ?v6 callback =
   run_lwt ?port ?certchains ?v4 ?v6 callback |> Lwt_main.run

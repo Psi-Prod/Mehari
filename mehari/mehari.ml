@@ -33,6 +33,7 @@ let raw_response = Response.raw_response
 let raw_respond = Response.raw_respond
 
 module type IO = sig
+  type 'a t
   type middleware = handler -> handler
   type route
   type stack
@@ -51,22 +52,23 @@ module type IO = sig
   include
     Router_impl.S with type t := route and type rate_limiter := rate_limiter
 
-  val run_lwt :
+  val run :
     ?port:int ->
     ?certchains:(string * string) list ->
     stack ->
     Handler.t ->
-    unit Lwt.t
+    unit t
 end
 
 module Mirage = struct
   module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-    IO with type stack = Stack.t = struct
+    IO with type 'a t = 'a Lwt.t and type stack = Stack.t = struct
     module RateLimiter = Rate_limiter_impl.Make (Clock)
     module Logger = Logger_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter) (Logger)
     module Server = Server_impl.Make (Stack) (Logger)
 
+    type 'a t = 'a Lwt.t
     type middleware = handler -> handler
     type route = Router.t
     type rate_limiter = RateLimiter.t
@@ -81,6 +83,6 @@ module Mirage = struct
     let route = Router.route
     let scope = Router.scope
     let make_rate_limit = RateLimiter.make
-    let run_lwt = Server.run
+    let run = Server.run
   end
 end
