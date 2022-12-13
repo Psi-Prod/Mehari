@@ -3,7 +3,8 @@
 
 (** {1 IO} *)
 
-include Mehari.IO
+include Mehari.IO with module IO := Lwt
+
 
 (** {1 Response} *)
 
@@ -70,7 +71,7 @@ val run_lwt :
   ?certchains:(string * string) list ->
   ?v4:string ->
   ?v6:string ->
-  Mehari.handler ->
+  handler ->
   unit Lwt.t
 (** See {!val:Mehari.IO.run_lwt}. *)
 
@@ -79,6 +80,6 @@ val run :
   ?certchains:(string * string) list ->
   ?v4:string ->
   ?v6:string ->
-  Mehari.handler ->
+  handler ->
   unit
 (** Like {!val:Mehari.IO.run_lwt} but calls [Lwt_main.run] internally. *)

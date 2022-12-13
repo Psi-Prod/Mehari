@@ -15,6 +15,6 @@ let () =
     (fun _ ->
       incr n;
       Mehari_unix.info (fun log -> log "Request n°: %i" !n);
-      Mehari.respond_text "Success")
+      Mehari_unix.respond_text "Success")
     |> Mehari_unix.logger |> Mehari_unix.run_lwt)
   |> setup_logs |> Lwt_main.run

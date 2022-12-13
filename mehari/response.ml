@@ -75,17 +75,34 @@ module Status = struct
 end
 
 let response status info = to_response status info
-let respond status info = to_response status info |> Lwt.return
-let respond_body body = respond (Status.success body)
+let response_body body = response (Status.success body)
 
-let respond_text txt =
-  respond (Status.success (text txt)) (Mime.text_mime "plain")
+let response_text txt =
+  response (Status.success (text txt)) (Mime.text_mime "plain")
 
-let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
+let response_gemtext g = response (Status.success (gemtext g)) Mime.gemini
 
-let raw_response raw =
+let response_raw raw =
   match raw with
   | `Body b -> Immediate [ b ]
   | `Full (code, meta, body) -> Immediate [ fmt_meta code meta; body ]
 
-let raw_respond raw = raw_response raw |> Lwt.return
+module type S = sig
+  module IO : Io.S
+
+  val respond : 'a status -> 'a -> t IO.t
+  val respond_body : body -> Mime.t -> t IO.t
+  val respond_text : string -> t IO.t
+  val respond_gemtext : Gemtext.t -> t IO.t
+
+  val respond_raw :
+    [ `Body of string | `Full of int * string * string ] -> t IO.t
+end
+
+module Make (IO : Io.S) = struct
+  let respond s i = response s i |> IO.return
+  let respond_body b m = response_body b m |> IO.return
+  let respond_text t = response_text t |> IO.return
+  let respond_gemtext g = response_gemtext g |> IO.return
+  let respond_raw g = response_raw g |> IO.return
+end

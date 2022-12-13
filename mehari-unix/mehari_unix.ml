@@ -1,6 +1,5 @@
 open Lwt.Syntax
-module Stack = Tcpip_stack_socket.V4V6
-include Mehari.Mirage.Make (Pclock) (Stack)
+include Mehari_io
 
 let read_chunks ?(chunk_size = 16384) path =
   let+ ic = Lwt_io.open_file path ~mode:Input in

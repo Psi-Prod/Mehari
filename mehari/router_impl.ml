@@ -1,32 +1,43 @@
 module type S = sig
-  type t
+  type route
   type rate_limiter
 
-  val router : t list -> Handler.t
+  module IO : Io.S
+
+  type handler = Handler.Make(IO).t
+  type middleware = handler -> handler
+
+  val router : route list -> handler
 
   val route :
     ?rate_limit:rate_limiter ->
-    ?mw:(Handler.t -> Handler.t) ->
+    ?mw:(middleware) ->
     ?typ:[ `Raw | `Regex ] ->
     string ->
-    Handler.t ->
-    t
+    handler ->
+    route
 
   val scope :
     ?rate_limit:rate_limiter ->
-    ?mw:(Handler.t -> Handler.t) ->
+    ?mw:(middleware) ->
     string ->
-    t list ->
-    t
+    route list ->
+    route
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
-  S with type rate_limiter := RateLimiter.t = struct
-  type t = route list
+  S with module IO = RateLimiter.IO and type rate_limiter := RateLimiter.t =
+struct
+  module IO = RateLimiter.IO
 
-  and route = {
+  type handler = Handler.Make(IO).t
+  type middleware = handler -> handler
+
+  type route = route' list
+
+  and route' = {
     route : [ `Raw | `Regex ] * string;
-    handler : Handler.t;
+    handler : handler;
     rate_limit : RateLimiter.t option;
   }
 
@@ -58,7 +69,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
         Logger.info (fun log ->
             log "respond not found for path '%a' to '%a'." Uri.pp
               (Request.uri req) Ipaddr.pp (Request.ip req));
-        Response.(respond Status.not_found "")
+        Response.(response Status.not_found "") |> IO.return
     | Some (handler, limit_opt, params) -> (
         let req = Request.attach_params req params in
         Logger.info (fun log ->

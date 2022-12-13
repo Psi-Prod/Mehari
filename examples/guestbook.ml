@@ -42,12 +42,12 @@ let () =
                 text book#print;
               ]
           in
-          Mehari.respond_gemtext home);
+          Mehari_unix.respond_gemtext home);
       MIO.route "/submit" (fun req ->
           match Mehari.query req with
-          | None -> Mehari.(respond input "Enter your message")
+          | None -> Mehari_unix.respond Mehari.input "Enter your message"
           | Some msg ->
               book#add_entry ~addr:(Mehari.ip req) msg;
-              Mehari.(respond redirect_temp "/"));
+              Mehari_unix.(respond Mehari.redirect_temp "/"));
     ]
   |> MIO.run

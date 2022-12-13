@@ -1,11 +1,16 @@
 module type S = sig
   type t
 
+  module IO : Io.S
+
+  val check : t -> Request.t -> Response.t IO.t option
   val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
-  val check : t -> Request.t -> Response.t Lwt.t option
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) = struct
+module Make (Clock : Mirage_clock.PCLOCK) (IO : Io.S) : S with module IO = IO =
+struct
+  module IO = IO
+
   module AddrMap = Map.Make (struct
     type t = Ipaddr.t
 
@@ -35,7 +40,8 @@ module Make (Clock : Mirage_clock.PCLOCK) = struct
     t.history <- AddrMap.add addr n t.history;
     if n > t.requests then
       let msg = Printf.sprintf "Wait %i seconds" time_left in
-      Response.(respond (Status.slow_down time_left) msg) |> Option.some
+      Response.(response (Status.slow_down time_left) msg)
+      |> IO.return |> Option.some
     else None
 
   let make ?(period = 1) requests duration =

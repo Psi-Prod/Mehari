@@ -1,16 +1,24 @@
 module type S = sig
   type stack
 
+  module IO : Io.S
+
+  type handler = Handler.Make(IO).t
+
   val run :
     ?port:int ->
     ?certchains:(string * string) list ->
     stack ->
-    Handler.t ->
-    unit Lwt.t
+    handler ->
+    unit IO.t
 end
 
 module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
-  S with type stack := Stack.t = struct
+  S with module IO = Lwt and type stack := Stack.t = struct
+  module IO = Lwt
+
+  type handler = Handler.Make(IO).t
+
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
   open Lwt.Syntax
@@ -56,7 +64,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
     let* request = read chan in
     let* resp =
       match Re.exec_opt client_req request with
-      | None -> Response.(respond Status.bad_request) ""
+      | None -> Response.(response Status.bad_request) "" |> Lwt.return
       | Some grp ->
           let uri = Re.Group.get grp 1 |> Uri.of_string in
           let sni =

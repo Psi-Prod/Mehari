@@ -19,10 +19,6 @@ type request
 type response
 (** Gemini response. See {!section-response}. *)
 
-type handler = request -> response Lwt.t
-(** Handlers are asynchronous functions from {!type:request} to
-    {!type:response}. *)
-
 type 'a status
 (** Status of a Gemini response. See {!section-status}. *)
 
@@ -95,34 +91,25 @@ val response : 'a status -> 'a -> response
 
     @raise Invalid_argument if [meta] is more than 1024 bytes. *)
 
-val respond : 'a status -> 'a -> response Lwt.t
-(** Same as {!val:response}, but the new {!type:response} is wrapped in a
-    [Lwt] promise. *)
+val response_body : body -> mime -> response
+(** Same as {!val:response} but respond with given {!type:body} and
+        use given {!type:mime} as mime type. *)
 
-val respond_body : body -> mime -> response Lwt.t
-(** Same as {!val:respond} but respond with given {!type:body} and
-    use given {!type:mime} as mime type. *)
+val response_text : string -> response
+(** Same as {!val:response} but respond with given text and use [text/plain] as
+        {!type:mime} type. *)
 
-val respond_text : string -> response Lwt.t
-(** Same as {!val:respond} but respond with given text and use [text/plain] as
-    {!type:mime} type. *)
+val response_gemtext : Gemtext.t -> response
+(** Same as {!val:response} but respond with given {!type:Gemtext.t} and use
+        [text/gemini] as {!type:mime} type. *)
 
-val respond_gemtext : Gemtext.t -> response Lwt.t
-(** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
-    [text/gemini] as {!type:mime} type. *)
-
-val raw_response :
+val response_raw :
   [ `Body of string | `Full of int * string * string ] -> response
 (** Creates a new raw {!type:response}. Does not perform any check on validity
-    i.e. length of header or beginning with a byte order mark U+FEFF.
+      i.e. length of header or beginning with a byte order mark U+FEFF.
 
-    - [`Body body]: creates a {!val:respond} with [body].
-    - [`Full (code, meta, body)]: creates a {!val:respond} with given arguments. *)
-
-val raw_respond :
-  [ `Body of string | `Full of int * string * string ] -> response Lwt.t
-(** Same as {!val:raw_response}, but the new {!type:response} is wrapped in a
-    [Lwt] promise. *)
+      - [`Body body]: creates a {!val:respond} with [body].
+      - [`Full (code, meta, body)]: creates a {!val:respond} with given arguments. *)
 
 (** {1:status Status} *)
 
@@ -206,52 +193,30 @@ val text_mime : string -> mime
 val with_charset : mime -> string -> mime
 (** Changes charset of given {!type:mime}. *)
 
-(** {1 IO} *)
+(* * {1 IO} *)
 
 (** Module type containing all environment-dependent functions. An
     implementation for Unix is provided by {!Mehari_unix}. *)
 module type IO = sig
-  type 'a t
-
-  type middleware = handler -> handler
-  (** Middlewares take a {!type:Mehari.handler}, and run some code before or
-      after — producing a “bigger” {!type:Mehari.handler}. *)
-
   type route
   (** Routes tell {!val:router} which handler to select for each request. See
       {!section-routing}. *)
 
+  type rate_limiter
+  (** Rate limiter. See {!section-rate_limit}. *)
+
+  module IO : Io.S
+
+  type handler = request -> response IO.t
+  (** Handlers are asynchronous functions from {!type:request} to
+    {!type:response}. *)
+
+  type middleware = handler -> handler
+  (** Middlewares take a {!type:Mehari.handler}, and run some code before or
+        after — producing a “bigger” {!type:Mehari.handler}. *)
+
   type stack
   (** Tcpip stack. *)
-
-  (** {1:rate_limit Rate limit} *)
-
-  type rate_limiter
-  (** Rate limiter. *)
-
-  val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
-      limits client to [n] request per [period * unit].
-
-      For example,
-      {[
-  make_rate_limit ~period:2 5 `Hour
-      ]}
-      limits client to 5 requests every 2 hours. *)
-
-  (** {1 Logging} *)
-
-  val set_log_lvl : Logs.level -> unit
-  (** Set Mehari's logger to the given log level. *)
-
-  val logger : middleware
-  (** Logs and times requests. *)
-
-  val debug : 'a Logs.log
-  val info : 'a Logs.log
-  val warning : 'a Logs.log
-  val error : 'a Logs.log
 
   (** {1:routing Routing} *)
 
@@ -277,6 +242,55 @@ module type IO = sig
   (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
       [prefix], [rate_limit] and [mw]. *)
 
+  (** {1:response Response} *)
+
+  val respond : 'a status -> 'a -> response IO.t
+  (** Same as {!val:response}, but the new {!type:response} is wrapped in a
+      promise. *)
+
+  val respond_body : body -> mime -> response IO.t
+  (** Same as {!val:respond} but respond with given {!type:body} and
+      use given {!type:mime} as mime type. *)
+
+  val respond_text : string -> response IO.t
+  (** Same as {!val:respond} but respond with given text and use [text/plain] as
+      {!type:mime} type. *)
+
+  val respond_gemtext : Gemtext.t -> response IO.t
+  (** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
+      [text/gemini] as {!type:mime} type. *)
+
+  val respond_raw :
+    [ `Body of string | `Full of int * string * string ] -> response IO.t
+  (** Same as {!val:response_raw}, but the new {!type:response} is wrapped in a
+        promise. *)
+
+  (** {1:rate_limit Rate limit} *)
+
+  val make_rate_limit :
+    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
+      limits client to [n] request per [period * unit].
+
+      For example,
+      {[
+  make_rate_limit ~period:2 5 `Hour
+      ]}
+      limits client to 5 requests every 2 hours. *)
+
+  (** {1 Logging} *)
+
+  val set_log_lvl : Logs.level -> unit
+  (** Set Mehari's logger to the given log level. *)
+
+  val logger : (request -> response Lwt.t) -> (request -> response Lwt.t)
+  (** Logs and times requests. *)
+
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
+
   (** {1 Entry point} *)
 
   val run :
@@ -284,7 +298,7 @@ module type IO = sig
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    unit t
+    unit IO.t
   (** [run ?port ?certchains stack handler] runs the server using
       [handler].
       - [port] is the port to listen on. Defaults to [1965].
@@ -300,5 +314,5 @@ module Mirage : sig
   module Make : functor
     (Clock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    -> IO with type 'a t = 'a Lwt.t and type stack = Stack.t
+    -> IO with module IO := Lwt and type stack = Stack.t
 end

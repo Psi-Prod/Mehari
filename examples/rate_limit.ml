@@ -7,8 +7,8 @@ let () =
   MIO.router
     [
       MIO.route "/low" ~rate_limit:low_limit (fun _ ->
-          Mehari.respond_text "5 requests per minute authorized");
+          Mehari_unix.respond_text "5 requests per minute authorized");
       MIO.route "/hight" ~rate_limit:hight_limit (fun _ ->
-          Mehari.respond_text "2 requests per 10 seconds authorized");
+          Mehari_unix.respond_text "2 requests per 10 seconds authorized");
     ]
   |> MIO.run

@@ -1,6 +1,5 @@
 type request = Request.t
 type response = Response.t
-type handler = Handler.t
 type 'a status = 'a Response.status
 type mime = Mime.t
 type body = Response.body
@@ -25,64 +24,62 @@ include Mime
 
 let make_mime = Mime.make
 let response = Response.response
-let respond = Response.respond
-let respond_body = Response.respond_body
-let respond_text = Response.respond_text
-let respond_gemtext = Response.respond_gemtext
-let raw_response = Response.raw_response
-let raw_respond = Response.raw_respond
+let response_body = Response.response_body
+let response_text = Response.response_text
+let response_gemtext = Response.response_gemtext
+let response_raw = Response.response_raw
 
 module type IO = sig
-  type 'a t
+  module IO : Io.S
+  include Router_impl.S with module IO := IO
+
   type middleware = handler -> handler
-  type route
   type stack
-  type rate_limiter
+
+  include Response.S with module IO := IO
 
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
   val set_log_lvl : Logs.level -> unit
-  val logger : Handler.t -> Handler.t
+  val logger : Handler.Make(Lwt).t -> Handler.Make(Lwt).t
   val debug : 'a Logs.log
   val info : 'a Logs.log
   val warning : 'a Logs.log
   val error : 'a Logs.log
 
-  include
-    Router_impl.S with type t := route and type rate_limiter := rate_limiter
-
   val run :
     ?port:int ->
     ?certchains:(string * string) list ->
     stack ->
-    Handler.t ->
-    unit t
+    handler ->
+    unit IO.t
 end
 
 module Mirage = struct
   module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-    IO with type 'a t = 'a Lwt.t and type stack = Stack.t = struct
-    module RateLimiter = Rate_limiter_impl.Make (Clock)
+    IO with module IO := Lwt and type stack = Stack.t = struct
+    module RateLimiter = Rate_limiter_impl.Make (Clock) (Lwt)
     module Logger = Logger_impl.Make (Clock)
     module Router = Router_impl.Make (RateLimiter) (Logger)
     module Server = Server_impl.Make (Stack) (Logger)
 
-    type 'a t = 'a Lwt.t
+    type handler = Handler.Make(Lwt).t
     type middleware = handler -> handler
-    type route = Router.t
+    type route = Router.route
     type rate_limiter = RateLimiter.t
     type stack = Stack.t
 
     let set_log_lvl = Logger.set_level
 
     include Logger
+    include Response.Make (Lwt)
 
+    let make_rate_limit = RateLimiter.make
     let logger = Logger.logger
     let router = Router.router
     let route = Router.route
     let scope = Router.scope
-    let make_rate_limit = RateLimiter.make
     let run = Server.run
   end
 end

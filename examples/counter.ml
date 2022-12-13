@@ -10,13 +10,13 @@ let () =
   MIO.router
     [
       MIO.route "/" (fun _ ->
-          Mehari.respond_gemtext
+          Mehari_unix.respond_gemtext
             Mehari.Gemtext.
               [
                 link "/incr" ~name:"Increment counter";
                 text (Printf.sprintf "Counter = %i" !counter);
               ]);
       MIO.route "/incr" ~mw:incr_count
-        Mehari.(fun _ -> respond redirect_temp "/");
+        Mehari_unix.(fun _ -> respond Mehari.redirect_temp "/");
     ]
   |> MIO.run

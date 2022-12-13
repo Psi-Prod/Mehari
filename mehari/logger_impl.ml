@@ -1,6 +1,8 @@
 module type S = sig
+  type lwt_handler = Handler.Make(Lwt).t
+
   val set_level : Logs.level -> unit
-  val logger : Handler.t -> Handler.t
+  val logger : lwt_handler -> lwt_handler
   val debug : 'a Logs.log
   val info : 'a Logs.log
   val warning : 'a Logs.log
@@ -8,6 +10,8 @@ module type S = sig
 end
 
 module Make (Clock : Mirage_clock.PCLOCK) : S = struct
+  type lwt_handler = Handler.Make(Lwt).t
+
   let src = Logs.Src.create "mehari.log"
 
   module Log = (val Logs.src_log src)

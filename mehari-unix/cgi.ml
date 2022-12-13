@@ -66,11 +66,12 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
     with_proc ~timeout ~env:(make_env req path) (path, [||]) (fun proc ->
         if nph then
           let* chunks = read_body proc |> Lwt_seq.to_list in
-          `Body (String.concat "" chunks) |> Mehari.raw_respond
+          `Body (String.concat "" chunks) |> Mehari.response_raw |> Lwt.return
         else
           match%lwt parse_header proc#stdout with
-          | None -> Mehari.respond Mehari.cgi_error ""
+          | None -> Mehari.response Mehari.cgi_error "" |> Lwt.return
           | Some (code, meta) ->
               let* chunks = read_body proc |> Lwt_seq.to_list in
-              Mehari.raw_respond (`Full (code, meta, String.concat "" chunks)))
-  with Exited -> Mehari.respond Mehari.cgi_error ""
+              Mehari.response_raw (`Full (code, meta, String.concat "" chunks))
+              |> Lwt.return)
+  with Exited -> Mehari.response Mehari.cgi_error "" |> Lwt.return
