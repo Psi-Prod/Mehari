@@ -26,14 +26,15 @@ let book =
       Buffer.contents buf
   end
 
-module MIO = Mehari_unix
+module M = Mehari
+module M_unix = Mehari_unix
 
 let () =
-  MIO.router
+  M_unix.router
     [
-      MIO.route "/" (fun _ ->
+      M_unix.route "/" (fun _ ->
           let home =
-            Mehari.Gemtext.
+            M.Gemtext.
               [
                 heading `H1 "Guestbook";
                 newline;
@@ -42,12 +43,12 @@ let () =
                 text book#print;
               ]
           in
-          Mehari_unix.respond_gemtext home);
-      MIO.route "/submit" (fun req ->
-          match Mehari.query req with
-          | None -> Mehari_unix.respond Mehari.input "Enter your message"
+          M_unix.respond_gemtext home);
+      M_unix.route "/submit" (fun req ->
+          match M.query req with
+          | None -> M_unix.respond M.input "Enter your message"
           | Some msg ->
-              book#add_entry ~addr:(Mehari.ip req) msg;
-              Mehari_unix.(respond Mehari.redirect_temp "/"));
+              book#add_entry ~addr:(M.ip req) msg;
+              M_unix.respond M.redirect_temp "/");
     ]
-  |> MIO.run
+  |> M_unix.run

@@ -10,11 +10,13 @@ let setup_logs f =
 
 let n = ref 0
 
+module M_unix = Mehari_unix
+
 let () =
   (fun () ->
     (fun _ ->
       incr n;
-      Mehari_unix.info (fun log -> log "Request n°: %i" !n);
-      Mehari_unix.respond_text "Success")
-    |> Mehari_unix.logger |> Mehari_unix.run_lwt)
+      M_unix.info (fun log -> log "Request n°: %i" !n);
+      M_unix.respond_text "Success")
+    |> M_unix.logger |> M_unix.run_lwt)
   |> setup_logs |> Lwt_main.run
