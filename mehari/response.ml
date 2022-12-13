@@ -6,7 +6,6 @@ and _ typ =
   | Success : body -> Mime.t typ
   | SlowDown : int -> string typ
   | Meta : string typ
-  | Raw : body -> string typ
 
 and body =
   | Text of string
@@ -21,10 +20,12 @@ let stream stream = Stream stream
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
 
+let fmt_meta = Printf.sprintf "%i %s\r\n"
+
 let validate code meta body =
   if Bytes.(of_string meta |> length) > 1024 then invalid_arg "too long header"
   else
-    let meta = Printf.sprintf "%i %s\r\n" code meta in
+    let meta = fmt_meta code meta in
     match body with
     | None -> Immediate meta
     | Some (Text t) -> Immediate (meta ^ t)
@@ -37,7 +38,6 @@ let to_response (type a) ((code, status) : a status) (m : a) =
     | Success body -> (Mime.to_string m, Some body)
     | SlowDown n -> (Int.to_string n, None)
     | Meta -> (m, None)
-    | Raw b -> (m, Some b)
   in
   validate code meta body
 
@@ -75,6 +75,6 @@ let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
 let raw_response raw =
   match raw with
   | `Body b -> Immediate b
-  | `Full (code, meta, body) -> to_response (code, Raw (text body)) meta
+  | `Full (code, meta, body) -> Immediate (fmt_meta code meta ^ body)
 
 let raw_respond raw = raw_response raw |> Lwt.return
