@@ -283,7 +283,7 @@ module type IO = sig
   val set_log_lvl : Logs.level -> unit
   (** Set Mehari's logger to the given log level. *)
 
-  val logger : (request -> response Lwt.t) -> (request -> response Lwt.t)
+  val logger : handler -> handler
   (** Logs and times requests. *)
 
   val debug : 'a Logs.log

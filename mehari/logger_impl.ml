@@ -1,16 +1,25 @@
 module type S = sig
-  type lwt_handler = Handler.Make(Lwt).t
+  module IO : Io.S
+
+  type handler = Handler.Make(IO).t
 
   val set_level : Logs.level -> unit
-  val logger : lwt_handler -> lwt_handler
+  val logger : handler -> handler
   val debug : 'a Logs.log
   val info : 'a Logs.log
   val warning : 'a Logs.log
   val error : 'a Logs.log
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) : S = struct
-  type lwt_handler = Handler.Make(Lwt).t
+module Make
+    (Clock : Mirage_clock.PCLOCK) (IO : sig
+      include Io.S
+
+      val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
+    end) : S with module IO = IO = struct
+  module IO = IO
+
+  type handler = Handler.Make(IO).t
 
   let src = Logs.Src.create "mehari.log"
 
@@ -28,19 +37,19 @@ module Make (Clock : Mirage_clock.PCLOCK) : S = struct
     |> List.iter f
 
   let logger handler req =
-    Lwt.try_bind
+    IO.finally
       (fun () -> handler req)
       (fun resp ->
         Log.info (fun log ->
             log "%s %s"
               (Request.uri req |> Uri.path_and_query)
               (Request.ip req |> Ipaddr.to_string));
-        Lwt.return resp)
+        IO.return resp)
       (fun exn ->
         let backtrace = Printexc.get_backtrace () in
         Log.warn (fun log -> log "Aborted by: %s" (Printexc.to_string exn));
         iter_backtrace
           (fun line -> Log.warn (fun log -> log "%s" line))
           backtrace;
-        Lwt.fail exn)
+        raise exn)
 end

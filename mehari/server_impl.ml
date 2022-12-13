@@ -13,7 +13,7 @@ module type S = sig
     unit IO.t
 end
 
-module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
+module MirageMake (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
 
