@@ -113,7 +113,8 @@ val respond_gemtext : Gemtext.t -> response Lwt.t
 
 val raw_response :
   [ `Body of string | `Full of int * string * string ] -> response
-(** Creates a new raw {!type:response}, does not perform any check on validity.
+(** Creates a new raw {!type:response}. Does not perform any check on validity
+    i.e. length of header or beginning with a byte order mark U+FEFF.
 
     - [`Body body]: creates a {!val:respond} with [body].
     - [`Full (code, meta, body)]: creates a {!val:respond} with given arguments. *)
