@@ -26,7 +26,6 @@ let book =
       Buffer.contents buf
   end
 
-module M = Mehari
 module M_unix = Mehari_unix
 
 let () =
@@ -34,7 +33,7 @@ let () =
     [
       M_unix.route "/" (fun _ ->
           let home =
-            M.Gemtext.
+            Mehari.Gemtext.
               [
                 heading `H1 "Guestbook";
                 newline;
@@ -45,10 +44,10 @@ let () =
           in
           M_unix.respond_gemtext home);
       M_unix.route "/submit" (fun req ->
-          match M.query req with
-          | None -> M_unix.respond M.input "Enter your message"
+          match Mehari.query req with
+          | None -> M_unix.respond Mehari.input "Enter your message"
           | Some msg ->
-              book#add_entry ~addr:(M.ip req) msg;
-              M_unix.respond M.redirect_temp "/");
+              book#add_entry ~addr:(Mehari.ip req) msg;
+              M_unix.respond Mehari.redirect_temp "/");
     ]
   |> M_unix.run

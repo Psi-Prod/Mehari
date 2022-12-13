@@ -11,18 +11,14 @@ module type S = sig
 
   val route :
     ?rate_limit:rate_limiter ->
-    ?mw:(middleware) ->
+    ?mw:middleware ->
     ?typ:[ `Raw | `Regex ] ->
     string ->
     handler ->
     route
 
   val scope :
-    ?rate_limit:rate_limiter ->
-    ?mw:(middleware) ->
-    string ->
-    route list ->
-    route
+    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -30,7 +26,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
 struct
   module IO = RateLimiter.IO
 
-  type handler = Handler.Make(IO).t
+  type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
 
   type route = route' list

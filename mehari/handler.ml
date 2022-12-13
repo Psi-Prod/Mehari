@@ -1,6 +1,3 @@
-module Make (I : sig
-  type 'a t
-end) =
-struct
-  type t = Request.t -> Response.t I.t
+module Make (IO : Io.S) = struct
+  type t = Request.t -> Response.t IO.t
 end

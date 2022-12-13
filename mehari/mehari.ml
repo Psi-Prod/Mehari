@@ -4,37 +4,56 @@ type 'a status = 'a Response.status
 type mime = Mime.t
 type body = Response.body
 
+module Gemtext = Gemtext
+
 let uri = Request.uri
 let ip = Request.ip
 let port = Request.port
 let sni = Request.sni
 let query = Request.query
 let param = Request.param
-
-include Response.Status
-module Gemtext = Gemtext
-
-let text = Response.text
-let gemtext = Response.gemtext
-let lines = Response.lines
-let stream = Response.stream
-let page = Response.page
-
-include Mime
-
-let make_mime = Mime.make
 let response = Response.response
 let response_body = Response.response_body
 let response_text = Response.response_text
 let response_gemtext = Response.response_gemtext
 let response_raw = Response.response_raw
 
-module type IO = sig
-  module IO : Io.S
-  include Router_impl.S with module IO := IO
+include Response.Status
 
+let text = Response.text
+let gemtext = Response.gemtext
+let lines = Response.lines
+let stream = Response.stream
+let page = Response.page
+let make_mime = Mime.make_mime
+let from_filename = Mime.from_filename
+let from_content = Mime.from_content
+let empty = Mime.empty
+let gemini = Mime.gemini
+let text_mime = Mime.text_mime
+let with_charset = Mime.with_charset
+
+module type NET = sig
+  module IO : Io.S
+
+  type route
+  type rate_limiter
+  type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
   type stack
+
+  val router : route list -> handler
+
+  val route :
+    ?rate_limit:rate_limiter ->
+    ?mw:middleware ->
+    ?typ:[ `Raw | `Regex ] ->
+    string ->
+    handler ->
+    route
+
+  val scope :
+    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 
   include Response.S with module IO := IO
 
@@ -56,38 +75,17 @@ module type IO = sig
     unit IO.t
 end
 
-module Mirage = struct
-  module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-    IO with module IO := Lwt and type stack = Stack.t = struct
-    module RateLimiter = Rate_limiter_impl.Make (Clock) (Lwt)
+module Private = struct
+  module type IO = Io.S
 
-    module Logger =
-      Logger_impl.Make
-        (Clock)
-        (struct
-          include Lwt
+  type response_view = Response.view
 
-          let finally = try_bind
-        end)
+  let view_of_resp = Response.view_of_resp
+  let make_request = Request.make
 
-    module Router = Router_impl.Make (RateLimiter) (Logger)
-    module Server = Server_impl.MirageMake (Stack) (Logger)
-    include Logger
-
-    type middleware = handler -> handler
-    type route = Router.route
-    type rate_limiter = RateLimiter.t
-    type stack = Stack.t
-
-    let set_log_lvl = Logger.set_level
-
-    include Response.Make (Lwt)
-
-    let make_rate_limit = RateLimiter.make
-    let logger = Logger.logger
-    let router = Router.router
-    let route = Router.route
-    let scope = Router.scope
-    let run = Server.run
-  end
+  module Handler = Handler
+  module Logger_impl = Logger_impl
+  module Rate_limiter_impl = Rate_limiter_impl
+  module Router_impl = Router_impl
+  module MakeResponse = Response.Make
 end

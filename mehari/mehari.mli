@@ -2,64 +2,32 @@
 building Gemini servers. It fully implements the
 {{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
 and aims to expose a clean and simple API.
-
-
 It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
 a tidy, feature-complete Web framework.
-
 This module provides the core abstraction, it does not depend on any platform
 code, and does not interact with the environment. Input and output are provided
 by {!Mehari_unix}. *)
 
 (** {1 Types} *)
 
-type request
+type request = Request.t
 (** Gemini request. See {!section-request}. *)
 
-type response
+type response = Response.t
 (** Gemini response. See {!section-response}. *)
 
-type 'a status
+type 'a status = 'a Response.status
 (** Status of a Gemini response. See {!section-status}. *)
 
-type mime
+type mime = Mime.t
 (** Mime type of a document. See {!section-mime}. *)
 
-type body
+type body = Response.body
 (** Body of Gemini response. See {!section-body}. *)
 
 (** {1:gemtext Gemtext} *)
 
-(** Implementation of the Gemini own native response format. *)
-module Gemtext : sig
-  type t = line list
-
-  and line =
-    | Text of string
-    | Link of { url : string; name : string option }
-    | Preformat of preformat
-    | Heading of [ `H1 | `H2 | `H3 ] * string
-    | ListItem of string
-    | Quote of string
-
-  and preformat = { alt : string option; text : string }
-
-  val of_string : string -> t
-  val to_string : t -> string
-
-  (** {1 Facilities} *)
-
-  val text : string -> line
-
-  val newline : line
-  (** [newline] is [text ""]. *)
-
-  val link : ?name:string -> string -> line
-  val preformat : ?alt:string -> string -> line
-  val heading : [ `H1 | `H2 | `H3 ] -> string -> line
-  val list_item : string -> line
-  val quote : string -> line
-end
+module Gemtext = Gemtext
 
 (** {1:request Request} *)
 
@@ -80,7 +48,6 @@ val query : request -> string option
 
 val param : request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
-
     @raise Invalid_argument if [n] is not a positive integer or path does not
       contain any parameters in which case the program is buggy. *)
 
@@ -88,7 +55,6 @@ val param : request -> int -> string
 
 val response : 'a status -> 'a -> response
 (** Creates a new {!type:response} with given {!type:Mehari.status}.
-
     @raise Invalid_argument if [meta] is more than 1024 bytes. *)
 
 val response_body : body -> mime -> response
@@ -107,14 +73,12 @@ val response_raw :
   [ `Body of string | `Full of int * string * string ] -> response
 (** Creates a new raw {!type:response}. Does not perform any check on validity
       i.e. length of header or beginning with a byte order mark U+FEFF.
-
-      - [`Body body]: creates a {!val:respond} with [body].
-      - [`Full (code, meta, body)]: creates a {!val:respond} with given arguments. *)
+      - [`Body body]: creates a {!val:response} with [body].
+      - [`Full (code, meta, body)]: creates a {!val:response} with given arguments. *)
 
 (** {1:status Status} *)
 
 (** A wrapper around Gemini status codes.
-
   @see < https://gemini.circumlunar.space/docs/specification.gmi >
     Section "Appendix 1. Full two digit status codes" for a description of the
     meaning of each code. *)
@@ -157,10 +121,8 @@ val stream : string Lwt_stream.t -> body
 
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
-
 {[
   # title
-
   content
 ]}
 *)
@@ -193,11 +155,30 @@ val text_mime : string -> mime
 val with_charset : mime -> string -> mime
 (** Changes charset of given {!type:mime}. *)
 
-(* * {1 IO} *)
+module Private : sig
+  module type IO = Io.S
+
+  type response_view = Response.view
+
+  val view_of_resp : response -> response_view
+
+  val make_request :
+    uri:Uri.t -> addr:Ipaddr.t * int -> sni:string option -> request
+
+  module Handler = Handler
+  module Logger_impl = Logger_impl
+  module Rate_limiter_impl = Rate_limiter_impl
+  module Router_impl = Router_impl
+  module MakeResponse = Response.Make
+end
+
+(** {1 IO} *)
 
 (** Module type containing all environment-dependent functions. An
     implementation for Unix is provided by {!Mehari_unix}. *)
-module type IO = sig
+module type NET = sig
+  module IO : Io.S
+
   type route
   (** Routes tell {!val:router} which handler to select for each request. See
       {!section-routing}. *)
@@ -205,15 +186,13 @@ module type IO = sig
   type rate_limiter
   (** Rate limiter. See {!section-rate_limit}. *)
 
-  module IO : Io.S
-
   type handler = request -> response IO.t
-  (** Handlers are asynchronous functions from {!type:request} to
-    {!type:response}. *)
+  (** Handlers are asynchronous functions from {!type:Mehari.request} to
+    {!type:Mehari.response}. *)
 
   type middleware = handler -> handler
-  (** Middlewares take a {!type:Mehari.handler}, and run some code before or
-        after — producing a “bigger” {!type:Mehari.handler}. *)
+  (** Middlewares take a {!type:handler}, and run some code before or
+        after — producing a “bigger” {!type:handler}. *)
 
   type stack
   (** Tcpip stack. *)
@@ -245,25 +224,25 @@ module type IO = sig
   (** {1:response Response} *)
 
   val respond : 'a status -> 'a -> response IO.t
-  (** Same as {!val:response}, but the new {!type:response} is wrapped in a
-      promise. *)
+  (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
+      wrapped in a promise. *)
 
   val respond_body : body -> mime -> response IO.t
-  (** Same as {!val:respond} but respond with given {!type:body} and
-      use given {!type:mime} as mime type. *)
+  (** Same as {!val:respond} but respond with given {!type:Mehari.body}
+      and use given {!type:Mehari.mime} as mime type. *)
 
   val respond_text : string -> response IO.t
   (** Same as {!val:respond} but respond with given text and use [text/plain] as
-      {!type:mime} type. *)
+      {!type:Mehari.mime} type. *)
 
   val respond_gemtext : Gemtext.t -> response IO.t
-  (** Same as {!val:respond} but respond with given {!type:Gemtext.t} and use
-      [text/gemini] as {!type:mime} type. *)
+  (** Same as {!val:respond} but respond with given {!type:Mehari.Gemtext.t} and use
+      [text/gemini] as {!type:Mehari.mime} type. *)
 
   val respond_raw :
     [ `Body of string | `Full of int * string * string ] -> response IO.t
-  (** Same as {!val:response_raw}, but the new {!type:response} is wrapped in a
-        promise. *)
+  (** Same as {!val:Mehari.response_raw}, but the new {!type:Mehari.response}
+      is wrapped in a promise. *)
 
   (** {1:rate_limit Rate limit} *)
 
@@ -271,7 +250,6 @@ module type IO = sig
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
   (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
       limits client to [n] request per [period * unit].
-
       For example,
       {[
   make_rate_limit ~period:2 5 `Hour
@@ -304,15 +282,5 @@ module type IO = sig
       - [port] is the port to listen on. Defaults to [1965].
       - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
         the last one is considered default.
-
   @raise Invalid_argument if [certchains] is empty. *)
-end
-
-(** Mirage OS compatiblity. *)
-module Mirage : sig
-  (** A functor building an IO module. *)
-  module Make : functor
-    (Clock : Mirage_clock.PCLOCK)
-    (Stack : Tcpip.Stack.V4V6)
-    -> IO with module IO := Lwt and type stack = Stack.t
 end

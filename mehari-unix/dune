@@ -4,7 +4,7 @@
  (libraries
   lwt
   lwt.unix
-  mehari
+  mehari.mirage
   mirage-clock-unix
   mirage-flow-unix
   tcpip.stack-socket)

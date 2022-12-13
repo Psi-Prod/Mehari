@@ -1,3 +1,4 @@
+open Mehari
 open Lwt.Syntax
 
 let make_env req path =
@@ -7,16 +8,16 @@ let make_env req path =
     ("CONTENT_LENGTH", empty);
     ("CONTENT_TYPE", empty);
     ("GATEWAY_INTERFACE", "CGI/1.1");
-    ("PATH_INFO", Mehari.uri req |> Uri.path |> Uri.pct_decode);
+    ("PATH_INFO", uri req |> Uri.path |> Uri.pct_decode);
     ("PATH_TRANSLATED", path);
-    ("QUERY_STRING", Mehari.query req |> Option.value ~default:"");
-    ("REMOTE_ADDR", Mehari.ip req |> Ipaddr.to_string);
-    ("REMOTE_HOST", Mehari.uri req |> Uri.host |> Option.value ~default:"");
+    ("QUERY_STRING", query req |> Option.value ~default:"");
+    ("REMOTE_ADDR", ip req |> Ipaddr.to_string);
+    ("REMOTE_HOST", uri req |> Uri.host |> Option.value ~default:"");
     ("REMOTE_IDENT", empty);
     ("REQUEST_METHOD", empty);
     ("SCRIPT_NAME", Filename.concat (Unix.getcwd ()) path);
-    ("SERVER_NAME", Mehari.uri req |> Uri.host |> Option.value ~default:"");
-    ("SERVER_PORT", Mehari.port req |> Int.to_string);
+    ("SERVER_NAME", uri req |> Uri.host |> Option.value ~default:"");
+    ("SERVER_PORT", port req |> Int.to_string);
     ("SERVER_PROTOCOL", "GEMINI");
     ("SERVER_SOFTWARE", "Mehari/%%VERSION%%");
   |]
@@ -66,12 +67,12 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
     with_proc ~timeout ~env:(make_env req path) (path, [||]) (fun proc ->
         if nph then
           let* chunks = read_body proc |> Lwt_seq.to_list in
-          `Body (String.concat "" chunks) |> Mehari.response_raw |> Lwt.return
+          `Body (String.concat "" chunks) |> Mehari_io.respond_raw
         else
           match%lwt parse_header proc#stdout with
-          | None -> Mehari.response Mehari.cgi_error "" |> Lwt.return
+          | None -> Mehari_io.respond Mehari.cgi_error ""
           | Some (code, meta) ->
               let* chunks = read_body proc |> Lwt_seq.to_list in
-              Mehari.response_raw (`Full (code, meta, String.concat "" chunks))
-              |> Lwt.return)
-  with Exited -> Mehari.response Mehari.cgi_error "" |> Lwt.return
+              Mehari_io.respond_raw
+                (`Full (code, meta, String.concat "" chunks)))
+  with Exited -> Mehari_io.respond Mehari.cgi_error ""

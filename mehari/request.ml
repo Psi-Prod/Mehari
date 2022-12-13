@@ -5,14 +5,13 @@ type t = {
   params : Re.Group.t option;
 }
 
-let make ~uri ~addr ~sni = { uri; addr; sni; params = None }
-let attach_params t params = { t with params }
-let set_uri t uri = { t with uri = Uri.of_string uri }
 let uri { uri; _ } = uri
 let ip { addr = ip, _; _ } = ip
 let port { addr = _, port; _ } = port
 let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
+let make ~uri ~addr ~sni = { uri; addr; sni; params = None }
+let attach_params t params = { t with params }
 
 let param t p =
   let fail () = invalid_arg "Mehari.param" in

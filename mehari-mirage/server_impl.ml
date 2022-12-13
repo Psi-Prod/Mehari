@@ -1,9 +1,11 @@
+open Mehari
+
 module type S = sig
   type stack
 
-  module IO : Io.S
+  module IO : Private.IO
 
-  type handler = Handler.Make(IO).t
+  type handler = Private.Handler.Make(IO).t
 
   val run :
     ?port:int ->
@@ -13,11 +15,11 @@ module type S = sig
     unit IO.t
 end
 
-module MirageMake (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
+module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
 
-  type handler = Handler.Make(IO).t
+  type handler = Private.Handler.Make(IO).t
 
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
@@ -38,8 +40,9 @@ module MirageMake (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
     | Ok () -> Lwt.return_unit
     | Error _ -> failwith "writing"
 
-  let write_resp chan = function
-    | Response.Immediate bufs -> Lwt_list.iter_s (write chan) bufs
+  let write_resp chan resp =
+    match Mehari.Private.view_of_resp resp with
+    | Immediate bufs -> Lwt_list.iter_s (write chan) bufs
     | Stream stream -> Lwt_stream.iter_s (write chan) stream
 
   let read flow =
@@ -64,7 +67,7 @@ module MirageMake (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
     let* request = read chan in
     let* resp =
       match Re.exec_opt client_req request with
-      | None -> Response.(response Status.bad_request) "" |> Lwt.return
+      | None -> (response bad_request) "" |> Lwt.return
       | Some grp ->
           let uri = Re.Group.get grp 1 |> Uri.of_string in
           let sni =
@@ -72,7 +75,7 @@ module MirageMake (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
             | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
             | Error () -> assert false
           in
-          Request.make ~addr ~uri ~sni |> callback
+          Private.make_request ~addr ~uri ~sni |> callback
     in
     write_resp chan resp
 

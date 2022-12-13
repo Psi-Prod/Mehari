@@ -1,4 +1,4 @@
-module M = Mehari
+open Mehari
 module M_unix = Mehari_unix
 
 let counter = ref 0
@@ -12,12 +12,12 @@ let () =
     [
       M_unix.route "/" (fun _ ->
           M_unix.respond_gemtext
-            M.Gemtext.
+            Gemtext.
               [
                 link "/incr" ~name:"Increment counter";
                 text (Printf.sprintf "Counter = %i" !counter);
               ]);
       M_unix.route "/incr" ~mw:incr_count (fun _ ->
-          Mehari_unix.respond M.redirect_temp "/");
+          Mehari_unix.respond Mehari.redirect_temp "/");
     ]
   |> M_unix.run

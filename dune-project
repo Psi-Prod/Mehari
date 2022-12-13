@@ -37,8 +37,6 @@
    (>= 4.2.0))
   (mirage-channel
    (>= 4.1.0))
-  (mirage-logs
-   (>= 1.2.0))
   (lwt
    (>= 5.6.1))
   (lwt_ppx
@@ -56,7 +54,7 @@
 
 (package
  (name mehari_unix)
- (synopsis "Mehari implementation for Unix and Windows using Lwt")
+ (synopsis "Mehari IO implementation using Lwt")
  (depends
   mehari
   (lwt
@@ -67,3 +65,12 @@
    (>= 3.0.0))
   (tcpip
    (>= 7.1.2))))
+
+(package
+ (name mehari_eio)
+ (synopsis "Mehari IO implementation using EIO")
+ (depends
+  (ocaml
+   (>= 5.0.0))
+  eio
+  mehari))

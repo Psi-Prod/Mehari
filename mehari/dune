@@ -4,17 +4,10 @@
  (libraries
   conan-database.light
   conan.string
+  ipaddr
   logs
   lwt
-  lwt.unix
   magic-mime
-  mirage-channel
   mirage-clock
-  mirage-logs
   re
-  tcpip
-  tls.lwt
-  tls-mirage
-  uri)
- (preprocess
-  (pps lwt_ppx)))
+  uri))

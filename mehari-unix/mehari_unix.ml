@@ -17,12 +17,11 @@ let read_chunks ?(chunk_size = 16384) path =
           Lwt.return_some chunk))
 
 let respond_document ?mime path =
-  let open Mehari in
   if%lwt Lwt_unix.file_exists path then
-    let mime = Option.value ~default:(from_filename path) mime in
+    let mime = Option.value ~default:(Mehari.from_filename path) mime in
     let* chunks = read_chunks path in
-    respond_body (stream chunks) mime
-  else respond not_found ""
+    respond_body (Mehari.stream chunks) mime
+  else respond Mehari.not_found ""
 
 let from_filename ?(lookup = `Ext) ?charset ?lang fname =
   match lookup with

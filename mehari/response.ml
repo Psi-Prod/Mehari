@@ -3,6 +3,8 @@ type t =
   (* A list for avoid ( ^ ) quadatric concatenation. *)
   | Stream of string Lwt_stream.t
 
+and view = t
+
 type 'a status = int * 'a typ
 
 and _ typ =
@@ -14,6 +16,10 @@ and body =
   | Text of string
   | Gemtext of Gemtext.t
   | Stream of string Lwt_stream.t
+
+let view_of_resp : t -> view = function
+  | Immediate i -> Immediate i
+  | Stream s -> Stream s
 
 let text t = Text t
 let gemtext g = Gemtext g
@@ -46,7 +52,7 @@ let validate code meta body =
 let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =
     match status with
-    | Success body -> (Mime.to_string m, Some body)
+    | Success body -> (Mime.Private.to_string m, Some body)
     | SlowDown n -> (Int.to_string n, None)
     | Meta -> (m, None)
   in
@@ -99,7 +105,7 @@ module type S = sig
     [ `Body of string | `Full of int * string * string ] -> t IO.t
 end
 
-module Make (IO : Io.S) = struct
+module Make (IO : Io.S) : S with module IO := IO = struct
   let respond s i = response s i |> IO.return
   let respond_body b m = response_body b m |> IO.return
   let respond_text t = response_text t |> IO.return
