@@ -1,4 +1,7 @@
-type t = Immediate of string | Stream of string Lwt_stream.t
+type t =
+  | Immediate of string list
+  (* A list for avoid ( ^ ) quadatric concatenation. *)
+  | Stream of string Lwt_stream.t
 
 type 'a status = int * 'a typ
 
@@ -35,9 +38,9 @@ let validate code meta body =
   else
     let meta = fmt_meta code meta in
     match body with
-    | None -> Immediate meta
-    | Some (Text t) -> Immediate (meta ^ t)
-    | Some (Gemtext g) -> Immediate (meta ^ Gemtext.to_string g)
+    | None -> Immediate [ meta ]
+    | Some (Text t) -> Immediate [ meta; t ]
+    | Some (Gemtext g) -> Immediate [ meta; Gemtext.to_string g ]
     | Some (Stream body) -> Stream Lwt_stream.(append (of_list [ meta ]) body)
 
 let to_response (type a) ((code, status) : a status) (m : a) =
@@ -82,7 +85,7 @@ let respond_gemtext g = respond (Status.success (gemtext g)) Mime.gemini
 
 let raw_response raw =
   match raw with
-  | `Body b -> Immediate b
-  | `Full (code, meta, body) -> Immediate (fmt_meta code meta ^ body)
+  | `Body b -> Immediate [ b ]
+  | `Full (code, meta, body) -> Immediate [ fmt_meta code meta; body ]
 
 let raw_respond raw = raw_response raw |> Lwt.return

@@ -12,6 +12,7 @@ end
 module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
   S with type stack := Stack.t = struct
   module TLS = Tls_mirage.Make (Stack.TCP)
+  module Channel = Mirage_channel.Make (TLS)
   open Lwt.Syntax
 
   let load_certs certs =
@@ -23,17 +24,18 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
     in
     aux [] certs
 
-  let write flow buf =
-    match%lwt Cstruct.of_string buf |> TLS.write flow with
+  let write chan buf =
+    Channel.write_string chan buf 0 (String.length buf - 1);
+    match%lwt Channel.flush chan with
     | Ok () -> Lwt.return_unit
     | Error _ -> failwith "writing"
 
-  let write_resp flow = function
-    | Response.Immediate buf -> write flow buf
-    | Stream stream -> Lwt_stream.iter_s (write flow) stream
+  let write_resp chan = function
+    | Response.Immediate bufs -> Lwt_list.iter_s (write chan) bufs
+    | Stream stream -> Lwt_stream.iter_s (write chan) stream
 
   let read flow =
-    match%lwt TLS.read flow with
+    match%lwt Channel.read_some flow with
     | Ok (`Data buffer) -> Cstruct.to_string buffer |> Lwt.return
     | Ok `Eof -> failwith "eof"
     | Error _ -> failwith "reading"
@@ -50,9 +52,10 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
   let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
 
   let handle_request callback flow addr ep =
-    let* buf = read flow in
+    let chan = Channel.create flow in
+    let* request = read chan in
     let* resp =
-      match Re.exec_opt client_req buf with
+      match Re.exec_opt client_req request with
       | None -> Response.(respond Status.bad_request) ""
       | Some grp ->
           let uri = Re.Group.get grp 1 |> Uri.of_string in
@@ -63,7 +66,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Logger_impl.S) :
           in
           Request.make ~addr ~uri ~sni |> callback
     in
-    write_resp flow resp
+    write_resp chan resp
 
   let start_server ~port ~certchains ~stack callback =
     let* certs = load_certs certchains in

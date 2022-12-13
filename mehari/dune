@@ -8,6 +8,7 @@
   lwt
   lwt.unix
   magic-mime
+  mirage-channel
   mirage-clock
   mirage-logs
   re
