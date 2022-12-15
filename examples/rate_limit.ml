@@ -9,6 +9,6 @@ let () =
       M_unix.route "/low" ~rate_limit:low_limit (fun _ ->
           M_unix.respond_text "5 requests per minute authorized");
       M_unix.route "/hight" ~rate_limit:hight_limit (fun _ ->
-        M_unix.respond_text "2 requests per 10 seconds authorized");
+          M_unix.respond_text "2 requests per 10 seconds authorized");
     ]
   |> M_unix.run

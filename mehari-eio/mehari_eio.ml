@@ -1,9 +1,3 @@
-module Direct = struct
-  type 'a t = 'a
-
-  let return x = x
-end
-
 module IO = Direct
 module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Pclock) (Direct)
 
