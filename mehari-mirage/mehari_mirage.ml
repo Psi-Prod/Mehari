@@ -9,7 +9,7 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
     Logger_impl.Make
       (Clock)
       (struct
-        include IO
+        include Lwt
 
         let finally = try_bind
       end)
