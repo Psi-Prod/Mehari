@@ -1,5 +1,5 @@
-(** An IO module Mehari implementation for Unix and Windows. Contains also
-    extra features based on Unix such as {!section-cgi}. *)
+(** An IO module Mehari implementation for Unix and Windows using Lwt. Contains
+    also extra features based on Unix filesystem such as {!section-cgi}. *)
 
 (** {1 IO} *)
 

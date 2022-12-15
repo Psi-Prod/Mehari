@@ -5,8 +5,8 @@ and aims to expose a clean and simple API.
 It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
 a tidy, feature-complete Web framework.
 This module provides the core abstraction, it does not depend on any platform
-code, and does not interact with the environment. Input and output are provided
-by {!Mehari_unix}. *)
+code, and does not interact with the environment. Input and output for Unix are
+provided by {!Mehari_lwt_unix}. *)
 
 (** {1 Types} *)
 
@@ -155,27 +155,10 @@ val text_mime : string -> mime
 val with_charset : mime -> string -> mime
 (** Changes charset of given {!type:mime}. *)
 
-module Private : sig
-  module type IO = Io.S
-
-  type response_view = Response.view
-
-  val view_of_resp : response -> response_view
-
-  val make_request :
-    uri:Uri.t -> addr:Ipaddr.t * int -> sni:string option -> request
-
-  module Handler = Handler
-  module Logger_impl = Logger_impl
-  module Rate_limiter_impl = Rate_limiter_impl
-  module Router_impl = Router_impl
-  module MakeResponse = Response.Make
-end
-
 (** {1 IO} *)
 
 (** Module type containing all environment-dependent functions. An
-    implementation for Unix is provided by {!Mehari_unix}. *)
+    implementation for Unix using {!Lwt} is provided by {!Mehari_lwt_unix}. *)
 module type NET = sig
   module IO : Io.S
 
@@ -283,4 +266,23 @@ module type NET = sig
       - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
         the last one is considered default.
   @raise Invalid_argument if [certchains] is empty. *)
+end
+
+(** {1 Private} *)
+
+module Private : sig
+  module type IO = Io.S
+
+  type response_view = Response.view
+
+  val view_of_resp : response -> response_view
+
+  val make_request :
+    uri:Uri.t -> addr:Ipaddr.t * int -> sni:string option -> request
+
+  module Handler = Handler
+  module Logger_impl = Logger_impl
+  module Rate_limiter_impl = Rate_limiter_impl
+  module Router_impl = Router_impl
+  module MakeResponse = Response.Make
 end
