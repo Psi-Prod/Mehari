@@ -53,7 +53,7 @@
    (>= 4.2.0))))
 
 (package
- (name mehari_unix)
+ (name mehari_lwt_unix)
  (synopsis "Mehari IO implementation using Lwt")
  (depends
   mehari

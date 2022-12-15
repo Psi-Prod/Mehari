@@ -1,5 +1,5 @@
 open Mehari
-module M_unix = Mehari_unix
+module M_unix = Mehari_lwt_unix
 
 let counter = ref 0
 
@@ -18,6 +18,6 @@ let () =
                 text (Printf.sprintf "Counter = %i" !counter);
               ]);
       M_unix.route "/incr" ~mw:incr_count (fun _ ->
-          Mehari_unix.respond Mehari.redirect_temp "/");
+          M_unix.respond Mehari.redirect_temp "/");
     ]
   |> M_unix.run

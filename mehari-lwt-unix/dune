@@ -1,0 +1,12 @@
+(library
+ (name mehari_lwt_unix)
+ (public_name mehari.lwt_unix)
+ (libraries
+  lwt
+  lwt.unix
+  mehari.mirage
+  mirage-clock-unix
+  mirage-flow-unix
+  tcpip.stack-socket)
+ (preprocess
+  (pps lwt_ppx)))

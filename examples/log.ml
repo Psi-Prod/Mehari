@@ -10,7 +10,7 @@ let setup_logs f =
 
 let n = ref 0
 
-module M_unix = Mehari_unix
+module M_unix = Mehari_lwt_unix
 
 let () =
   (fun () ->
