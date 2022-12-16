@@ -1,3 +1,11 @@
 (executables
- (names counter echo hello guestbook log rate_limit)
- (libraries mehari mehari.lwt_unix mirage-clock-unix mirage-logs logs uri))
+ (names counter echo test hello guestbook log rate_limit)
+ (libraries
+  mehari
+  mehari.eio
+  eio_main
+  mehari.lwt_unix
+  mirage-clock-unix
+  mirage-logs
+  logs
+  uri))

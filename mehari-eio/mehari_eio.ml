@@ -11,3 +11,4 @@ module Logger =
     end)
 
 module Router = Mehari.Private.Router_impl.Make (RateLimiter) (Logger)
+module Server = Server_impl.Make (Logger)

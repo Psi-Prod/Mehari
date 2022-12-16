@@ -16,30 +16,26 @@ module type S = sig
     unit
 end
 
-module Make (Logger : Private.Logger_impl.S) : S with type stack := Eio.Net.t =
-struct
+module Make (Logger : Private.Logger_impl.S) = struct
   module IO = Direct
 
   type handler = Private.Handler.Make(IO).t
 
-  let rec handle_connection callback sock =
-    let handler flow _ =
-      flow#write
-        [
-          (Cstruct.of_string @@ callback
-          @@
-          let r = Eio.Buf_read.of_flow flow ~max_size:1_000_000 in
-          Eio.Buf_read.line r);
-        ]
-    in
-    let on_error e = raise e in
-    Eio.Switch.run @@ fun sw ->
-    Eio.Net.accept_fork ~sw ~on_error sock handler;
-    handle_connection callback sock
+  module Read = Eio.Buf_read
 
-  let run ?(backlog = 10) ?(address = Eio.Net.Ipaddr.V4.loopback) ?(port = 1965)
-      stack callback =
-    ( Eio.Switch.run @@ fun sw ->
-      Eio.Net.listen ~backlog ~sw stack (`Tcp (address, port)) )
-    |> handle_connection callback
+  let handle_client _callback flow _addr =
+    let client_req = Read.of_flow flow ~max_size:1024 in
+    Eio.traceln "Received: %S" (Read.line client_req);
+    Eio.Flow.copy_string "20 text/gemini" flow
+
+  let run ?(backlog = 10) ?(addr = Eio.Net.Ipaddr.V4.loopback) ?(port = 1965)
+      net callback =
+    Eio.Switch.run (fun sw ->
+        let socket = Eio.Net.listen ~reuse_addr:true ~backlog ~sw net (`Tcp (addr, port)) in
+        let rec serve () =
+          handle_client callback
+          |> Eio.Net.accept_fork ~sw ~on_error:raise socket;
+          serve ()
+        in
+        serve ())
 end
