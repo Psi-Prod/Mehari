@@ -1,4 +1,4 @@
 (library
  (name mehari_eio)
  (public_name mehari.eio)
- (libraries eio mehari mirage-clock-unix))
+ (libraries eio mehari mirage-clock-unix tls-eio re))

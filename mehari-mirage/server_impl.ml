@@ -62,7 +62,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
 
   let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
 
-  let handle_request callback flow addr ep =
+  let handle_client callback flow addr ep =
     let chan = Channel.create flow in
     let* request = read chan in
     let* resp =
@@ -86,7 +86,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
       | c :: _ -> `Multiple_default (c, certs)
       | _ -> invalid_arg "start_server"
     in
-    handle_request callback
+    handle_client callback
     |> serve (Tls.Config.server ~certificates ())
     |> Stack.TCP.listen (Stack.tcp stack) ~port;
     Stack.listen stack
