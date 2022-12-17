@@ -1,5 +1,5 @@
 (executables
- (names counter echo eio_backend hello guestbook log rate_limit)
+ (names counter echo eio_backend hello guestbook log rate_limit stream)
  (libraries
   ipaddr
   mehari

@@ -30,12 +30,11 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   open Eio
 
   let write_resp flow resp =
-    match Mehari.Private.view_of_resp resp with
-    | Immediate bufs ->
-        Buf_write.with_flow flow (fun w ->
-            List.iter (fun buf -> Buf_write.string w buf) bufs;
-            Buf_write.flush w)
-    | _ -> failwith "todo"
+    Buf_write.with_flow flow @@ fun w ->
+    (match Mehari.Private.view_of_resp resp with
+    | Immediate bufs -> List.iter (fun buf -> Buf_write.string w buf) bufs
+    | Stream bufs -> Seq.iter (fun buf -> Buf_write.string w buf) bufs);
+    Buf_write.flush w
 
   let client_req =
     let crlf = Buf_read.string "\r\n" in

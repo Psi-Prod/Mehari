@@ -1,7 +1,7 @@
 let main ~net ~cwd =
   let ( / ) = Eio.Path.( / ) in
   let certchains = [ (cwd / "cert.pem", cwd / "key.pem") ] in
-  Mehari_eio.run ~certchains net (fun _ -> Mehari.response_text "ok")
+  Mehari_eio.run ~certchains net (fun _ -> Mehari.response_text "Hello from an effect based server!")
 
 let () =
   Eio_main.run (fun env ->
