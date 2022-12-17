@@ -23,7 +23,7 @@ include Response.Status
 let text = Response.text
 let gemtext = Response.gemtext
 let lines = Response.lines
-let stream = Response.stream
+let seq = Response.seq
 let page = Response.page
 let make_mime = Mime.make_mime
 let from_filename = Mime.from_filename

@@ -1,7 +1,7 @@
 type t =
   | Immediate of string list
   (* A list for avoid ( ^ ) quadatric concatenation. *)
-  | Stream of string Lwt_stream.t
+  | Stream of string Seq.t
 
 and view = t
 
@@ -12,10 +12,7 @@ and _ typ =
   | SlowDown : int -> string typ
   | Meta : string typ
 
-and body =
-  | Text of string
-  | Gemtext of Gemtext.t
-  | Stream of string Lwt_stream.t
+and body = Text of string | Gemtext of Gemtext.t | Stream of string Seq.t
 
 let view_of_resp : t -> view = function
   | Immediate i -> Immediate i
@@ -24,7 +21,7 @@ let view_of_resp : t -> view = function
 let text t = Text t
 let gemtext g = Gemtext g
 let lines l = String.concat "\n" l |> text
-let stream stream = Stream stream
+let seq s = Stream s
 
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
@@ -47,7 +44,7 @@ let validate code meta body =
     | None -> Immediate [ meta ]
     | Some (Text t) -> Immediate [ meta; t ]
     | Some (Gemtext g) -> Immediate [ meta; Gemtext.to_string g ]
-    | Some (Stream body) -> Stream Lwt_stream.(append (of_list [ meta ]) body)
+    | Some (Stream body) -> Stream (fun () -> Seq.Cons (meta, body))
 
 let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =

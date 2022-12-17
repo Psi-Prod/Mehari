@@ -1,26 +1,33 @@
 open Lwt.Syntax
 include Mehari_io
 
+(** TODO: true lazyness (is even possible?) *)
+let rec unfold f u () =
+  match%lwt f u with
+  | None -> Lwt.return Seq.Nil
+  | Some (x, u') ->
+      let* xs = unfold f u' () in
+      Lwt.return (Seq.Cons (x, fun () -> xs))
+
 let read_chunks ?(chunk_size = 16384) path =
   let+ ic = Lwt_io.open_file path ~mode:Input in
-  (* Why there's no Lwt_stream unfold *)
-  let ended = ref false in
-  Lwt_stream.from (fun () ->
-      if !ended then
+  unfold
+    (fun ended ->
+      if ended then
         let* () = Lwt_io.close ic in
         Lwt.return_none
       else
         let* chunk = Lwt_io.read ~count:chunk_size ic in
-        if String.length chunk = chunk_size then Lwt.return_some chunk
-        else (
-          ended := true;
-          Lwt.return_some chunk))
+        if String.length chunk = chunk_size then Lwt.return_some (chunk, false)
+        else Lwt.return_some (chunk, true))
+    false
 
 let respond_document ?mime path =
   if%lwt Lwt_unix.file_exists path then
     let mime = Option.value ~default:(Mehari.from_filename path) mime in
     let* chunks = read_chunks path in
-    respond_body (Mehari.stream chunks) mime
+    let* cs = chunks () in
+    respond_body (Mehari.seq (fun () -> cs)) mime
   else respond Mehari.not_found ""
 
 let from_filename ?(lookup = `Ext) ?charset ?lang fname =

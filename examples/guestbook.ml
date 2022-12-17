@@ -1,8 +1,4 @@
-type entry = {
-  timestamp : Unix.tm;
-  addr : (Ipaddr.V4.t, Ipaddr.V6.t) Ipaddr.v4v6;
-  message : string;
-}
+type entry = { timestamp : Unix.tm; addr : Ipaddr.t; message : string }
 
 let book =
   object

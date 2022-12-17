@@ -1,6 +1,7 @@
 (executables
- (names counter echo test hello guestbook log rate_limit)
+ (names counter echo eio_backend hello guestbook log rate_limit)
  (libraries
+  ipaddr
   mehari
   mehari.eio
   eio_main
@@ -10,4 +11,3 @@
   mirage-logs
   logs
   uri))
-
