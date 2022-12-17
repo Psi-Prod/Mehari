@@ -2,7 +2,7 @@
 
 module type S = sig
   module IO = Lwt
-  include Mehari.NET with module IO := IO
+  include Mehari.NET with module IO := IO and type addr = Ipaddr.t
 
   include Server_impl.S with module IO := IO
 

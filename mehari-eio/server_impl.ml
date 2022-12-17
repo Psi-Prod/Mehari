@@ -1,9 +1,7 @@
-module Private = Mehari.Private
-
 module type S = sig
-  module IO : Private.IO
+  module IO : Mehari.Private.IO
 
-  type handler = Private.Handler.Make(IO).t
+  type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
 
   val run :
     ?port:int ->
@@ -11,15 +9,15 @@ module type S = sig
     ?addr:Eio.Net.Ipaddr.v4v6 ->
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
     Eio.Net.t ->
-    (Uri.t -> Mehari.response) ->
+    handler ->
     'a
 end
 
-module Make (Logger : Private.Logger_impl.S) : S with module IO = Direct =
-struct
-  module IO = Direct
+module Make (Logger : Mehari.Private.Logger_impl.S) :
+  S with module IO = Common.Direct = struct
+  module IO = Common.Direct
 
-  type handler = Private.Handler.Make(IO).t
+  type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
 
   let load_certs certs =
     let rec aux acc = function
@@ -43,18 +41,19 @@ struct
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
-  let handle_client callback flow ep =
+  let handle_client ~addr ~port callback flow ep =
     let reader = Buf_read.of_flow flow ~initial_size:1024 ~max_size:1024 in
     let resp =
       match client_req reader with
       | req ->
           let uri = Uri.of_string req in
-          let _sni =
+          let sni =
             match ep with
             | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
             | Error () -> assert false
           in
-          callback uri
+          Mehari.Private.make_request (module Common.Addr) ~uri ~addr ~port ~sni
+          |> callback
       | exception Failure _ -> failwith "todo"
       | exception End_of_file -> failwith "todo"
       | exception Buf_read.Buffer_limit_exceeded ->
@@ -62,7 +61,7 @@ struct
     in
     write_resp flow resp
 
-  let handler ~certchains callback flow _ =
+  let handler ~addr ~port ~certchains callback flow _ =
     let certs = load_certs certchains in
     let certificates =
       match certs with
@@ -72,7 +71,7 @@ struct
     let server =
       Tls_eio.server_of_flow (Tls.Config.server ~certificates ()) flow
     in
-    Tls_eio.epoch server |> handle_client callback server
+    Tls_eio.epoch server |> handle_client ~addr ~port callback server
 
   let run ?(port = 1965) ?(backlog = 10) ?(addr = Net.Ipaddr.V4.loopback)
       ~certchains net callback =
@@ -81,7 +80,7 @@ struct
           Net.listen ~reuse_addr:true ~backlog ~sw net (`Tcp (addr, port))
         in
         let rec loop () =
-          handler ~certchains callback
+          handler ~addr ~port ~certchains callback
           |> Net.accept_fork ~sw ~on_error:raise socket;
           loop ()
         in

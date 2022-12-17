@@ -4,7 +4,6 @@
  (libraries
   conan-database.light
   conan.string
-  ipaddr
   logs
   lwt
   magic-mime

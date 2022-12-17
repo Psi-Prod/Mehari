@@ -3,7 +3,7 @@
 
 (** {1 IO} *)
 
-include Mehari.NET with module IO = Lwt
+include Mehari.NET with module IO = Lwt and type addr = Ipaddr.t
 
 (** {1 Response} *)
 
@@ -53,7 +53,7 @@ val run_cgi :
   ?timeout:float ->
   ?nph:bool ->
   string ->
-  Mehari.request ->
+  addr Mehari.request ->
   Mehari.response Lwt.t
 (** [run_cgi ?timeout ?nph script_path req] executes the given file as a CGI
     script and return a {!type:Mehari.response} based on bytes printed on

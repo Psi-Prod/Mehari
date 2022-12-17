@@ -1,16 +1,22 @@
-type t = {
-  addr : Ipaddr.t * int;
+type 'a t = {
+  addr : 'a;
+  addrm : (module Types.ADDR with type t = 'a);
+  port : int;
   uri : Uri.t;
   sni : string option;
   params : Re.Group.t option;
 }
 
 let uri { uri; _ } = uri
-let ip { addr = ip, _; _ } = ip
-let port { addr = _, port; _ } = port
+let ip { addr; _ } = addr
+let port { port; _ } = port
 let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
-let make ~uri ~addr ~sni = { uri; addr; sni; params = None }
+
+let make (type a) (module Addr : Types.ADDR with type t = a) ~uri ~(addr : a)
+    ~port ~sni =
+  { uri; addr; addrm = (module Addr); port; sni; params = None }
+
 let attach_params t params = { t with params }
 
 let param t p =

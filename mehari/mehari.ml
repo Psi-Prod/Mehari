@@ -1,4 +1,4 @@
-type request = Request.t
+type 'addr request = 'addr Request.t
 type response = Response.t
 type 'a status = 'a Response.status
 type mime = Mime.t
@@ -38,7 +38,8 @@ module type NET = sig
 
   type route
   type rate_limiter
-  type handler = Request.t -> Response.t IO.t
+  type addr
+  type handler = addr Request.t -> Response.t IO.t
   type middleware = handler -> handler
   type stack
 
@@ -66,7 +67,6 @@ module type NET = sig
   val info : 'a Logs.log
   val warning : 'a Logs.log
   val error : 'a Logs.log
-
 end
 
 module Private = struct

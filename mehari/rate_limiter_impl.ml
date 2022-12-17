@@ -1,21 +1,19 @@
 module type S = sig
-  type t
-
   module IO : Io.S
 
-  val check : t -> Request.t -> Response.t IO.t option
+  type t
+
+  module Addr : Types.ADDR
+
+  val check : t -> Addr.t Request.t -> Response.t IO.t option
   val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) (IO : Io.S) : S with module IO = IO =
-struct
+module Make (Clock : Mirage_clock.PCLOCK) (IO : Io.S) (Addr : Types.ADDR) :
+  S with module IO = IO and module Addr = Addr = struct
   module IO = IO
-
-  module AddrMap = Map.Make (struct
-    type t = Ipaddr.t
-
-    let compare = Stdlib.compare
-  end)
+  module Addr = Addr
+  module AddrMap = Map.Make (Addr)
 
   type t = {
     mutable requests : int;

@@ -1,9 +1,11 @@
-module Direct = Direct
-module IO = Direct
+module Addr = Common.Addr
+module Direct = Common.Direct
+module IO = Common.Direct
 
-(** TODO: replace Pclock by irage-clock-eio when it becomes available. *)
+(** TODO: replace Pclock by mirage-clock-eio when it becomes available. *)
 
-module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Pclock) (Direct)
+module RateLimiter =
+  Mehari.Private.Rate_limiter_impl.Make (Pclock) (Direct) (Addr)
 
 module Logger =
   Mehari.Private.Logger_impl.Make
@@ -13,10 +15,12 @@ module Logger =
 
       let finally t f r = try f (t ()) with exn -> r exn
     end)
+    (Addr)
 
 module Router = Mehari.Private.Router_impl.Make (RateLimiter) (Logger)
 module Server = Server_impl.Make (Logger)
 
+type addr = Addr.t
 type handler = Router.handler
 type middleware = handler -> handler
 type route = Router.route

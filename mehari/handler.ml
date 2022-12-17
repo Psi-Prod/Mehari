@@ -1,3 +1,3 @@
 module Make (IO : Io.S) = struct
-  type t = Request.t -> Response.t IO.t
+  type 'addr t = 'addr Request.t -> Response.t IO.t
 end

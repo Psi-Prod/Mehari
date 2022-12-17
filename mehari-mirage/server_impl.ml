@@ -5,7 +5,7 @@ module type S = sig
 
   module IO : Private.IO
 
-  type handler = Private.Handler.Make(IO).t
+  type handler = Ipaddr.t Private.Handler.Make(IO).t
 
   val run :
     ?port:int ->
@@ -19,7 +19,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
 
-  type handler = Private.Handler.Make(IO).t
+  type handler = Ipaddr.t Private.Handler.Make(IO).t
 
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
@@ -62,7 +62,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
 
   let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
 
-  let handle_client callback flow addr ep =
+  let handle_client callback flow (addr, port) ep =
     let chan = Channel.create flow in
     let* request = read chan in
     let* resp =
@@ -75,7 +75,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
             | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
             | Error () -> assert false
           in
-          Private.make_request ~addr ~uri ~sni |> callback
+          Private.make_request (module Ipaddr) ~addr ~port ~uri ~sni |> callback
     in
     write_resp chan resp
 

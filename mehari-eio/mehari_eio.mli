@@ -1,5 +1,7 @@
-module Direct = Direct
-include Mehari.NET with module IO := Direct
+module Direct = Common.Direct
+
+include
+  Mehari.NET with module IO := Common.Direct and type addr = Eio.Net.Ipaddr.v4v6
 
 val run :
   ?port:int ->
@@ -7,5 +9,5 @@ val run :
   ?addr:Eio.Net.Ipaddr.v4v6 ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
   Eio.Net.t ->
-  (Uri.t -> Mehari.response) ->
+  handler ->
   'a

@@ -1,10 +1,10 @@
 module type S = sig
-  type route
-  type rate_limiter
-
   module IO : Io.S
 
-  type handler = Handler.Make(IO).t
+  type route
+  type rate_limiter
+  type addr
+  type handler = addr Handler.Make(IO).t
   type middleware = handler -> handler
 
   val router : route list -> handler
@@ -22,11 +22,14 @@ module type S = sig
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
-  S with module IO = RateLimiter.IO and type rate_limiter := RateLimiter.t =
-struct
+  S
+    with module IO = RateLimiter.IO
+     and type rate_limiter := RateLimiter.t
+     and type addr := RateLimiter.Addr.t = struct
   module IO = RateLimiter.IO
+  module Addr = RateLimiter.Addr
 
-  type handler = Request.t -> Response.t IO.t
+  type handler = Addr.t Handler.Make(IO).t
   type middleware = handler -> handler
 
   type route = route' list
@@ -64,12 +67,12 @@ struct
     | None ->
         Logger.info (fun log ->
             log "respond not found for path '%a' to '%a'." Uri.pp
-              (Request.uri req) Ipaddr.pp (Request.ip req));
+              (Request.uri req) Addr.pp (Request.ip req));
         Response.(response Status.not_found "") |> IO.return
     | Some (handler, limit_opt, params) -> (
         let req = Request.attach_params req params in
         Logger.info (fun log ->
-            log "serve '%a' for '%a'" Uri.pp (Request.uri req) Ipaddr.pp
+            log "serve '%a' for '%a'" Uri.pp (Request.uri req) Addr.pp
               (Request.ip req));
         match limit_opt with
         | None -> handler req
@@ -77,7 +80,7 @@ struct
             match RateLimiter.check limiter req with
             | None ->
                 Logger.info (fun log ->
-                    log "'%a' is rate limited." Ipaddr.pp (Request.ip req));
+                    log "'%a' is rate limited." Addr.pp (Request.ip req));
                 handler req
             | Some resp -> resp))
 

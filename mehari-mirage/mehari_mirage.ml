@@ -2,14 +2,15 @@ open Mehari.Private
 
 module type S = sig
   module IO = Lwt
-  include Mehari.NET with module IO := IO
+  include Mehari.NET with module IO := IO and type addr = Ipaddr.t
   include Server_impl.S with module IO := IO
 end
 
 module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
   S with type stack = Stack.t = struct
   module IO = Lwt
-  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO)
+  module Addr = Ipaddr
+  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
 
   module Logger =
     Logger_impl.Make
@@ -19,10 +20,12 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
 
         let finally = try_bind
       end)
+      (Addr)
 
   module Router = Router_impl.Make (RateLimiter) (Logger)
   module Server = Server_impl.Make (Stack) (Logger)
 
+  type addr = Addr.t
   type handler = Router.handler
   type middleware = handler -> handler
   type route = Router.route

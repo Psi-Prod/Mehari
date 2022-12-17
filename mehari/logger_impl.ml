@@ -1,7 +1,8 @@
 module type S = sig
   module IO : Io.S
 
-  type handler = Handler.Make(IO).t
+  type addr
+  type handler = addr Handler.Make(IO).t
 
   val set_level : Logs.level -> unit
   val logger : handler -> handler
@@ -16,10 +17,12 @@ module Make
       include Io.S
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-    end) : S with module IO = IO = struct
+    end)
+    (Addr : Types.ADDR) : S with module IO = IO and type addr = Addr.t = struct
   module IO = IO
 
-  type handler = Handler.Make(IO).t
+  type addr = Addr.t
+  type handler = addr Handler.Make(IO).t
 
   let src = Logs.Src.create "mehari.log"
 
@@ -41,9 +44,9 @@ module Make
       (fun () -> handler req)
       (fun resp ->
         Log.info (fun log ->
-            log "%s %s"
+            log "%s %a"
               (Request.uri req |> Uri.path_and_query)
-              (Request.ip req |> Ipaddr.to_string));
+              Addr.pp (Request.ip req));
         IO.return resp)
       (fun exn ->
         let backtrace = Printexc.get_backtrace () in

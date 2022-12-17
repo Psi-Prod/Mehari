@@ -10,7 +10,7 @@ provided by {!Mehari_lwt_unix}. *)
 
 (** {1 Types} *)
 
-type request = Request.t
+type 'addr request = 'addr Request.t
 (** Gemini request. See {!section-request}. *)
 
 type response = Response.t
@@ -31,22 +31,22 @@ module Gemtext = Gemtext
 
 (** {1:request Request} *)
 
-val uri : request -> Uri.t
+val uri : 'a request -> Uri.t
 (** Request uri. *)
 
-val ip : request -> Ipaddr.t
+val ip : 'addr request -> 'addr
 (** Address of client sending the {!type:request}. *)
 
-val port : request -> int
+val port : 'a request -> int
 (** Port of client sending the {!type:request}. *)
 
-val sni : request -> string option
+val sni : 'a request -> string option
 (** Server name indication TLS extension. *)
 
-val query : request -> string option
+val query : 'a request -> string option
 (** User uri query. *)
 
-val param : request -> int -> string
+val param : 'a request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
     @raise Invalid_argument if [n] is not a positive integer or path does not
       contain any parameters in which case the program is buggy. *)
@@ -169,7 +169,10 @@ module type NET = sig
   type rate_limiter
   (** Rate limiter. See {!section-rate_limit}. *)
 
-  type handler = request -> response IO.t
+  type addr
+  (** Type for IP address. *)
+
+  type handler = addr request -> response IO.t
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
     {!type:Mehari.response}. *)
 
@@ -263,7 +266,12 @@ module Private : sig
   val view_of_resp : response -> response_view
 
   val make_request :
-    uri:Uri.t -> addr:Ipaddr.t * int -> sni:string option -> request
+    (module Types.ADDR with type t = 'addr) ->
+    uri:Uri.t ->
+    addr:'addr ->
+    port:int ->
+    sni:string option ->
+    'addr request
 
   module Handler = Handler
   module Logger_impl = Logger_impl
