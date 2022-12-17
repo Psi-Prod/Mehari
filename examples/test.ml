@@ -6,6 +6,6 @@ let main ~net ~cwd =
     (fun _ -> Mehari.response_text "ok")
 
 let () =
-  Mirage_crypto_rng_unix.initialize ();
   Eio_main.run (fun env ->
-      main ~net:(Eio.Stdenv.net env) ~cwd:(Eio.Stdenv.cwd env))
+      Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env
+      @@ fun () -> main ~net:(Eio.Stdenv.net env) ~cwd:(Eio.Stdenv.cwd env))

@@ -1,4 +1,4 @@
-open Mehari
+module Private = Mehari.Private
 
 module type S = sig
   type stack
@@ -21,9 +21,6 @@ module Make (Logger : Private.Logger_impl.S) = struct
 
   type handler = Private.Handler.Make(IO).t
 
-  module Read = Eio.Buf_read
-  module Write = Eio.Buf_write
-
   let load_certs certs =
     let rec aux acc = function
       | [] -> acc
@@ -32,30 +29,36 @@ module Make (Logger : Private.Logger_impl.S) = struct
     in
     aux [] certs
 
+  open Eio
+
   let write_resp flow resp =
     match Mehari.Private.view_of_resp resp with
     | Immediate bufs ->
-        Write.with_flow flow (fun w ->
-            List.iter (fun buf -> Write.string w buf) bufs;
-            Write.flush w)
+        Buf_write.with_flow flow (fun w ->
+            List.iter (fun buf -> Buf_write.string w buf) bufs;
+            Buf_write.flush w)
     | _ -> failwith "todo"
 
-  let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
+  let client_req =
+    let crlf = Buf_read.string "\r\n" in
+    Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
   let handle_client callback flow ep =
-    let req = Read.parse_exn ~initial_size:1024 ~max_size:1024 Read.line flow in
-    Eio.traceln "CLIENT: %S" req;
+    let reader = Buf_read.of_flow flow ~initial_size:1024 ~max_size:1024 in
     let resp =
-      match Re.exec_opt client_req req with
-      | None -> (response bad_request) ""
-      | Some grp ->
-          let uri = Re.Group.get grp 1 |> Uri.of_string in
+      match client_req reader with
+      | req ->
+          let uri = Uri.of_string req in
           let _sni =
             match ep with
             | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
             | Error () -> assert false
           in
-          uri |> callback
+          callback uri
+      | exception Failure _ -> failwith "todo"
+      | exception End_of_file -> failwith "todo"
+      | exception Buf_read.Buffer_limit_exceeded ->
+          Mehari.(response bad_request) ""
     in
     write_resp flow resp
 
@@ -71,15 +74,15 @@ module Make (Logger : Private.Logger_impl.S) = struct
     in
     Tls_eio.epoch server |> handle_client callback server
 
-  let run ?(port = 1965) ?(backlog = 10) ?(addr = Eio.Net.Ipaddr.V4.loopback)
+  let run ?(port = 1965) ?(backlog = 10) ?(addr = Net.Ipaddr.V4.loopback)
       ~certchains net callback =
-    Eio.Switch.run (fun sw ->
+    Switch.run (fun sw ->
         let socket =
-          Eio.Net.listen ~reuse_addr:true ~backlog ~sw net (`Tcp (addr, port))
+          Net.listen ~reuse_addr:true ~backlog ~sw net (`Tcp (addr, port))
         in
         let rec loop () =
           handler ~certchains callback
-          |> Eio.Net.accept_fork ~sw ~on_error:raise socket;
+          |> Net.accept_fork ~sw ~on_error:raise socket;
           loop ()
         in
         loop ())

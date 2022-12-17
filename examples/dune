@@ -6,6 +6,7 @@
   eio_main
   mehari.lwt_unix
   mirage-clock-unix
+  mirage-crypto-rng-eio
   mirage-logs
   logs
   uri))
