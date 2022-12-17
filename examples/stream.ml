@@ -9,13 +9,11 @@ let router req =
           Mehari.(response_body body (text_mime "plain")))
 
 let main ~net ~cwd =
-  let ( / ) = Eio.Path.( / ) in
-  let certchains = [ (cwd / "cert.pem", cwd / "key.pem") ] in
-  Mehari_eio.run ~certchains net router
+  Mehari_eio.run net
+    ~certchains:Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ]
+    router
 
 let () =
-  Eio_main.run (fun env ->
-      Mirage_crypto_rng_eio.run
-        (module Mirage_crypto_rng.Fortuna)
-        env
-        (fun () -> main ~net:(Eio.Stdenv.net env) ~cwd:(Eio.Stdenv.cwd env)))
+  Eio_main.run @@ fun env ->
+  Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env @@ fun () ->
+  main ~net:(Eio.Stdenv.net env) ~cwd:(Eio.Stdenv.cwd env)

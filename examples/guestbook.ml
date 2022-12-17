@@ -12,12 +12,12 @@ let book =
       let buf = Buffer.create 4096 in
       List.iter
         (fun e ->
-          Printf.sprintf "%i-%i-%i %i:%i:%i - %s: %s\n"
+          Format.kasprintf (Buffer.add_string buf)
+            "%i-%i-%i %i:%i:%i - %a: %s\n"
             (e.timestamp.tm_year + 1900)
             (e.timestamp.tm_mon + 1) e.timestamp.tm_mday e.timestamp.tm_hour
-            e.timestamp.tm_min e.timestamp.tm_sec (Ipaddr.to_string e.addr)
-            (Uri.pct_decode e.message)
-          |> Buffer.add_string buf)
+            e.timestamp.tm_min e.timestamp.tm_sec Ipaddr.pp e.addr
+            (Uri.pct_decode e.message))
         entries;
       Buffer.contents buf
   end
