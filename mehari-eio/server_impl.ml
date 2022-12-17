@@ -1,22 +1,22 @@
 module Private = Mehari.Private
 
 module type S = sig
-  type stack
-
   module IO : Private.IO
 
   type handler = Private.Handler.Make(IO).t
 
   val run :
-    ?backlog:int ->
-    ?address:Eio.Net.Sockaddr.stream ->
     ?port:int ->
-    stack ->
-    handler ->
-    unit
+    ?backlog:int ->
+    ?addr:Eio.Net.Ipaddr.v4v6 ->
+    certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
+    Eio.Net.t ->
+    (Uri.t -> Mehari.response) ->
+    'a
 end
 
-module Make (Logger : Private.Logger_impl.S) = struct
+module Make (Logger : Private.Logger_impl.S) : S with module IO = Direct =
+struct
   module IO = Direct
 
   type handler = Private.Handler.Make(IO).t
