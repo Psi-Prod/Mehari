@@ -72,7 +72,7 @@ val run_lwt :
   ?v6:string ->
   handler ->
   unit Lwt.t
-(** See {!val:Mehari.NET.run}. *)
+(** See {!val:Mehari_mirage.S.run}. *)
 
 val run :
   ?port:int ->

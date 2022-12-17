@@ -67,12 +67,6 @@ module type NET = sig
   val warning : 'a Logs.log
   val error : 'a Logs.log
 
-  val run :
-    ?port:int ->
-    ?certchains:(string * string) list ->
-    stack ->
-    handler ->
-    unit IO.t
 end
 
 module Private = struct

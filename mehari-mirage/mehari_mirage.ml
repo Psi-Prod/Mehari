@@ -1,7 +1,13 @@
 open Mehari.Private
 
+module type S = sig
+  module IO = Lwt
+  include Mehari.NET with module IO := IO
+  include Server_impl.S with module IO := IO
+end
+
 module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  Mehari.NET with module IO = Lwt and type stack = Stack.t = struct
+  S with type stack = Stack.t = struct
   module IO = Lwt
   module RateLimiter = Rate_limiter_impl.Make (Clock) (IO)
 

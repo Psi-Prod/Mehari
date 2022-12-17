@@ -251,21 +251,6 @@ module type NET = sig
   val info : 'a Logs.log
   val warning : 'a Logs.log
   val error : 'a Logs.log
-
-  (** {1 Entry point} *)
-
-  val run :
-    ?port:int ->
-    ?certchains:(string * string) list ->
-    stack ->
-    handler ->
-    unit IO.t
-  (** [run ?port ?certchains stack handler] runs the server using
-      [handler].
-      - [port] is the port to listen on. Defaults to [1965].
-      - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
-        the last one is considered default.
-  @raise Invalid_argument if [certchains] is empty. *)
 end
 
 (** {1 Private} *)

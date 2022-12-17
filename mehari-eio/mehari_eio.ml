@@ -1,5 +1,8 @@
 module Direct = Direct
 module IO = Direct
+
+(** TODO: replace Pclock by irage-clock-eio when it becomes available. *)
+
 module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Pclock) (Direct)
 
 module Logger =
