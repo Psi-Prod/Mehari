@@ -10,8 +10,10 @@ bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "2.9"}
   "ocaml" {>= "5.0.0"}
-  "eio"
   "mehari"
+  "eio" {>= "0.6"}
+  "mirage-clock-unix" {>= "4.2.0"}
+  "tls-eio" {>= "0.15.5"}
   "odoc" {with-doc}
 ]
 build: [

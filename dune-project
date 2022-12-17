@@ -72,5 +72,10 @@
  (depends
   (ocaml
    (>= 5.0.0))
-  eio
-  mehari))
+  mehari
+  (eio
+   (>= 0.6))
+  (mirage-clock-unix
+   (>= 4.2.0))
+  (tls-eio
+   (>= 0.15.5))))
