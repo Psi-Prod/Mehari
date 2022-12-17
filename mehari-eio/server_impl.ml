@@ -42,7 +42,7 @@ module Make (Logger : Private.Logger_impl.S) = struct
 
   let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
 
-  let handle_client callback (flow : Eio.Flow.two_way) ep =
+  let handle_client callback flow ep =
     let req = Read.parse_exn ~initial_size:1024 ~max_size:1024 Read.line flow in
     Eio.traceln "CLIENT: %S" req;
     let resp =
@@ -59,10 +59,6 @@ module Make (Logger : Private.Logger_impl.S) = struct
     in
     write_resp flow resp
 
-  let serve conf handler flow =
-    let server = Tls_eio.server_of_flow conf flow in
-    Tls_eio.epoch server |> handler server flow
-
   let handler ~certchains callback flow _ =
     let certs = load_certs certchains in
     let certificates =
@@ -73,7 +69,7 @@ module Make (Logger : Private.Logger_impl.S) = struct
     let server =
       Tls_eio.server_of_flow (Tls.Config.server ~certificates ()) flow
     in
-    Tls_eio.epoch server |> handle_client callback flow
+    Tls_eio.epoch server |> handle_client callback server
 
   let run ?(port = 1965) ?(backlog = 10) ?(addr = Eio.Net.Ipaddr.V4.loopback)
       ~certchains net callback =
