@@ -34,14 +34,13 @@ let text_mime = Mime.text_mime
 let with_charset = Mime.with_charset
 
 module type NET = sig
-  module IO : Io.S
+  module IO : Types.IO
 
   type route
   type rate_limiter
   type addr
   type handler = addr Request.t -> Response.t IO.t
   type middleware = handler -> handler
-  type stack
 
   val router : route list -> handler
 
@@ -56,8 +55,6 @@ module type NET = sig
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 
-  include Response.S with module IO := IO
-
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
@@ -70,7 +67,8 @@ module type NET = sig
 end
 
 module Private = struct
-  module type IO = Io.S
+  module type IO = Types.IO
+  module type ADDR = Types.ADDR
 
   type response_view = Response.view
 
@@ -81,5 +79,4 @@ module Private = struct
   module Logger_impl = Logger_impl
   module Rate_limiter_impl = Rate_limiter_impl
   module Router_impl = Router_impl
-  module MakeResponse = Response.Make
 end

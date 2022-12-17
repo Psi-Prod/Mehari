@@ -1,5 +1,5 @@
 module type S = sig
-  module IO : Io.S
+  module IO : Types.IO
 
   type addr
   type handler = addr Handler.Make(IO).t
@@ -14,7 +14,7 @@ end
 
 module Make
     (Clock : Mirage_clock.PCLOCK) (IO : sig
-      include Io.S
+      include Types.IO
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
     end)
@@ -35,9 +35,8 @@ module Make
   let set_level lvl = Logs.Src.set_level src (Some lvl)
 
   let iter_backtrace f backtrace =
-    backtrace |> String.split_on_char '\n'
-    |> List.filter (( <> ) "")
-    |> List.iter f
+    String.split_on_char '\n' backtrace
+    |> List.iter (function "" -> () | l -> f l)
 
   let logger handler req =
     IO.finally

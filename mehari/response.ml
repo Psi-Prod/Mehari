@@ -49,7 +49,7 @@ let validate code meta body =
 let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =
     match status with
-    | Success body -> (Mime.Private.to_string m, Some body)
+    | Success body -> (Mime.to_string m, Some body)
     | SlowDown n -> (Int.to_string n, None)
     | Meta -> (m, None)
   in
@@ -89,23 +89,3 @@ let response_raw raw =
   match raw with
   | `Body b -> Immediate [ b ]
   | `Full (code, meta, body) -> Immediate [ fmt_meta code meta; body ]
-
-module type S = sig
-  module IO : Io.S
-
-  val respond : 'a status -> 'a -> t IO.t
-  val respond_body : body -> Mime.t -> t IO.t
-  val respond_text : string -> t IO.t
-  val respond_gemtext : Gemtext.t -> t IO.t
-
-  val respond_raw :
-    [ `Body of string | `Full of int * string * string ] -> t IO.t
-end
-
-module Make (IO : Io.S) : S with module IO := IO = struct
-  let respond s i = response s i |> IO.return
-  let respond_body b m = response_body b m |> IO.return
-  let respond_text t = response_text t |> IO.return
-  let respond_gemtext g = response_gemtext g |> IO.return
-  let respond_raw g = response_raw g |> IO.return
-end

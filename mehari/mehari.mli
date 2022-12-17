@@ -55,7 +55,8 @@ val param : 'a request -> int -> string
 
 val response : 'a status -> 'a -> response
 (** Creates a new {!type:response} with given {!type:Mehari.status}.
-    @raise Invalid_argument if [meta] is more than 1024 bytes. *)
+    @raise Invalid_argument if [meta] is more than 1024 bytes.
+    @raise Invalid_argument if [meta] starts with [U+FEFF] byte order mark. *)
 
 val response_body : body -> mime -> response
 (** Same as {!val:response} but respond with given {!type:body} and
@@ -72,7 +73,7 @@ val response_gemtext : Gemtext.t -> response
 val response_raw :
   [ `Body of string | `Full of int * string * string ] -> response
 (** Creates a new raw {!type:response}. Does not perform any check on validity
-      i.e. length of header or beginning with a byte order mark U+FEFF.
+      i.e. length of header or beginning with a byte order mark [U+FEFF].
       - [`Body body]: creates a {!val:response} with [body].
       - [`Full (code, meta, body)]: creates a {!val:response} with given arguments. *)
 
@@ -160,7 +161,7 @@ val with_charset : mime -> string -> mime
 (** Module type containing all environment-dependent functions. An
     implementation for Unix using {!Lwt} is provided by {!Mehari_lwt_unix}. *)
 module type NET = sig
-  module IO : Io.S
+  module IO : Types.IO
 
   type route
   (** Routes tell {!val:router} which handler to select for each request. See
@@ -179,9 +180,6 @@ module type NET = sig
   type middleware = handler -> handler
   (** Middlewares take a {!type:handler}, and run some code before or
         after — producing a “bigger” {!type:handler}. *)
-
-  type stack
-  (** Tcpip stack. *)
 
   (** {1:routing Routing} *)
 
@@ -206,29 +204,6 @@ module type NET = sig
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
   (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
       [prefix], [rate_limit] and [mw]. *)
-
-  (** {1:response Response} *)
-
-  val respond : 'a status -> 'a -> response IO.t
-  (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
-      wrapped in a promise. *)
-
-  val respond_body : body -> mime -> response IO.t
-  (** Same as {!val:respond} but respond with given {!type:Mehari.body}
-      and use given {!type:Mehari.mime} as mime type. *)
-
-  val respond_text : string -> response IO.t
-  (** Same as {!val:respond} but respond with given text and use [text/plain] as
-      {!type:Mehari.mime} type. *)
-
-  val respond_gemtext : Gemtext.t -> response IO.t
-  (** Same as {!val:respond} but respond with given {!type:Mehari.Gemtext.t} and use
-      [text/gemini] as {!type:Mehari.mime} type. *)
-
-  val respond_raw :
-    [ `Body of string | `Full of int * string * string ] -> response IO.t
-  (** Same as {!val:Mehari.response_raw}, but the new {!type:Mehari.response}
-      is wrapped in a promise. *)
 
   (** {1:rate_limit Rate limit} *)
 
@@ -259,23 +234,28 @@ end
 (** {1 Private} *)
 
 module Private : sig
-  module type IO = Io.S
+  module type IO = Types.IO
+  module type ADDR = Types.ADDR
 
   type response_view = Response.view
 
   val view_of_resp : response -> response_view
 
   val make_request :
-    (module Types.ADDR with type t = 'addr) ->
+    (module ADDR with type t = 'addr) ->
     uri:Uri.t ->
     addr:'addr ->
     port:int ->
     sni:string option ->
     'addr request
 
-  module Handler = Handler
+  module Handler : sig
+    module Make (IO : Types.IO) : sig
+      type 'addr t = 'addr request -> response IO.t
+    end
+  end
+
   module Logger_impl = Logger_impl
   module Rate_limiter_impl = Rate_limiter_impl
   module Router_impl = Router_impl
-  module MakeResponse = Response.Make
 end

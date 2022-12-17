@@ -1,9 +1,10 @@
 (** An IO module Mehari implementation for Unix and Windows using Lwt. Contains
     also extra features based on Unix filesystem such as {!section-cgi}. *)
 
-(** {1 IO} *)
+(** {1 Net} *)
 
-include Mehari.NET with module IO = Lwt and type addr = Ipaddr.t
+include Mehari_mirage.S with type addr = Ipaddr.t
+(** @closed *)
 
 (** {1 Response} *)
 

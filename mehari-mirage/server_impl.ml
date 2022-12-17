@@ -7,12 +7,15 @@ module type S = sig
 
   type handler = Ipaddr.t Private.Handler.Make(IO).t
 
-  val run :
+  val run_lwt :
     ?port:int ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
     unit IO.t
+
+  val run :
+    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
 end
 
 module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
@@ -91,7 +94,10 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     |> Stack.TCP.listen (Stack.tcp stack) ~port;
     Stack.listen stack
 
-  let run ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack
-      callback =
+  let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
+      stack callback =
     start_server ~port ~certchains ~stack callback
+
+  let run ?port ?certchains stack callback =
+    run_lwt ?port ?certchains stack callback |> Lwt_main.run
 end

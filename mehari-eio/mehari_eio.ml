@@ -25,9 +25,6 @@ type handler = Router.handler
 type middleware = handler -> handler
 type route = Router.route
 type rate_limiter = RateLimiter.t
-type stack
-
-include Mehari.Private.MakeResponse (Direct)
 
 let make_rate_limit = RateLimiter.make
 let set_log_lvl = Logger.set_level

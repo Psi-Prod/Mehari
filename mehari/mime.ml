@@ -26,16 +26,14 @@ let from_content ?charset ?lang content =
   | Ok meta -> Conan.Metadata.mime meta |> Option.map (make_mime ?charset ?lang)
   | Error _ -> None
 
-module Private = struct
-  let to_string { mime; charset; lang } =
-    let charset =
-      Option.fold charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
-    in
-    let lang =
-      match lang with
-      | [] -> ""
-      | l when mime = "text/gemini" -> "; lang=" ^ String.concat "," l
-      | _ -> ""
-    in
-    mime ^ charset ^ lang
-end
+let to_string { mime; charset; lang } =
+  let charset =
+    Option.fold charset ~none:"" ~some:(Printf.sprintf "; charset=%s")
+  in
+  let lang =
+    match lang with
+    | [] -> ""
+    | l when mime = "text/gemini" -> "; lang=" ^ String.concat "," l
+    | _ -> ""
+  in
+  mime ^ charset ^ lang

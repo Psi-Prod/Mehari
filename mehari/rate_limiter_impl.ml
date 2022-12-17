@@ -1,5 +1,5 @@
 module type S = sig
-  module IO : Io.S
+  module IO : Types.IO
 
   type t
 
@@ -9,7 +9,7 @@ module type S = sig
   val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) (IO : Io.S) (Addr : Types.ADDR) :
+module Make (Clock : Mirage_clock.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
   S with module IO = IO and module Addr = Addr = struct
   module IO = IO
   module Addr = Addr

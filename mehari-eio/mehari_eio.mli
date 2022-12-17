@@ -1,7 +1,13 @@
+(** An IO module Mehari implementation based on [Eio] library. *)
+
+(** {1 Net} *)
+
 module Direct = Common.Direct
 
-include
-  Mehari.NET with module IO := Common.Direct and type addr = Eio.Net.Ipaddr.v4v6
+(** @closed *)
+include Mehari.NET with module IO := Direct and type addr = Eio.Net.Ipaddr.v4v6
+
+(** {1 Entry point} *)
 
 val run :
   ?port:int ->

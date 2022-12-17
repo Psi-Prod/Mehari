@@ -1,7 +1,7 @@
 open Lwt.Syntax
 include Mehari_io
 
-(** TODO: true lazyness (is even possible?) *)
+(** TODO: true lazyness (is it even possible?) *)
 let rec unfold f u () =
   match%lwt f u with
   | None -> Lwt.return Seq.Nil
@@ -66,7 +66,7 @@ let run_lwt ?port ?certchains ?v4 ?v6 callback =
     in
     stack ~v4 ~v6:(Option.map Ipaddr.V6.Prefix.of_string_exn v6)
   in
-  run ?port ?certchains stack callback
+  run_lwt ?port ?certchains stack callback
 
 let run ?port ?certchains ?v4 ?v6 callback =
   run_lwt ?port ?certchains ?v4 ?v6 callback |> Lwt_main.run

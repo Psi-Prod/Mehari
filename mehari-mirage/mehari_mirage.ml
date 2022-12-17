@@ -1,8 +1,20 @@
 open Mehari.Private
 
+module type IO_RESPONSE = sig
+  val respond : 'a Mehari.status -> 'a -> Mehari.response Lwt.t
+  val respond_body : Mehari.body -> Mehari.mime -> Mehari.response Lwt.t
+  val respond_text : string -> Mehari.response Lwt.t
+  val respond_gemtext : Mehari.Gemtext.t -> Mehari.response Lwt.t
+
+  val respond_raw :
+    [ `Body of string | `Full of int * string * string ] ->
+    Mehari.response Lwt.t
+end
+
 module type S = sig
   module IO = Lwt
   include Mehari.NET with module IO := IO and type addr = Ipaddr.t
+  include IO_RESPONSE
   include Server_impl.S with module IO := IO
 end
 
@@ -32,8 +44,11 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
   type rate_limiter = RateLimiter.t
   type stack = Stack.t
 
-  include Mehari.Private.MakeResponse (IO)
-
+  let respond s i = Mehari.response s i |> IO.return
+  let respond_body b m = Mehari.response_body b m |> IO.return
+  let respond_text t = Mehari.response_text t |> IO.return
+  let respond_gemtext g = Mehari.response_gemtext g |> IO.return
+  let respond_raw g = Mehari.response_raw g |> IO.return
   let make_rate_limit = RateLimiter.make
   let set_log_lvl = Logger.set_level
   let logger = Logger.logger
@@ -44,5 +59,6 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
   let router = Router.router
   let route = Router.route
   let scope = Router.scope
+  let run_lwt = Server.run_lwt
   let run = Server.run
 end
