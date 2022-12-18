@@ -1,12 +1,12 @@
 let router req =
   match Mehari.query req with
-  | None -> Mehari.(response input "Enter a number")
+  | None -> Mehari.(response input) "Enter a number"
   | Some number -> (
       match int_of_string_opt number with
       | None -> Mehari.(response bad_request) "Enter a valid number!"
       | Some n ->
           let body = Seq.init n (Printf.sprintf "%i\n") |> Mehari.seq in
-          Mehari.(response_body body (text_mime "plain")))
+          Mehari.(response_body body plaintext))
 
 let main ~net ~cwd =
   Mehari_eio.run net

@@ -30,6 +30,7 @@ let from_filename = Mime.from_filename
 let from_content = Mime.from_content
 let empty = Mime.empty
 let gemini = Mime.gemini
+let plaintext = Mime.plaintext
 let text_mime = Mime.text_mime
 let with_charset = Mime.with_charset
 

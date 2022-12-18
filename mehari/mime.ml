@@ -11,8 +11,9 @@ let make_mime ?charset ?(lang = []) mime =
   }
 
 let empty = make_mime ""
-let text_mime text = make_mime ("text/" ^ text)
 let gemini = make_mime "text/gemini"
+let text_mime text = make_mime ("text/" ^ text)
+let plaintext = text_mime "plain"
 let with_charset t c = { t with charset = Some c }
 
 let from_filename ?charset ?(lang = []) fname =
