@@ -28,10 +28,12 @@ let page ~title body =
 
 let fmt_meta = Printf.sprintf "%i %s\r\n"
 
-let is_startswith_bom s =
-  String.get_utf_8_uchar s 0 |> Uchar.utf_decode_uchar
-  |> Fun.flip List.mem
-       [ Uchar.of_int 0xEF; Uchar.of_int 0xBB; Uchar.of_int 0xBF ]
+let is_startswith_bom = function
+  | "" -> false
+  | s ->
+      String.get_utf_8_uchar s 0 |> Uchar.utf_decode_uchar
+      |> Fun.flip List.mem
+           [ Uchar.of_int 0xEF; Uchar.of_int 0xBB; Uchar.of_int 0xBF ]
 
 let validate code meta body =
   if is_startswith_bom meta then

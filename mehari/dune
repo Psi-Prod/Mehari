@@ -5,8 +5,6 @@
   conan-database.light
   conan.string
   logs
-  lwt
   magic-mime
   mirage-clock
-  re
   uri))

@@ -31,34 +31,45 @@
    (>= 0.0.2))
   (conan
    (>= 0.0.2))
+  (logs
+   (>= 0.7.0))
   (magic-mime
    (>= 1.3.0))
   (mirage-clock
    (>= 4.2.0))
-  (mirage-channel
-   (>= 4.1.0))
+  (uri
+   (>= 4.2.0))))
+
+(package
+ (name mehari_mirage)
+ (synopsis "Mehari IO implementation for MirageOS")
+ (depends
+  mehari
+  (ipaddr
+   (>= 5.3.1))
   (lwt
    (>= 5.6.1))
   (lwt_ppx
    (>= 2.1.0))
+  (mirage-channel
+   (>= 4.1.0))
   (re
    (>= 1.10.4))
   (tcpip
    (>= 7.1.2))
-  (tls
-   (>= 0.15.3))
   (tls-mirage
-   (>= 0.15.4))
-  (uri
-   (>= 4.2.0))))
+   (>= 0.15.4))))
 
 (package
  (name mehari_lwt_unix)
  (synopsis "Mehari IO implementation using Lwt")
  (depends
   mehari
+  mehari_mirage
   (lwt
    (>= 5.6.1))
+  (lwt_ppx
+   (>= 2.1.0))
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-flow-unix
@@ -77,5 +88,7 @@
    (>= 0.6))
   (mirage-clock-unix
    (>= 4.2.0))
+  (tls
+   (>= 0.15.4))
   (tls-eio
    (>= 0.15.5))))

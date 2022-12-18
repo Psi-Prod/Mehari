@@ -43,20 +43,32 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   let route ?rate_limit ?(mw = Fun.id) ?(typ = `Raw) r handler =
     [ { route = (typ, r); handler = mw handler; rate_limit } ]
 
+  let compare_url u u' =
+    match (u, u') with
+    | "", "/" | "/", "" | "", "" -> true
+    | "", _ | _, "" -> false
+    | _, _ ->
+        if String.equal u u' then true
+        else if String.ends_with ~suffix:"/" u then
+          String.equal (String.sub u 0 (String.length u - 1)) u'
+        else if String.ends_with ~suffix:"/" u' then
+          String.equal (String.sub u' 0 (String.length u' - 1)) u
+        else false
+
   let match_ (typ, route) path =
     match typ with
-    | `Raw -> `Bool (String.equal (Uri.of_string route |> Uri.to_string) path)
+    | `Raw -> `Bool (compare_url route path)
     | `Regex -> `Grp (Re.exec_opt (Re.Perl.re route |> Re.Perl.compile) path)
 
   let router routes req =
     let routes = List.concat routes in
-    let uri = Request.uri req |> Uri.path in
+    let path = Request.uri req |> Uri.path in
     let route =
       List.fold_left
         (fun acc { route; handler; rate_limit } ->
           match acc with
           | None -> (
-              match match_ route uri with
+              match match_ route path with
               | `Bool true -> Some (handler, rate_limit, None)
               | `Grp (Some _ as g) -> Some (handler, rate_limit, g)
               | `Bool false | `Grp None -> None)
