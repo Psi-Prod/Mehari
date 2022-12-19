@@ -23,13 +23,13 @@ val from_filename :
   ?charset:string ->
   ?lang:string list ->
   string ->
-  Mehari.mime Lwt.t
-(** [from_filename ?lookup_into ?charset ?lang fname] creates a
-    {!type:Mehari.mime} type by performing a mime lookup depending of the
-    value of [lookup]:
-    - [`Ext]: performs a lookup based on file extension of [fname];
-    - [`Content]: performs a lookup based on content of [fname];
-    - [`Both]: performs successivly a lookup on content and extension.
+  Mehari.mime option Lwt.t
+(** [from_filename ?lookup_into ?charset ?lang fname] tries to create a
+    {!type:Mehari.mime} by performing a mime lookup depending of the value of
+    [lookup]:
+    - [`Ext]: guesses on the file extension of [fname];
+    - [`Content]: guesses on content of [fname];
+    - [`Both]: performs successivly a lookup on content and file extension.
 
     Returns [make_mime ?charset ?lang "text/gemini"] if one of the previous
     lookup fails.

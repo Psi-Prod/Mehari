@@ -24,7 +24,11 @@ let read_chunks ?(chunk_size = 16384) path =
 
 let respond_document ?mime path =
   if%lwt Lwt_unix.file_exists path then
-    let mime = Option.value ~default:(Mehari.from_filename path) mime in
+    let mime =
+      match mime with
+      | None -> Mehari.from_filename path |> Option.value ~default:Mehari.empty
+      | Some m -> m
+    in
     let* chunks = read_chunks path in
     let* cs = chunks () in
     respond_body (Mehari.seq (fun () -> cs)) mime
@@ -36,11 +40,11 @@ let from_filename ?(lookup = `Ext) ?charset ?lang fname =
   | `Content ->
       let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
       Mehari.from_content ?charset ?lang content
-      |> Option.value ~default:Mehari.gemini
-  | `Both ->
+  | `Both -> (
       let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset ?lang content
-      |> Option.value ~default:(Mehari.from_filename ?charset ?lang fname)
+      match Mehari.from_content ?charset ?lang content with
+      | None -> Mehari.from_filename ?charset ?lang fname
+      | Some m -> Some m)
 
 let run_cgi = Cgi.run_cgi
 

@@ -17,8 +17,9 @@ let plaintext = text_mime "plain"
 let with_charset t c = { t with charset = Some c }
 
 let from_filename ?charset ?(lang = []) fname =
-  let mime = Magic_mime.lookup ~default:"text/gemini" fname in
-  make_mime mime ~charset ~lang
+  match Magic_mime.lookup ~default:"" fname with
+  | "" -> None
+  | mime -> make_mime mime ~charset ~lang |> Option.some
 
 let database = Conan.Process.database ~tree:Conan_light.tree
 

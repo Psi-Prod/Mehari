@@ -138,20 +138,20 @@ val page : title:string -> string -> body
 val make_mime : ?charset:string -> ?lang:string list -> string -> mime
 (** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
   [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
-  [text/]. [lang] paramter is ignored if [mime] is different from
+  [text/]. [lang] parameter is ignored if [mime] is different from
   "text/gemini". *)
 
-val from_filename : ?charset:string -> ?lang:string list -> string -> mime
-(** [from_filename ?charset ?lang fname] creates a
-    {!type:mime} type by performing a mime lookup based on file extension of
-    [fname], if it fails returns [make_mime ?charset ?lang "text/gemini"]. *)
+val from_filename :
+  ?charset:string -> ?lang:string list -> string -> mime option
+(** [from_filename ?charset ?lang fname] tries to create a {!type:mime} by
+    performing a mime lookup based on file extension of [fname]. *)
 
 val from_content : ?charset:string -> ?lang:string list -> string -> mime option
 (** [from_content ?default ?charset ?lang c] tries to create a {!type:mime}
     type by performing a mime lookup based on content [c]. *)
 
 val empty : mime
-(** The empty mime. *)
+(** The empty mime, corresponds to the absence of mime. *)
 
 val gemini : mime
 (** [gemini] is [text/gemini; charset=utf-8] *)
@@ -163,7 +163,7 @@ val text_mime : string -> mime
 (** [text_mime type] is [text/type; charset=utf-8]. *)
 
 val with_charset : mime -> string -> mime
-(** Changes charset of given {!type:mime}. *)
+(** Set charset of given {!type:mime}. *)
 
 (** {1 IO} *)
 
