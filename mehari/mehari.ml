@@ -24,6 +24,7 @@ let text = Response.text
 let gemtext = Response.gemtext
 let lines = Response.lines
 let seq = Response.seq
+let delayed = Response.delayed
 let page = Response.page
 let make_mime = Mime.make_mime
 let from_filename = Mime.from_filename

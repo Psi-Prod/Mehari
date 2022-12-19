@@ -1,7 +1,7 @@
 type t =
   | Immediate of string list
   (* A list for avoid ( ^ ) quadatric concatenation. *)
-  | Delayed of string Seq.t
+  | Delayed of ((string -> unit) -> unit)
 
 and view = t
 
@@ -12,13 +12,17 @@ and _ typ =
   | SlowDown : int -> string typ
   | Meta : string typ
 
-and body = Text of string | Gemtext of Gemtext.t | Stream of string Seq.t
+and body =
+  | Text of string
+  | Gemtext of Gemtext.t
+  | Delayed of ((string -> unit) -> unit)
 
 let view_of_resp r = r
 let text t = Text t
 let gemtext g = Gemtext g
+let delayed d = Delayed d
 let lines l = String.concat "\n" l |> text
-let seq s = Stream s
+let seq s = Delayed (fun consume -> Seq.iter consume s)
 
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
@@ -43,7 +47,11 @@ let validate code meta body =
     | None -> Immediate [ meta ]
     | Some (Text t) -> Immediate [ meta; t ]
     | Some (Gemtext g) -> Immediate [ meta; Gemtext.to_string g ]
-    | Some (Stream body) -> Delayed (fun () -> Seq.Cons (meta, body))
+    | Some (Delayed body) ->
+        Delayed
+          (fun consume ->
+            consume meta;
+            body consume)
 
 let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =
