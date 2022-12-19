@@ -2,9 +2,9 @@
  (names counter echo eio_backend hello guestbook log rate_limit stream)
  (libraries
   ipaddr
+  eio_main
   mehari
   mehari.eio
-  eio_main
   mehari.lwt_unix
   mirage-clock-unix
   mirage-crypto-rng-eio
