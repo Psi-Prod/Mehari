@@ -36,4 +36,5 @@ let error = Logger.error
 let router = Router.router
 let route = Router.route
 let scope = Router.scope
+let response_document = File.response_document
 let run = Server.run
