@@ -46,7 +46,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
   let write_resp chan resp =
     match Mehari.Private.view_of_resp resp with
     | Immediate bufs -> Lwt_list.iter_s (write chan) bufs
-    | Stream seq -> Lwt_seq.of_seq seq |> Lwt_seq.iter_s (write chan)
+    | Delayed seq -> Lwt_seq.of_seq seq |> Lwt_seq.iter_s (write chan)
 
   let read flow =
     match%lwt Channel.read_some flow with
