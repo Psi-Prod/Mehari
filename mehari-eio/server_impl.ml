@@ -71,14 +71,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          client_req reader |> Protocol.static_check_request ~port ~hostnames
        with
        | Ok uri ->
-           let clientcert =
+           let client_cert =
              match ep with
              | Ok data -> Option.to_list data.Tls.Core.peer_certificate
              | Error () -> assert false
            in
            Mehari.Private.make_request
              (module Common.Addr)
-             ~uri ~addr ~port ~sni ~clientcert
+             ~uri ~addr ~port ~sni ~client_cert
            |> callback |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
      with

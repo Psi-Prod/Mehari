@@ -46,7 +46,7 @@ val sni : 'a request -> string option
 val query : 'a request -> string option
 (** User uri query. *)
 
-val clientcert : 'a request -> X509.Certificate.t list
+val client_cert : 'a request -> X509.Certificate.t list
 (** User client certificate. *)
 
 val param : 'a request -> int -> string
@@ -259,7 +259,7 @@ module Private : sig
     addr:'addr ->
     port:int ->
     sni:string option ->
-    clientcert:X509.Certificate.t list ->
+    client_cert:X509.Certificate.t list ->
     'addr request
 
   module Handler : sig

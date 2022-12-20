@@ -77,12 +77,14 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
             | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
             | Error () -> assert false
           in
-          let clientcert =
+          let client_cert =
             match ep with
             | Ok data -> Option.to_list data.Tls.Core.peer_certificate
             | Error () -> assert false
           in
-          Private.make_request (module Ipaddr) ~addr ~port ~uri ~sni ~clientcert
+          Private.make_request
+            (module Ipaddr)
+            ~addr ~port ~uri ~sni ~client_cert
           |> callback
     in
     write_resp chan resp

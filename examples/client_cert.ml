@@ -2,7 +2,7 @@ let router =
   Mehari_eio.router
     [
       Mehari_eio.route "/" (fun req ->
-          match Mehari.clientcert req with
+          match Mehari.client_cert req with
           | [] -> Mehari.(response client_cert_req) "Certificate plz"
           | hd :: _ ->
               X509.Certificate.encode_pem hd
