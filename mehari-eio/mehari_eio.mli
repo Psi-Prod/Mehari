@@ -19,8 +19,19 @@ val response_document : Mehari.mime -> Eio.Fs.dir Eio.Path.t -> Mehari.response
 val run :
   ?port:int ->
   ?backlog:int ->
-  ?addr:Eio.Net.Ipaddr.v4v6 ->
+  ?addr:addr ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
   Eio.Net.t ->
   handler ->
-  'a
+  unit
+(** [run ?port ?backlog ?addr ~certchains net handler] runs the server using
+    [handler].
+      - [port] is the port to listen on. Defaults to [1965].
+      - [backlog] is the the number of pending connections that can be queued
+        up. Defaults to [10].
+      - [addr] is the socket addresses. Defaults to
+        [Eio.Net.Ipaddr.V4.loopback].
+      - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
+        the last one is considered default.
+
+      @raise Invalid_argument if [certchains] is empty. *)

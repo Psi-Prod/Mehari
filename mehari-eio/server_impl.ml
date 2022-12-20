@@ -10,7 +10,7 @@ module type S = sig
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
     Eio.Net.t ->
     handler ->
-    'a
+    unit
 end
 
 module Make (Logger : Mehari.Private.Logger_impl.S) :
@@ -65,7 +65,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     let certificates =
       match certs with
       | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "start_server"
+      | _ -> invalid_arg "Mehari_eio.run"
     in
     let server =
       Tls_eio.server_of_flow (Tls.Config.server ~certificates ()) flow
@@ -84,4 +84,5 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
           loop ()
         in
         loop ())
+    |> ignore
 end

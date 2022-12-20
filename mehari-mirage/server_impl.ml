@@ -86,7 +86,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     let certificates =
       match certs with
       | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "start_server"
+      | _ -> invalid_arg "Mehari_mirage.start_server"
     in
     handle_client callback
     |> serve (Tls.Config.server ~certificates ())
