@@ -10,7 +10,7 @@ let make_mime ?charset ?(lang = []) mime =
     lang;
   }
 
-let empty = make_mime ""
+let no_mime = make_mime ""
 let gemini = make_mime "text/gemini"
 let text_mime text = make_mime ("text/" ^ text)
 let plaintext = text_mime "plain"

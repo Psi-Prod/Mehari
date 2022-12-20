@@ -26,7 +26,8 @@ let respond_document ?mime path =
   if%lwt Lwt_unix.file_exists path then
     let mime =
       match mime with
-      | None -> Mehari.from_filename path |> Option.value ~default:Mehari.empty
+      | None ->
+          Mehari.from_filename path |> Option.value ~default:Mehari.no_mime
       | Some m -> m
     in
     let* chunks = read_chunks path in

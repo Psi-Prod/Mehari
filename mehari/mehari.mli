@@ -150,8 +150,8 @@ val from_content : ?charset:string -> ?lang:string list -> string -> mime option
 (** [from_content ?default ?charset ?lang c] tries to create a {!type:mime}
     type by performing a mime lookup based on content [c]. *)
 
-val empty : mime
-(** The empty mime, corresponds to the absence of mime. *)
+val no_mime : mime
+(** Represents the absence of a mime. *)
 
 val gemini : mime
 (** [gemini] is [text/gemini; charset=utf-8] *)
