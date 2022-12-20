@@ -17,11 +17,16 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   S with module IO = Common.Direct = struct
   module IO = Common.Direct
 
+  type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
+
+  module Buf_read = Eio.Buf_read
+  module Buf_write = Eio.Buf_write
+  module Net = Eio.Net
+  module Protocol = Mehari.Private.Protocol
+
   let src = Logs.Src.create "mehari.eio"
 
   module Log = (val Logs.src_log src)
-
-  type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
 
   let load_certs certs =
     let rec aux acc = function
@@ -31,8 +36,6 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     in
     aux [] certs
 
-  open Eio
-
   let write_resp flow resp =
     Buf_write.with_flow flow @@ fun w ->
     (match Mehari.Private.view_of_resp resp with
@@ -40,7 +43,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Delayed d -> d (Buf_write.string w));
     Buf_write.flush w
 
-  (* TODO: check url is utf-8 (Zed) *)
+  (* TODO: check url is utf-8 *)
   let client_req =
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
@@ -51,13 +54,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       match client_req reader with
       | req -> (
           (* TODO timeout *)
-          (* TODO invalid port and hostname *)
-          let uri = Uri.of_string req in
-          match Uri.scheme uri with
-          | None ->
-              failwith "todo url"
-              (* TODO: url must have scheme, be not empty, have a path not relative, and not be random text *)
-          | Some _ ->
+          match Protocol.static_check_request ~port req with
+          | Ok uri ->
               let sni =
                 match ep with
                 | Ok data ->
@@ -67,11 +65,11 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
               Mehari.Private.make_request
                 (module Common.Addr)
                 ~uri ~addr ~port ~sni
-              |> callback)
+              |> callback
+          | Error err -> Protocol.to_response err)
       | exception Failure _ -> failwith "todo"
       | exception End_of_file -> failwith "todo"
-      | exception Buf_read.Buffer_limit_exceeded ->
-          Mehari.(response bad_request) ""
+      | exception Buf_read.Buffer_limit_exceeded -> Protocol.to_response AboveMaxSize
     in
     write_resp flow resp;
     flow#shutdown `Send
@@ -98,7 +96,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
               log "Tls failure: %S" (Tls.Packet.alert_type_to_string alert))
       | exn -> raise exn
     in
-    Switch.run (fun sw ->
+    Eio.Switch.run (fun sw ->
         let socket =
           Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net
             (`Tcp (addr, port))

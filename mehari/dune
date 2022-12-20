@@ -7,4 +7,5 @@
   logs
   magic-mime
   mirage-clock
-  uri))
+  uri
+  zed))

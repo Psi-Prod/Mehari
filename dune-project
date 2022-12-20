@@ -38,7 +38,9 @@
   (mirage-clock
    (>= 4.2.0))
   (uri
-   (>= 4.2.0))))
+   (>= 4.2.0))
+  (zed
+   (>= 3.2.1))))
 
 (package
  (name mehari_mirage)

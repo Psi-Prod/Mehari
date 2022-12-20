@@ -80,6 +80,7 @@ module Private = struct
   module CGI = Cgi
   module Handler = Handler
   module Logger_impl = Logger_impl
+  module Protocol = Protocol
   module Rate_limiter_impl = Rate_limiter_impl
   module Router_impl = Router_impl
 end
