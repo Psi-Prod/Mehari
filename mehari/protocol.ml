@@ -1,6 +1,7 @@
 type request_err =
   | AboveMaxSize
   | EmptyURL
+  | InvalidURL
   | MalformedUTF8
   | NoScheme
   | RelativePath
@@ -32,6 +33,7 @@ let pp_err fmt =
   function
   | AboveMaxSize -> fmt "Request has a size higher than 1024 bytes"
   | EmptyURL -> fmt "URL is empty"
+  | InvalidURL -> fmt "invalid URL"
   | MalformedUTF8 -> fmt "URL contains non-UTF8 byte sequence"
   | NoScheme -> fmt "URL has no scheme"
   | RelativePath -> fmt "URL path is relative"
@@ -41,7 +43,8 @@ let to_response err =
   let body = Format.asprintf "%a" pp_err err in
   let status =
     match err with
-    | AboveMaxSize | EmptyURL | MalformedUTF8 | NoScheme | RelativePath ->
+    | AboveMaxSize | EmptyURL | InvalidURL | MalformedUTF8 | NoScheme
+    | RelativePath ->
         Response.Status.bad_request
     | WrongPort -> Response.Status.proxy_request_refused
   in

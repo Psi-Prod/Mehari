@@ -43,35 +43,35 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Delayed d -> d (Buf_write.string w));
     Buf_write.flush w
 
-  (* TODO: check url is utf-8 *)
   let client_req =
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
   let handle_client ~addr ~port callback flow ep =
-    let reader = Buf_read.of_flow flow ~initial_size:1025 ~max_size:1025 in
-    let resp =
-      match client_req reader with
-      | req -> (
-          (* TODO timeout *)
-          match Protocol.static_check_request ~port req with
-          | Ok uri ->
-              let sni =
-                match ep with
-                | Ok data ->
-                    Option.map Domain_name.to_string data.Tls.Core.own_name
-                | Error () -> assert false
-              in
-              Mehari.Private.make_request
-                (module Common.Addr)
-                ~uri ~addr ~port ~sni
-              |> callback
-          | Error err -> Protocol.to_response err)
-      | exception Failure _ -> failwith "todo"
-      | exception End_of_file -> failwith "todo"
-      | exception Buf_read.Buffer_limit_exceeded -> Protocol.to_response AboveMaxSize
+    let reader =
+      Buf_read.of_flow flow ~initial_size:1025
+        ~max_size:1025 (* Apparently not inclusive *)
     in
-    write_resp flow resp;
+    (try
+       (* TODO timeout *)
+       match client_req reader |> Protocol.static_check_request ~port with
+       | Ok uri ->
+           let sni =
+             match ep with
+             | Ok data ->
+                 Option.map Domain_name.to_string data.Tls.Core.own_name
+             | Error () -> assert false
+           in
+           Mehari.Private.make_request
+             (module Common.Addr)
+             ~uri ~addr ~port ~sni
+           |> callback |> write_resp flow
+       | Error err -> Protocol.to_response err |> write_resp flow
+     with
+    | Buf_read.Buffer_limit_exceeded ->
+        Protocol.to_response AboveMaxSize |> write_resp flow
+    | End_of_file -> Log.warn (fun log -> log "EOF encountered prematurly")
+    | Failure _ -> Protocol.to_response InvalidURL |> write_resp flow);
     flow#shutdown `Send
 
   let handler ~addr ~port ~certchains callback flow _ =
@@ -90,9 +90,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       ~certchains net callback =
     let log_err = function
       | End_of_file ->
-          Log.info (fun log -> log "Client closed socket prematurly")
+          Log.warn (fun log -> log "Client closed socket prematurly")
       | Tls_eio.Tls_alert alert ->
-          Log.info (fun log ->
+          Log.warn (fun log ->
               log "Tls failure: %S" (Tls.Packet.alert_type_to_string alert))
       | exn -> raise exn
     in
@@ -101,11 +101,11 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
           Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net
             (`Tcp (addr, port))
         in
-        let rec loop () =
+        let rec serve () =
           handler ~addr ~port ~certchains callback
           |> Net.accept_fork ~sw ~on_error:log_err socket;
-          loop ()
+          serve ()
         in
-        loop ())
+        serve ())
     |> ignore
 end
