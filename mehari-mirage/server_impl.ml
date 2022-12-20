@@ -77,7 +77,10 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
             | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
             | Error () -> assert false
           in
-          Private.make_request (module Ipaddr) ~addr ~port ~uri ~sni |> callback
+          Private.make_request
+            (module Ipaddr)
+            ~addr ~port ~uri ~sni ~clientcert:[]
+          |> callback
     in
     write_resp chan resp
 

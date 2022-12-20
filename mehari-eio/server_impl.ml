@@ -71,9 +71,20 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          client_req reader |> Protocol.static_check_request ~port ~hostnames
        with
        | Ok uri ->
+           let sni =
+             match ep with
+             | Ok data ->
+                 Option.map Domain_name.to_string data.Tls.Core.own_name
+             | Error () -> assert false
+           in
+           let clientcert =
+             match ep with
+             | Ok data -> Option.to_list data.Tls.Core.peer_certificate
+             | Error () -> assert false
+           in
            Mehari.Private.make_request
              (module Common.Addr)
-             ~uri ~addr ~port ~sni
+             ~uri ~addr ~port ~sni ~clientcert
            |> callback |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
      with
@@ -91,7 +102,11 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | _ -> invalid_arg "Mehari_eio.run"
     in
     let server =
-      Tls_eio.server_of_flow (Tls.Config.server ~certificates ()) flow
+      Tls_eio.server_of_flow
+        (Tls.Config.server ~certificates
+           ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+           ())
+        flow
     in
     Tls_eio.epoch server |> handle_client ~addr ~port callback server
 

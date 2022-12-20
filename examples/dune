@@ -1,5 +1,14 @@
 (executables
- (names counter echo eio_backend hello guestbook log rate_limit stream)
+ (names
+  counter
+  echo
+  eio_backend
+  hello
+  guestbook
+  log
+  rate_limit
+  stream
+  client_cert)
  (libraries
   ipaddr
   eio_main

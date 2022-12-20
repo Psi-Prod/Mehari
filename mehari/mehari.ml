@@ -11,6 +11,7 @@ let ip = Request.ip
 let port = Request.port
 let sni = Request.sni
 let query = Request.query
+let clientcert = Request.clientcert
 let param = Request.param
 let response = Response.response
 let response_body = Response.response_body
