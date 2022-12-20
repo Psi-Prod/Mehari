@@ -6,6 +6,7 @@ type request_err =
   | NoScheme
   | RelativePath
   | WrongPort
+  | WrongScheme
 
 (* Perform some static check on given request *)
 let static_check_request ~port input =
@@ -18,6 +19,7 @@ let static_check_request ~port input =
       let uri = Uri.of_string utf8 in
       match Uri.scheme uri with
       | None -> Error NoScheme
+      | Some scheme when scheme <> "gemini" -> Error WrongScheme
       | Some _ -> (
           if Uri.path uri |> Filename.is_relative then Error RelativePath
           else
@@ -38,6 +40,7 @@ let pp_err fmt =
   | NoScheme -> fmt "URL has no scheme"
   | RelativePath -> fmt "URL path is relative"
   | WrongPort -> fmt "URL has an incorrect port number"
+  | WrongScheme -> fmt {|URL scheme is not "gemini://"|}
 
 let to_response err =
   let body = Format.asprintf "%a" pp_err err in
@@ -46,6 +49,6 @@ let to_response err =
     | AboveMaxSize | EmptyURL | InvalidURL | MalformedUTF8 | NoScheme
     | RelativePath ->
         Response.Status.bad_request
-    | WrongPort -> Response.Status.proxy_request_refused
+    | WrongPort | WrongScheme -> Response.Status.proxy_request_refused
   in
   Response.response status body
