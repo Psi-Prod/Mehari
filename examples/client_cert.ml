@@ -5,10 +5,10 @@ let router =
           match Mehari.clientcert req with
           | [] -> Mehari.(response client_cert_req) "Certificate plz"
           | hd :: _ ->
-              Mehari.response_text
-              @@ Printf.sprintf "Client certificate ~nyoron\n%s"
-              @@ Cstruct.to_string
-              @@ X509.Certificate.encode_pem hd);
+              X509.Certificate.encode_pem hd |>
+              Cstruct.to_string |>
+              Printf.sprintf "Client certificate ~nyoron\n%s" |>
+              Mehari.response_text);
     ]
 
 let main ~net ~cwd =
