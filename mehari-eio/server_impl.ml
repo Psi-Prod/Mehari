@@ -58,7 +58,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | exception Buf_read.Buffer_limit_exceeded ->
           Mehari.(response bad_request) ""
     in
-    write_resp flow resp
+    write_resp flow resp;
+    flow#shutdown `Send
 
   let handler ~addr ~port ~certchains callback flow _ =
     let certs = load_certs certchains in
