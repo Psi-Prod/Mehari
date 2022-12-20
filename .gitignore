@@ -31,3 +31,7 @@ _opam/
 
 # Certificates
 *.pem
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
