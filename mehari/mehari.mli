@@ -46,6 +46,9 @@ val sni : 'a request -> string option
 val query : 'a request -> string option
 (** User uri query. *)
 
+val client_cert : 'a request -> X509.Certificate.t list
+(** User client certificate. *)
+
 val param : 'a request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
     @raise Invalid_argument if [n] is not a positive integer or path does not
@@ -256,6 +259,7 @@ module Private : sig
     addr:'addr ->
     port:int ->
     sni:string option ->
+    client_cert:X509.Certificate.t list ->
     'addr request
 
   module Handler : sig

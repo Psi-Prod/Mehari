@@ -8,4 +8,5 @@
   magic-mime
   mirage-clock
   uri
-  zed))
+  zed
+  x509))
