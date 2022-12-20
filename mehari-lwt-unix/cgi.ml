@@ -1,33 +1,10 @@
-open Mehari
 open Lwt.Syntax
-
-let make_env req path =
-  let empty = {|""|} in
-  [|
-    ("AUTH_TYPE", "CERTIFICATE");
-    ("CONTENT_LENGTH", empty);
-    ("CONTENT_TYPE", empty);
-    ("GATEWAY_INTERFACE", "CGI/1.1");
-    ("PATH_INFO", uri req |> Uri.path |> Uri.pct_decode);
-    ("PATH_TRANSLATED", path);
-    ("QUERY_STRING", query req |> Option.value ~default:"");
-    ("REMOTE_ADDR", ip req |> Ipaddr.to_string);
-    ("REMOTE_HOST", uri req |> Uri.host |> Option.value ~default:"");
-    ("REMOTE_IDENT", empty);
-    ("REQUEST_METHOD", empty);
-    ("SCRIPT_NAME", Filename.concat (Unix.getcwd ()) path);
-    ("SERVER_NAME", uri req |> Uri.host |> Option.value ~default:"");
-    ("SERVER_PORT", port req |> Int.to_string);
-    ("SERVER_PROTOCOL", "GEMINI");
-    ("SERVER_SOFTWARE", "Mehari/%%VERSION%%");
-  |]
-  |> Array.map (fun (name, value) -> Printf.sprintf "%s=%s" name value)
 
 let chunk_size = 16384
 
 exception Exited
 
-let read_body (proc : Lwt_process.process_in) =
+let read_body proc =
   Lwt_seq.unfold_lwt
     (fun finished ->
       if finished then Lwt.return_none
@@ -36,7 +13,7 @@ let read_body (proc : Lwt_process.process_in) =
         if String.length data = chunk_size then Lwt.return_some (data, true)
         else
           match proc#state with
-          | Running -> Lwt.return_some (data, true)
+          | Lwt_process.Running -> Lwt.return_some (data, true)
           | Exited (WEXITED 0) -> Lwt.return_some (data, false)
           | _ -> Lwt.fail Exited)
     false
@@ -62,9 +39,13 @@ let with_proc ?timeout ?env cmd f =
       let* _ = proc#close in
       Lwt.return_unit)
 
+module CGI = Mehari.Private.CGI.Make (Ipaddr)
+
 let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
   try%lwt
-    with_proc ~timeout ~env:(make_env req path) (path, [||]) (fun proc ->
+    let* cwd = Lwt_unix.getcwd () in
+    let env = CGI.make_env req ~fullpath:(Filename.concat cwd path) ~path in
+    with_proc ~timeout ~env (path, [||]) (fun proc ->
         if nph then
           let* chunks = read_body proc |> Lwt_seq.to_list in
           `Body (String.concat "" chunks) |> Mehari_io.respond_raw

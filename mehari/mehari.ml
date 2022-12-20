@@ -77,6 +77,7 @@ module Private = struct
   let view_of_resp = Response.view_of_resp
   let make_request = Request.make
 
+  module CGI = Cgi
   module Handler = Handler
   module Logger_impl = Logger_impl
   module Rate_limiter_impl = Rate_limiter_impl
