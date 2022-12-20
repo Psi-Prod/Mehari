@@ -71,9 +71,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          client_req reader |> Protocol.static_check_request ~port ~hostnames
        with
        | Ok uri ->
+           let client_cert =
+             match ep with
+             | Ok data -> Option.to_list data.Tls.Core.peer_certificate
+             | Error () -> assert false
+           in
            Mehari.Private.make_request
              (module Common.Addr)
-             ~uri ~addr ~port ~sni
+             ~uri ~addr ~port ~sni ~client_cert
            |> callback |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
      with
@@ -91,7 +96,11 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | _ -> invalid_arg "Mehari_eio.run"
     in
     let server =
-      Tls_eio.server_of_flow (Tls.Config.server ~certificates ()) flow
+      Tls_eio.server_of_flow
+        (Tls.Config.server ~certificates
+           ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+           ())
+        flow
     in
     Tls_eio.epoch server |> handle_client ~addr ~port callback server
 
@@ -106,8 +115,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | Tls_eio.Tls_failure f ->
           Log.warn (fun log ->
               log "Tls failure: %S" (Tls.Engine.string_of_failure f))
-      | Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
+      (*| Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
           Log.warn (fun log -> log "Concurrent connections")
+        FIXME: Removed due to unavailability outside of Linux *)
       | exn -> raise exn
     in
     Eio.Switch.run (fun sw ->
