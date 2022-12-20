@@ -91,9 +91,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     let log_err = function
       | End_of_file ->
           Log.warn (fun log -> log "Client closed socket prematurly")
-      | Tls_eio.Tls_alert alert ->
+      | Tls_eio.Tls_alert a ->
           Log.warn (fun log ->
-              log "Tls failure: %S" (Tls.Packet.alert_type_to_string alert))
+              log "Tls alert: %S" (Tls.Packet.alert_type_to_string a))
+      | Tls_eio.Tls_failure f ->
+          Log.warn (fun log ->
+              log "Tls failure: %S" (Tls.Engine.string_of_failure f))
+      | Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
+          Log.warn (fun log -> log "Concurrent connections")
       | exn -> raise exn
     in
     Eio.Switch.run (fun sw ->
