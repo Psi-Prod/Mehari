@@ -71,12 +71,6 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          client_req reader |> Protocol.static_check_request ~port ~hostnames
        with
        | Ok uri ->
-           let sni =
-             match ep with
-             | Ok data ->
-                 Option.map Domain_name.to_string data.Tls.Core.own_name
-             | Error () -> assert false
-           in
            let clientcert =
              match ep with
              | Ok data -> Option.to_list data.Tls.Core.peer_certificate
