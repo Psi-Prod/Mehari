@@ -18,7 +18,9 @@ let read_body proc =
           | _ -> Lwt.fail Exited)
     false
 
-let meta = Re.compile Re.(seq [ group (rep1 digit); space; group (rep any) ])
+let meta =
+  Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
+
 let ( let$ ) opt f = match opt with None -> Lwt.return_none | Some x -> f x
 
 let parse_header in_chan =
