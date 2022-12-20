@@ -54,14 +54,23 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     in
     (try
        (* TODO timeout *)
-       match client_req reader |> Protocol.static_check_request ~port with
+       let sni, certificates =
+         match ep with
+         | Ok data ->
+             ( Option.map Domain_name.to_string data.Tls.Core.own_name,
+               data.Tls.Core.own_certificate )
+         | Error () -> assert false
+       in
+       let hostnames =
+         List.map Tls.Core.Cert.hostnames certificates
+         |> List.fold_left X509.Host.Set.union X509.Host.Set.empty
+         |> X509.Host.Set.to_seq
+         |> Seq.map (fun (_, d) -> Domain_name.to_string d)
+       in
+       match
+         client_req reader |> Protocol.static_check_request ~port ~hostnames
+       with
        | Ok uri ->
-           let sni =
-             match ep with
-             | Ok data ->
-                 Option.map Domain_name.to_string data.Tls.Core.own_name
-             | Error () -> assert false
-           in
            Mehari.Private.make_request
              (module Common.Addr)
              ~uri ~addr ~port ~sni
