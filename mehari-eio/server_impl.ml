@@ -7,6 +7,7 @@ module type S = sig
     ?port:int ->
     ?backlog:int ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
+    ?config:Tls.Config.server ->
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
     Eio.Net.t ->
     handler ->
@@ -83,7 +84,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Failure _ -> Protocol.to_response InvalidURL |> write_resp flow);
     flow#shutdown `Send
 
-  let handler ~addr ~port ~certchains callback flow _ =
+  let handler ~addr ~port ~certchains ~config callback flow _ =
     let certs = load_certs certchains in
     let certificates =
       match certs with
@@ -91,12 +92,19 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | _ -> invalid_arg "Mehari_eio.run"
     in
     let server =
-      Tls_eio.server_of_flow (Tls.Config.server ~certificates ()) flow
+      Tls_eio.server_of_flow
+        (match config with
+        | Some c -> c
+        | None ->
+            Tls.Config.server ~certificates
+              ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+              ())
+        flow
     in
     Tls_eio.epoch server |> handle_client ~addr ~port callback server
 
   let run ?(port = 1965) ?(backlog = 10) ?(addr = Net.Ipaddr.V4.loopback)
-      ~certchains net callback =
+      ?config ~certchains net callback =
     let log_err = function
       | End_of_file ->
           Log.warn (fun log -> log "Client closed socket prematurly")
@@ -116,7 +124,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
             (`Tcp (addr, port))
         in
         let rec serve () =
-          handler ~addr ~port ~certchains callback
+          handler ~addr ~port ~certchains ~config callback
           |> Net.accept_fork ~sw ~on_error:log_err socket;
           serve ()
         in
