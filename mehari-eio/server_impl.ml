@@ -17,6 +17,10 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   S with module IO = Common.Direct = struct
   module IO = Common.Direct
 
+  let src = Logs.Src.create "mehari.eio"
+
+  module Log = (val Logs.src_log src)
+
   type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
 
   let load_certs certs =
@@ -36,23 +40,34 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Delayed d -> d (Buf_write.string w));
     Buf_write.flush w
 
+  (* TODO: check url is utf-8 (Zed) *)
   let client_req =
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
   let handle_client ~addr ~port callback flow ep =
-    let reader = Buf_read.of_flow flow ~initial_size:1024 ~max_size:1024 in
+    let reader = Buf_read.of_flow flow ~initial_size:1025 ~max_size:1025 in
     let resp =
       match client_req reader with
-      | req ->
+      | req -> (
+          (* TODO timeout *)
+          (* TODO invalid port and hostname *)
           let uri = Uri.of_string req in
-          let sni =
-            match ep with
-            | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
-            | Error () -> assert false
-          in
-          Mehari.Private.make_request (module Common.Addr) ~uri ~addr ~port ~sni
-          |> callback
+          match Uri.scheme uri with
+          | None ->
+              failwith "todo url"
+              (* TODO: url must have scheme, be not empty, have a path not relative, and not be random text *)
+          | Some _ ->
+              let sni =
+                match ep with
+                | Ok data ->
+                    Option.map Domain_name.to_string data.Tls.Core.own_name
+                | Error () -> assert false
+              in
+              Mehari.Private.make_request
+                (module Common.Addr)
+                ~uri ~addr ~port ~sni
+              |> callback)
       | exception Failure _ -> failwith "todo"
       | exception End_of_file -> failwith "todo"
       | exception Buf_read.Buffer_limit_exceeded ->
@@ -75,13 +90,22 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
 
   let run ?(port = 1965) ?(backlog = 10) ?(addr = Net.Ipaddr.V4.loopback)
       ~certchains net callback =
+    let log_err = function
+      | End_of_file ->
+          Log.info (fun log -> log "Client closed socket prematurly")
+      | Tls_eio.Tls_alert alert ->
+          Log.info (fun log ->
+              log "Tls failure: %S" (Tls.Packet.alert_type_to_string alert))
+      | exn -> raise exn
+    in
     Switch.run (fun sw ->
         let socket =
-          Net.listen ~reuse_addr:true ~backlog ~sw net (`Tcp (addr, port))
+          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net
+            (`Tcp (addr, port))
         in
         let rec loop () =
           handler ~addr ~port ~certchains callback
-          |> Net.accept_fork ~sw ~on_error:raise socket;
+          |> Net.accept_fork ~sw ~on_error:log_err socket;
           loop ()
         in
         loop ())
