@@ -73,7 +73,9 @@ val run_lwt :
   ?v6:string ->
   handler ->
   unit Lwt.t
-(** See {!val:Mehari_mirage.S.run}. *)
+(** See {!val:Mehari_mirage.S.run}.
+    - [v4] must be written as an IPv4 CIDR.
+    - [v6] must be written as an IPv6 CIDR. *)
 
 val run :
   ?port:int ->

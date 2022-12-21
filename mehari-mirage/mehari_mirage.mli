@@ -43,9 +43,17 @@ module type S = sig
     stack ->
     handler ->
     unit IO.t
-  (** [run ?port ?certchains stack handler] runs the server using
+  (** [run ?port ?config ?certchains stack handler] runs the server using
       [handler].
         - [port] is the port to listen on. Defaults to [1965].
+        - [config] is the server configuration. 
+          Defaults to
+          {[
+            Tls.Config.server ~certificates
+                ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+                ()
+          ]}
+        To support client certificates, specify the [authenticator].
         - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
           the last one is considered default.
 
