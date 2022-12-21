@@ -25,13 +25,21 @@ val run :
   Eio.Net.t ->
   handler ->
   unit
-(** [run ?port ?backlog ?addr ~certchains net handler] runs the server using
+(** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server using
     [handler].
       - [port] is the port to listen on. Defaults to [1965].
       - [backlog] is the the number of pending connections that can be queued
         up. Defaults to [10].
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
+      - [config] is the server configuration. 
+        Defaults to
+        {[
+          Tls.Config.server ~certificates
+              ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+              ()
+        ]}
+        To support client certificates, specify the [authenticator].
       - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
         the last one is considered default.
 
