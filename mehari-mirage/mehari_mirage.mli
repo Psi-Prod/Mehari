@@ -11,13 +11,6 @@ module type S = sig
   (** @closed *)
   include Mehari.NET with module IO := IO and type addr = Ipaddr.t
 
-  (** @closed *)
-  include
-    Server_impl.S
-      with module IO := IO
-       and type handler := handler
-       and type stack := stack
-
   (** {1:response Response} *)
 
   val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
@@ -44,11 +37,13 @@ module type S = sig
   (** {1 Entry point} *)
 
   val run_lwt :
+    ?addr:Ipaddr.t ->
     ?port:int ->
+    ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    unit Lwt.t
+    unit IO.t
   (** [run ?port ?certchains stack handler] runs the server using
       [handler].
         - [port] is the port to listen on. Defaults to [1965].
@@ -58,7 +53,13 @@ module type S = sig
       @raise Invalid_argument if [certchains] is empty. *)
 
   val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
+    ?addr:Ipaddr.t ->
+    ?port:int ->
+    ?config:Tls.Config.server ->
+    ?certchains:(string * string) list ->
+    stack ->
+    handler ->
+    unit
   (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
 end
 

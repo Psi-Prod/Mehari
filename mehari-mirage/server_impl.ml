@@ -8,14 +8,22 @@ module type S = sig
   type handler = Ipaddr.t Private.Handler.Make(IO).t
 
   val run_lwt :
+    ?addr:Ipaddr.t ->
     ?port:int ->
+    ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
     unit IO.t
 
   val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
+    ?addr:Ipaddr.t ->
+    ?port:int ->
+    ?config:Tls.Config.server ->
+    ?certchains:(string * string) list ->
+    stack ->
+    handler ->
+    unit
 end
 
 module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
@@ -37,11 +45,13 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     in
     aux [] certs
 
-  let write chan buf = Channel.write_string chan buf 0 (String.length buf - 1)
+  let write chan buf = Channel.write_line chan buf
 
   let write_resp chan resp =
     (match Mehari.Private.view_of_resp resp with
-    | Immediate bufs -> List.iter (write chan) bufs
+    | Immediate [] -> ()
+    | Immediate (hd :: tl) ->
+        List.iter (write chan) ([ String.sub hd 0 (String.length hd - 1) ] @ tl)
     | Delayed d -> d (write chan));
     match%lwt Channel.flush chan with
     | Ok () -> Lwt.return_unit
@@ -53,18 +63,10 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     | Ok `Eof -> failwith "eof"
     | Error _ -> failwith "reading"
 
-  let serve conf handler flow =
-    let* server =
-      match%lwt TLS.server_of_flow conf flow with
-      | Ok s -> Lwt.return s
-      | Error _ -> failwith "i hate god"
-    in
-    let* () = TLS.epoch server |> handler server (Stack.TCP.dst flow) in
-    TLS.close server
-
   let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
 
-  let handle_client callback flow (addr, port) ep =
+  let handle_client ~addr ~port ~timeout:_ callback flow ep =
+    (* TODO: Implement timeout here too *)
     let chan = Channel.create flow in
     let* request = read chan in
     let* resp =
@@ -87,24 +89,37 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
             ~addr ~port ~uri ~sni ~client_cert
           |> callback
     in
-    write_resp chan resp
+    let* () = write_resp chan resp in
+    TLS.close flow
 
-  let start_server ~port ~certchains ~stack callback =
+  let handler ~timeout ~certificates ~config ~addr ~port callback flow =
+    let* server_r =
+      TLS.server_of_flow
+        (match config with
+        | Some c -> c
+        | None ->
+            Tls.Config.server ~certificates
+              ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+              ())
+        flow
+    in
+    let server =
+      match server_r with Ok s -> s | Error _ -> failwith "server_of_flow"
+    in
+    TLS.epoch server |> handle_client ~timeout ~addr ~port callback server
+
+  let run_lwt ?(addr = Ipaddr.V4 Ipaddr.V4.localhost) ?(port = 1965) ?config
+      ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
     let* certs = load_certs certchains in
     let certificates =
       match certs with
       | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "Mehari_mirage.start_server"
+      | _ -> invalid_arg "Mehari_eio.run"
     in
-    handle_client callback
-    |> serve (Tls.Config.server ~certificates ())
+    handler ~timeout:() ~certificates ~config ~addr ~port callback
     |> Stack.TCP.listen (Stack.tcp stack) ~port;
     Stack.listen stack
 
-  let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
-      stack callback =
-    start_server ~port ~certchains ~stack callback
-
-  let run ?port ?certchains stack callback =
-    run_lwt ?port ?certchains stack callback |> Lwt_main.run
+  let run ?addr ?port ?config ?certchains stack callback =
+    run_lwt ?port ?addr ?config ?certchains stack callback |> Lwt_main.run
 end
