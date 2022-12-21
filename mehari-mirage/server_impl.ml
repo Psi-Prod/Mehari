@@ -8,7 +8,6 @@ module type S = sig
   type handler = Ipaddr.t Private.Handler.Make(IO).t
 
   val run_lwt :
-    ?addr:Ipaddr.t ->
     ?port:int ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
@@ -17,7 +16,6 @@ module type S = sig
     unit IO.t
 
   val run :
-    ?addr:Ipaddr.t ->
     ?port:int ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
@@ -108,7 +106,7 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     in
     TLS.epoch server |> handle_client ~timeout ~addr ~port callback server
 
-  let run_lwt ?(addr = Ipaddr.V4 Ipaddr.V4.localhost) ?(port = 1965) ?config
+  let run_lwt ?(port = 1965) ?config
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
     let* certs = load_certs certchains in
     let certificates =
@@ -116,10 +114,15 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
       | c :: _ -> `Multiple_default (c, certs)
       | _ -> invalid_arg "Mehari_eio.run"
     in
+    let addr =
+      match Stack.ip stack |> Stack.IP.get_ip with
+      | [] -> assert false
+      | hd :: _ -> hd
+    in
     handler ~timeout:() ~certificates ~config ~addr ~port callback
     |> Stack.TCP.listen (Stack.tcp stack) ~port;
     Stack.listen stack
 
-  let run ?addr ?port ?config ?certchains stack callback =
-    run_lwt ?port ?addr ?config ?certchains stack callback |> Lwt_main.run
+  let run ?port ?config ?certchains stack callback =
+    run_lwt ?port ?config ?certchains stack callback |> Lwt_main.run
 end

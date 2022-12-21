@@ -37,7 +37,6 @@ module type S = sig
   (** {1 Entry point} *)
 
   val run_lwt :
-    ?addr:Ipaddr.t ->
     ?port:int ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
@@ -53,7 +52,6 @@ module type S = sig
       @raise Invalid_argument if [certchains] is empty. *)
 
   val run :
-    ?addr:Ipaddr.t ->
     ?port:int ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
