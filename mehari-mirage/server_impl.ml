@@ -26,16 +26,16 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
 
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
-  open Lwt.Syntax
 
-  let load_certs certs =
-    let rec aux acc = function
-      | [] -> Lwt.return acc
-      | (cert, priv_key) :: tl ->
-          let* certchain = X509_lwt.private_of_pems ~cert ~priv_key in
-          aux (certchain :: acc) tl
-    in
-    aux [] certs
+  module Cert = Mehari.Private.Cert.Make (struct
+    module IO = IO
+
+    type path = string
+
+    include X509_lwt
+  end)
+
+  open Lwt.Syntax
 
   let write chan buf = Channel.write_string chan buf 0 (String.length buf - 1)
 
@@ -90,11 +90,8 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     write_resp chan resp
 
   let start_server ~port ~certchains ~stack callback =
-    let* certs = load_certs certchains in
-    let certificates =
-      match certs with
-      | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "Mehari_mirage.start_server"
+    let* certificates =
+      Cert.get_certs certchains ~exn_msg:"Mehari_mirage.run_lwt"
     in
     handle_client callback
     |> serve (Tls.Config.server ~certificates ())

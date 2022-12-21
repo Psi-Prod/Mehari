@@ -36,7 +36,7 @@ val run :
         handshake.
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
-      - [config] is the server configuration. 
+      - [config] is the server configuration.
         Defaults to
         {[
           Tls.Config.server ~certificates
