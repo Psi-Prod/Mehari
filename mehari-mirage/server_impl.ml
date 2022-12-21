@@ -43,13 +43,11 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
     in
     aux [] certs
 
-  let write chan buf = Channel.write_line chan buf
+  let write chan buf = Channel.write_string chan buf 0 (String.length buf)
 
   let write_resp chan resp =
     (match Mehari.Private.view_of_resp resp with
-    | Immediate [] -> ()
-    | Immediate (hd :: tl) ->
-        List.iter (write chan) ([ String.sub hd 0 (String.length hd - 1) ] @ tl)
+    | Immediate bufs -> List.iter (write chan) bufs
     | Delayed d -> d (write chan));
     match%lwt Channel.flush chan with
     | Ok () -> Lwt.return_unit
