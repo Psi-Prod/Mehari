@@ -6,6 +6,7 @@ module type S = sig
   val run :
     ?port:int ->
     ?backlog:int ->
+    ?timeout:float * Eio.Time.clock ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
     ?config:Tls.Config.server ->
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
@@ -48,13 +49,12 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
-  let handle_client ~addr ~port callback flow ep =
+  let handle_client ~addr ~port ~timeout callback flow ep =
     let reader =
       Buf_read.of_flow flow ~initial_size:1025
         ~max_size:1025 (* Apparently not inclusive *)
     in
     (try
-       (* TODO timeout *)
        let sni, certificates =
          match ep with
          | Ok data ->
@@ -68,8 +68,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          |> X509.Host.Set.to_seq
          |> Seq.map (fun (_, d) -> Domain_name.to_string d)
        in
+       let timeout =
+         match timeout with
+         | None -> fun f -> f ()
+         | Some (duration, clock) -> Eio.Time.with_timeout_exn clock duration
+       in
        match
-         client_req reader |> Protocol.static_check_request ~port ~hostnames
+         timeout (fun () ->
+             client_req reader |> Protocol.static_check_request ~port ~hostnames)
        with
        | Ok uri ->
            let client_cert =
@@ -86,10 +92,12 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Buf_read.Buffer_limit_exceeded ->
         Protocol.to_response AboveMaxSize |> write_resp flow
     | End_of_file -> Log.warn (fun log -> log "EOF encountered prematurly")
-    | Failure _ -> Protocol.to_response InvalidURL |> write_resp flow);
+    | Failure _ -> Protocol.to_response InvalidURL |> write_resp flow
+    | Eio.Time.Timeout ->
+        Log.warn (fun log -> log "Timeout while reading client request"));
     flow#shutdown `Send
 
-  let handler ~addr ~port ~certchains ~config callback flow _ =
+  let handler ~addr ~port ~timeout ~certchains ~config callback flow _ =
     let certs = load_certs certchains in
     let certificates =
       match certs with
@@ -106,10 +114,10 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
               ())
         flow
     in
-    Tls_eio.epoch server |> handle_client ~addr ~port callback server
+    Tls_eio.epoch server |> handle_client ~addr ~port ~timeout callback server
 
-  let run ?(port = 1965) ?(backlog = 10) ?(addr = Net.Ipaddr.V4.loopback)
-      ?config ~certchains net callback =
+  let run ?(port = 1965) ?(backlog = 4096) ?timeout
+      ?(addr = Net.Ipaddr.V4.loopback) ?config ~certchains net callback =
     let log_err = function
       | End_of_file ->
           Log.warn (fun log -> log "Client closed socket prematurly")
@@ -130,7 +138,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
             (`Tcp (addr, port))
         in
         let rec serve () =
-          handler ~addr ~port ~certchains ~config callback
+          handler ~addr ~port ~timeout ~certchains ~config callback
           |> Net.accept_fork ~sw ~on_error:log_err socket;
           serve ()
         in

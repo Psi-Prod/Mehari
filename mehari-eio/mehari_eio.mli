@@ -19,6 +19,7 @@ val response_document : Mehari.mime -> Eio.Fs.dir Eio.Path.t -> Mehari.response
 val run :
   ?port:int ->
   ?backlog:int ->
+  ?timeout:float * Eio.Time.clock ->
   ?addr:addr ->
   ?config:Tls.Config.server ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
@@ -29,7 +30,10 @@ val run :
     [handler].
       - [port] is the port to listen on. Defaults to [1965].
       - [backlog] is the the number of pending connections that can be queued
-        up. Defaults to [10].
+        up. Defaults to [4096].
+      - [timeout] is a couple of form [(duration, eio_clock)]. [duration] is
+        the maximum waiting time for the client to write a request after TLS
+        handshake.
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
       - [config] is the server configuration. 
