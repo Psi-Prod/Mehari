@@ -40,6 +40,16 @@ module Make
   module Protocol = Mehari.Private.Protocol
   open Lwt.Syntax
 
+  type config = {
+    addr : Ipaddr.t;
+    port : int;
+    timeout : float option;
+    tls_config : Tls.Config.server;
+  }
+
+  let make_config ~addr ~port ~timeout ~tls_config =
+    { addr; port; timeout; tls_config }
+
   let src = Logs.Src.create "mehari.mirage"
 
   module Log = (val Logs.src_log src)
@@ -96,9 +106,9 @@ module Make
         Ok ()
     | Error err -> Lwt.return_error err
 
-  let handle_client ~addr ~port ~timeout callback flow ep =
+  let handle_client config callback flow ep =
     let chan = Channel.create flow in
-    match%lwt with_timeout timeout (fun () -> read_client_req chan) with
+    match%lwt with_timeout config.timeout (fun () -> read_client_req chan) with
     | Ok client_req ->
         let sni, certificates, client_cert =
           match ep with
@@ -115,11 +125,14 @@ module Make
           |> Seq.map (fun (_, d) -> Domain_name.to_string d)
         in
         let* resp =
-          match Protocol.static_check_request ~port ~hostnames client_req with
+          match
+            Protocol.static_check_request ~port:config.port ~hostnames
+              client_req
+          with
           | Ok uri ->
               Mehari.Private.make_request
                 (module Ipaddr)
-                ~uri ~addr ~port ~sni ~client_cert
+                ~uri ~addr:config.addr ~port:config.port ~sni ~client_cert
               |> callback
           | Error err -> Protocol.to_response err |> Lwt.return
         in
@@ -128,29 +141,22 @@ module Make
         Protocol.to_response AboveMaxSize |> write_and_close chan flow
     | Error err -> Lwt.return_error err
 
-  let handler ~timeout ~certificates ~config ~addr ~port callback flow =
-    let srv_cfg =
-      match config with
-      | Some c -> c
-      | None ->
-          Tls.Config.server ~certificates
-            ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-            ()
-    in
-    match%lwt TLS.server_of_flow srv_cfg flow with
-    | Ok server ->
-        TLS.epoch server |> handle_client ~timeout ~addr ~port callback server
+  let handler config callback flow =
+    match%lwt TLS.server_of_flow config.tls_config flow with
+    | Ok server -> TLS.epoch server |> handle_client config callback server
     | Error err -> `TLSWriteErr err |> Lwt.return_error
 
   let log_err = function
     | `BufferLimitExceeded -> assert false
     | `Eof -> Log.warn (fun log -> log "EOF encountered prematurly")
     | `ChannelWriteErr err ->
-        Log.warn (fun log -> log "ChannelWriteErr: %a" Channel.pp_write_error err)
+        Log.warn (fun log ->
+            log "ChannelWriteErr: %a" Channel.pp_write_error err)
     | `ChannelErr err -> Log.warn (fun log -> log "%a" Channel.pp_error err)
     | `Timeout ->
         Log.warn (fun log -> log "Timeout while reading client request")
-    | `TLSWriteErr err -> Log.warn (fun log -> log "TLSWriteErr%a" TLS.pp_write_error err)
+    | `TLSWriteErr err ->
+        Log.warn (fun log -> log "TLSWriteErr%a" TLS.pp_write_error err)
 
   let run_lwt ?(port = 1965) ?timeout ?config
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
@@ -164,10 +170,17 @@ module Make
       Stack.ip stack |> Stack.IP.get_ip
       |> Fun.flip List.nth 0 (* List should not be empty. *)
     in
+    let tls_config =
+      match config with
+      | Some c -> c
+      | None ->
+          Tls.Config.server ~certificates
+            ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+            ()
+    in
+    let config = make_config ~addr ~port ~timeout ~tls_config in
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
-        match%lwt
-          handler ~timeout ~certificates ~config ~addr ~port callback flow
-        with
+        match%lwt handler config callback flow with
         | Ok () -> Lwt.return_unit
         | exception Timeout ->
             log_err `Timeout;
