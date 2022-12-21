@@ -19,6 +19,7 @@ let stack ~v4 ~v6 =
   Stack.connect udp tcp
 
 let run_lwt ?port ?certchains ?v4 ?v6 callback =
+  Mirage_crypto_rng_unix.initialize ();
   let* stack =
     let v4 =
       match v4 with
