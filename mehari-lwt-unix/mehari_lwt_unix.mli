@@ -68,6 +68,7 @@ val run_cgi :
 
 val run_lwt :
   ?port:int ->
+  ?timeout:float ->
   ?certchains:(string * string) list ->
   ?v4:string ->
   ?v6:string ->
@@ -79,6 +80,7 @@ val run_lwt :
 
 val run :
   ?port:int ->
+  ?timeout:float ->
   ?certchains:(string * string) list ->
   ?v4:string ->
   ?v6:string ->

@@ -38,6 +38,7 @@ module type S = sig
 
   val run_lwt :
     ?port:int ->
+    ?timeout:float ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
@@ -46,7 +47,9 @@ module type S = sig
   (** [run ?port ?config ?certchains stack handler] runs the server using
       [handler].
         - [port] is the port to listen on. Defaults to [1965].
-        - [config] is the server configuration. 
+        - [timeout] is the maximum waiting time in seconds for the client to
+          write a request after TLS handshake. Unset by default.
+        - [config] is the TLS server configuration.
           Defaults to
           {[
             Tls.Config.server ~certificates
@@ -61,6 +64,7 @@ module type S = sig
 
   val run :
     ?port:int ->
+    ?timeout:float ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
@@ -70,5 +74,7 @@ module type S = sig
 end
 
 (** A functor building an IO module from Mirage components. *)
-module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  S with type stack = Stack.t
+module Make
+    (Clock : Mirage_clock.PCLOCK)
+    (Stack : Tcpip.Stack.V4V6)
+    (Time : Mirage_time.S) : S with type stack = Stack.t

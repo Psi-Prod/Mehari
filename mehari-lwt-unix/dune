@@ -7,6 +7,7 @@
   mehari.mirage
   mirage-clock-unix
   mirage-flow-unix
+  mirage-time-unix
   tcpip.stack-socket)
  (preprocess
   (pps lwt_ppx)))

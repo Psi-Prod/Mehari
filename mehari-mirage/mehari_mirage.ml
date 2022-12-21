@@ -18,8 +18,10 @@ module type S = sig
   include Server_impl.S with module IO := IO
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  S with type stack = Stack.t = struct
+module Make
+    (Clock : Mirage_clock.PCLOCK)
+    (Stack : Tcpip.Stack.V4V6)
+    (Time : Mirage_time.S) : S with type stack = Stack.t = struct
   module IO = Lwt
   module Addr = Ipaddr
   module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
@@ -35,7 +37,7 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
       (Addr)
 
   module Router = Router_impl.Make (RateLimiter) (Logger)
-  module Server = Server_impl.Make (Stack) (Logger)
+  module Server = Server_impl.Make (Stack) (Time) (Logger)
 
   type addr = Addr.t
   type handler = Router.handler

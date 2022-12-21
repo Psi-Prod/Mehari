@@ -18,17 +18,17 @@ let stack ~v4 ~v6 =
   in
   Stack.connect udp tcp
 
-let run_lwt ?port ?certchains ?v4 ?v6 callback =
+let run_lwt ?port ?timeout ?certchains ?v4 ?v6 callback =
   Mirage_crypto_rng_unix.initialize ();
   let* stack =
     let v4 =
       match v4 with
       | Some ip -> Ipaddr.V4.Prefix.of_string_exn ip
-      | None -> Ipaddr.V4.Prefix.loopback
+      | None -> Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
     in
     stack ~v4 ~v6:(Option.map Ipaddr.V6.Prefix.of_string_exn v6)
   in
-  run_lwt ?port ?certchains stack callback
+  run_lwt ?port ?timeout ?certchains stack callback
 
-let run ?port ?certchains ?v4 ?v6 callback =
-  run_lwt ?port ?certchains ?v4 ?v6 callback |> Lwt_main.run
+let run ?port ?timeout ?certchains ?v4 ?v6 callback =
+  run_lwt ?port ?timeout ?certchains ?v4 ?v6 callback |> Lwt_main.run
