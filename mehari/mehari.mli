@@ -268,6 +268,7 @@ module Private : sig
     end
   end
 
+  module Cert = Cert
   module CGI = Cgi
   module Logger_impl = Logger_impl
   module Protocol = Protocol

@@ -26,17 +26,19 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   module Net = Eio.Net
   module Protocol = Mehari.Private.Protocol
 
+  type config = {
+    addr : Net.Ipaddr.v4v6;
+    port : int;
+    timeout : (float * Eio.Time.clock) option;
+    tls_config : Tls.Config.server;
+  }
+
+  let make_config ~addr ~port ~timeout ~tls_config =
+    { addr; port; timeout; tls_config }
+
   let src = Logs.Src.create "mehari.eio"
 
   module Log = (val Logs.src_log src)
-
-  let load_certs certs =
-    let rec aux acc = function
-      | [] -> acc
-      | (cert, priv_key) :: tl ->
-          aux (X509_eio.private_of_pems ~cert ~priv_key :: acc) tl
-    in
-    aux [] certs
 
   let write_resp flow resp =
     Buf_write.with_flow flow @@ fun w ->
@@ -49,7 +51,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
-  let handle_client ~addr ~port ~timeout callback flow ep =
+  let handle_client config callback flow ep =
     let reader =
       Buf_read.of_flow flow ~initial_size:1025
         ~max_size:1025 (* Apparently not inclusive *)
@@ -85,7 +87,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
            in
            Mehari.Private.make_request
              (module Common.Addr)
-             ~uri ~addr ~port ~sni ~client_cert
+             ~uri ~addr:config.addr ~port:config.port ~sni ~client_cert
            |> callback |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
      with
@@ -97,51 +99,52 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
         Log.warn (fun log -> log "Timeout while reading client request"));
     flow#shutdown `Send
 
-  let handler ~addr ~port ~timeout ~certchains ~config callback flow _ =
-    let certs = load_certs certchains in
-    let certificates =
-      match certs with
-      | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "Mehari_eio.run"
-    in
-    let server =
-      Tls_eio.server_of_flow
-        (match config with
-        | Some c -> c
-        | None ->
-            Tls.Config.server ~certificates
-              ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-              ())
-        flow
-    in
-    Tls_eio.epoch server |> handle_client ~addr ~port ~timeout callback server
+  let handler ~config callback flow _ =
+    let server = Tls_eio.server_of_flow config.tls_config flow in
+    Tls_eio.epoch server |> handle_client config callback server
+
+  let log_err = function
+    | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
+    | Tls_eio.Tls_alert a ->
+        Log.warn (fun log ->
+            log "Tls alert: %S" (Tls.Packet.alert_type_to_string a))
+    | Tls_eio.Tls_failure f ->
+        Log.warn (fun log ->
+            log "Tls failure: %S" (Tls.Engine.string_of_failure f))
+    (*| Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
+        Log.warn (fun log -> log "Concurrent connections")
+      FIXME: Removed due to unavailability outside of Linux *)
+    | exn -> raise exn
+
+  module Cert = Mehari.Private.Cert.Make (struct
+    module IO = Common.Direct
+
+    type path = Eio.Fs.dir Eio.Path.t
+
+    include X509_eio
+  end)
 
   let run ?(port = 1965) ?(backlog = 4096) ?timeout
       ?(addr = Net.Ipaddr.V4.loopback) ?config ~certchains net callback =
-    let log_err = function
-      | End_of_file ->
-          Log.warn (fun log -> log "Client closed socket prematurly")
-      | Tls_eio.Tls_alert a ->
-          Log.warn (fun log ->
-              log "Tls alert: %S" (Tls.Packet.alert_type_to_string a))
-      | Tls_eio.Tls_failure f ->
-          Log.warn (fun log ->
-              log "Tls failure: %S" (Tls.Engine.string_of_failure f))
-      (*| Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
-          Log.warn (fun log -> log "Concurrent connections")
-        FIXME: Removed due to unavailability outside of Linux *)
-      | exn -> raise exn
+    let certificates = Cert.get_certs certchains ~exn_msg:"Mehari_eio.run" in
+    let tls_config =
+      match config with
+      | Some c -> c
+      | None ->
+          Tls.Config.server ~certificates
+            ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+            ()
     in
+    let config = make_config ~addr ~port ~timeout ~tls_config in
     Eio.Switch.run (fun sw ->
         let socket =
           Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net
             (`Tcp (addr, port))
         in
         let rec serve () =
-          handler ~addr ~port ~timeout ~certchains ~config callback
+          handler ~config callback
           |> Net.accept_fork ~sw ~on_error:log_err socket;
           serve ()
         in
-        serve ())
-    |> ignore
+        serve () |> ignore)
 end

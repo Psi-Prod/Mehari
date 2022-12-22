@@ -78,6 +78,7 @@ module Private = struct
   let view_of_resp = Response.view_of_resp
   let make_request = Request.make
 
+  module Cert = Cert
   module CGI = Cgi
   module Handler = Handler
   module Logger_impl = Logger_impl

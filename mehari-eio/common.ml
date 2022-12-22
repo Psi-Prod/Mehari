@@ -2,6 +2,7 @@ module Direct = struct
   type 'a t = 'a
 
   let return x = x
+  let bind x f = f x
 end
 
 module Addr = struct
