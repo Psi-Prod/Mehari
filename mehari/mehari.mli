@@ -256,6 +256,8 @@ end
 
 (** {1 Private} *)
 
+(** You can ignore it, unless you are porting [Mehari] to a new platform not
+    supported by the existing IO backends. *)
 module Private : sig
   module type IO = Types.IO
   module type ADDR = Types.ADDR
