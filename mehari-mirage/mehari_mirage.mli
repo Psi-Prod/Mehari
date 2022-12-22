@@ -11,13 +11,6 @@ module type S = sig
   (** @closed *)
   include Mehari.NET with module IO := IO and type addr = Ipaddr.t
 
-  (** @closed *)
-  include
-    Server_impl.S
-      with module IO := IO
-       and type handler := handler
-       and type stack := stack
-
   (** {1:response Response} *)
 
   val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
@@ -45,23 +38,43 @@ module type S = sig
 
   val run_lwt :
     ?port:int ->
+    ?timeout:float ->
+    ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    unit Lwt.t
-  (** [run ?port ?certchains stack handler] runs the server using
+    unit IO.t
+  (** [run ?port ?config ?certchains stack handler] runs the server using
       [handler].
         - [port] is the port to listen on. Defaults to [1965].
+        - [timeout] is the maximum waiting time in seconds for the client to
+          write a request after TLS handshake. Unset by default.
+        - [config] is the TLS server configuration.
+          Defaults to
+          {[
+            Tls.Config.server ~certificates
+                ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+                ()
+          ]}
+        To support client certificates, specify the [authenticator].
         - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
           the last one is considered default.
 
       @raise Invalid_argument if [certchains] is empty. *)
 
   val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
+    ?port:int ->
+    ?timeout:float ->
+    ?config:Tls.Config.server ->
+    ?certchains:(string * string) list ->
+    stack ->
+    handler ->
+    unit
   (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
 end
 
 (** A functor building an IO module from Mirage components. *)
-module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  S with type stack = Stack.t
+module Make
+    (Clock : Mirage_clock.PCLOCK)
+    (Stack : Tcpip.Stack.V4V6)
+    (Time : Mirage_time.S) : S with type stack = Stack.t

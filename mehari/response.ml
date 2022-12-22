@@ -38,7 +38,7 @@ let is_startswith_bom = function
 
 let validate code meta body =
   if is_startswith_bom meta then
-    invalid_arg "meta begin with a U+FEFF byte order mark. "
+    invalid_arg "meta begins with a U+FEFF byte order mark. "
   else if Bytes.(of_string meta |> length) > 1024 then
     invalid_arg "too long header"
   else

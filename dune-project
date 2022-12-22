@@ -59,6 +59,8 @@
    (>= 2.1.0))
   (mirage-channel
    (>= 4.1.0))
+  (mirage-time
+   (>= 4.1.0))
   (re
    (>= 1.10.4))
   (tcpip
@@ -79,6 +81,8 @@
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-flow-unix
+   (>= 3.0.0))
+  (mirage-time-unix
    (>= 3.0.0))
   (tcpip
    (>= 7.1.2))))

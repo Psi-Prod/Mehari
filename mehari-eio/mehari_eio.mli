@@ -32,11 +32,11 @@ val run :
       - [backlog] is the the number of pending connections that can be queued
         up. Defaults to [4096].
       - [timeout] is a couple of form [(duration, eio_clock)]. [duration] is
-        the maximum waiting time for the client to write a request after TLS
-        handshake.
+        the maximum waiting time in seconds for the client to write a request
+        after TLS handshake. Unset by default.
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
-      - [config] is the server configuration.
+      - [config] is the TLS server configuration.
         Defaults to
         {[
           Tls.Config.server ~certificates
