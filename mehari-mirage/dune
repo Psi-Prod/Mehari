@@ -1,6 +1,14 @@
 (library
  (name mehari_mirage)
  (public_name mehari.mirage)
- (libraries ipaddr lwt mirage-channel mirage-time mehari tcpip tls.lwt tls-mirage)
+ (libraries
+  ipaddr
+  lwt
+  mirage-channel
+  mirage-time
+  mehari
+  tcpip
+  tls.lwt
+  tls-mirage)
  (preprocess
   (pps lwt_ppx)))

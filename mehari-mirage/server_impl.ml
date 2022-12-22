@@ -38,6 +38,7 @@ module Make
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
   module Protocol = Mehari.Private.Protocol
+
   module Cert = Mehari.Private.Cert.Make (struct
     module IO = IO
 
@@ -45,7 +46,7 @@ module Make
 
     include X509_lwt
   end)
-  
+
   open Lwt.Syntax
 
   type config = {
@@ -61,7 +62,7 @@ module Make
   let src = Logs.Src.create "mehari.mirage"
 
   module Log = (val Logs.src_log src)
-  
+
   let write_resp chan resp =
     let write buf = Channel.write_string chan buf 0 (String.length buf) in
     (match Mehari.Private.view_of_resp resp with
