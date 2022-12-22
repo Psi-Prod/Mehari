@@ -90,7 +90,8 @@ let response_body body = response (Status.success body)
 let response_text txt =
   response (Status.success (text txt)) (Mime.text_mime "plain")
 
-let response_gemtext g = response (Status.success (gemtext g)) Mime.gemini
+let response_gemtext ?charset ?lang g =
+  Mime.gemini ?charset ?lang () |> response (Status.success (gemtext g))
 
 let response_raw raw =
   match raw with

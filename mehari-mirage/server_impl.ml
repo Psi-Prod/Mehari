@@ -160,12 +160,7 @@ module Make
 
   let run_lwt ?(port = 1965) ?timeout ?config
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
-    let* certs = load_certs certchains in
-    let certificates =
-      match certs with
-      | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "Mehari_mirage.run_lwt"
-    in
+    let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
       Stack.ip stack |> Stack.IP.get_ip
       |> Fun.flip List.nth 0 (* List should not be empty. *)

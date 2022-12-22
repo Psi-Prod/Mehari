@@ -47,12 +47,13 @@ val query : 'a request -> string option
 (** User uri query. *)
 
 val client_cert : 'a request -> X509.Certificate.t list
-(** User client certificate. *)
+(** User client certificates. *)
 
 val param : 'a request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
-    @raise Invalid_argument if [n] is not a positive integer or path does not
-      contain any parameters in which case the program is buggy. *)
+    @raise Invalid_argument if [n] is not a positive integer
+    @raise Invalid_argument if path does not contain any parameters in which
+      case the program is buggy. *)
 
 (** {1:response Response} *)
 
@@ -69,7 +70,8 @@ val response_text : string -> response
 (** Same as {!val:response} but respond with given text and use [text/plain] as
         {!type:mime} type. *)
 
-val response_gemtext : Gemtext.t -> response
+val response_gemtext :
+  ?charset:string -> ?lang:string list -> Gemtext.t -> response
 (** Same as {!val:response} but respond with given {!type:Gemtext.t} and use
         [text/gemini] as {!type:mime} type. *)
 
@@ -154,13 +156,16 @@ val from_content : ?charset:string -> ?lang:string list -> string -> mime option
     type by performing a mime lookup based on content [c]. *)
 
 val no_mime : mime
-(** Represents the absence of a mime. *)
+(** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)
 
-val gemini : mime
-(** [gemini] is [text/gemini; charset=utf-8] *)
+val gemini : ?charset:string -> ?lang:string list -> unit -> mime
+(** [gemini] is a shortcut for [make_mime "text/gemini"]. *)
+
+val app_octet_stream : mime
+(** [app_octet_stream] is a shortcut for [application/octet-stream]. *)
 
 val plaintext : mime
-(** [plaintext] is [text/plain; charset=utf-8] *)
+(** [plaintext] is a shortcut for [text/plain; charset=utf-8]. *)
 
 val text_mime : string -> mime
 (** [text_mime type] is [text/type; charset=utf-8]. *)

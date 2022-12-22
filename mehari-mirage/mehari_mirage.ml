@@ -4,7 +4,12 @@ module type IO_RESPONSE = sig
   val respond : 'a Mehari.status -> 'a -> Mehari.response Lwt.t
   val respond_body : Mehari.body -> Mehari.mime -> Mehari.response Lwt.t
   val respond_text : string -> Mehari.response Lwt.t
-  val respond_gemtext : Mehari.Gemtext.t -> Mehari.response Lwt.t
+
+  val respond_gemtext :
+    ?charset:string ->
+    ?lang:string list ->
+    Mehari.Gemtext.t ->
+    Mehari.response Lwt.t
 
   val respond_raw :
     [ `Body of string | `Full of int * string * string ] ->
@@ -49,7 +54,10 @@ module Make
   let respond s i = Mehari.response s i |> IO.return
   let respond_body b m = Mehari.response_body b m |> IO.return
   let respond_text t = Mehari.response_text t |> IO.return
-  let respond_gemtext g = Mehari.response_gemtext g |> IO.return
+
+  let respond_gemtext ?charset ?lang g =
+    Mehari.response_gemtext ?charset ?lang g |> IO.return
+
   let respond_raw g = Mehari.response_raw g |> IO.return
   let make_rate_limit = RateLimiter.make
   let set_log_lvl = Logger.set_level

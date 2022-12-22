@@ -25,7 +25,11 @@ module type S = sig
   (** Same as {!val:respond} but respond with given text and use [text/plain] as
         {!type:Mehari.mime} type. *)
 
-  val respond_gemtext : Mehari.Gemtext.t -> Mehari.response IO.t
+  val respond_gemtext :
+    ?charset:string ->
+    ?lang:string list ->
+    Mehari.Gemtext.t ->
+    Mehari.response IO.t
   (** Same as {!val:respond} but respond with given {!type:Mehari.Gemtext.t} and use
         [text/gemini] as {!type:Mehari.mime} type. *)
 

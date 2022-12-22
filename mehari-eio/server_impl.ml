@@ -71,13 +71,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          |> Seq.map (fun (_, d) -> Domain_name.to_string d)
        in
        let with_timeout =
-         match timeout with
+         match config.timeout with
          | None -> fun f -> f ()
          | Some (duration, clock) -> Eio.Time.with_timeout_exn clock duration
        in
        match
          with_timeout (fun () ->
-             client_req reader |> Protocol.static_check_request ~port ~hostnames)
+             client_req reader
+             |> Protocol.static_check_request ~port:config.port ~hostnames)
        with
        | Ok uri ->
            let client_cert =

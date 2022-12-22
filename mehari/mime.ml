@@ -11,8 +11,9 @@ let make_mime ?charset ?(lang = []) mime =
   }
 
 let no_mime = make_mime ""
-let gemini = make_mime "text/gemini"
+let gemini ?charset ?lang () = make_mime ?charset ?lang "text/gemini"
 let text_mime text = make_mime ("text/" ^ text)
+let app_octet_stream = make_mime "application/octet-stream"
 let plaintext = text_mime "plain"
 let with_charset t c = { t with charset = Some c }
 
