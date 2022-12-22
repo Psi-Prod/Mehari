@@ -47,6 +47,32 @@ val from_filename :
     verbatim to the Gemini client, without any additional modification by the
     server.
 
+    {2 CGI Environment Variables}
+
+    Some variables are empty for compatibility with other CGI script.
+
+    Let's say that the url requested is [gemini://localhost/cgi/foo.cgi?input]:
+
+      - [AUTH_TYPE]: [CERTIFICATE] if a client certificate is provided, empty
+          otherwise.
+      - [CONTENT_LENGTH]: Empty.
+      - [CONTENT_TYPE]: Empty.
+      - [GATEWAY_INTERFACE]: [CGI/1.1].
+      - [PATH_INFO]: Example value: [/cgi/foo.cgi].
+      - [PATH_TRANSLATED]: Example value: [/cgi/foo.cgi].
+      - [QUERY_STRING]: Example value: [input].
+      - [REMOTE_ADDR]: Example value: [127.0.0.1].
+      - [REMOTE_HOST]: Same as [REMOTE_ADDR].
+      - [REMOTE_IDENT]: Empty.
+      - [REMOTE_METHOD]: Empty.
+      - [REMOTE_USER]: Client certificate common if it is provided, empty
+          otherwise.
+      - [SCRIPT_NAME]: Example value: [/var/cgi/foo.cgi].
+      - [SERVER_NAME]: Example value: [/var/cgi/foo.cgi].
+      - [SERVER_PORT]: Example value: [1965].
+      - [SERVER_PROTOCOL]: [GEMINI].
+      - [SERVER_SOFTWARE]: Example value: [Mehari/1.0].
+
     @see < https://www.rfc-editor.org/rfc/rfc3875 > For the CGI
       specification. *)
 

@@ -18,6 +18,7 @@ module Make (Addr : Types.ADDR) : S with type addr := Addr.t = struct
             (fun (_, d) -> Domain_name.to_string d)
             (Tls.Core.Cert.hostnames c |> X509.Host.Set.choose_opt)
     in
+    let client_addr = Format.asprintf "%a" Addr.pp (Request.ip req) in
     [|
       ( "AUTH_TYPE",
         Option.fold common_name_cert ~none:"" ~some:(fun _ -> "CERTIFICATE") );
@@ -27,8 +28,8 @@ module Make (Addr : Types.ADDR) : S with type addr := Addr.t = struct
       ("PATH_INFO", Request.uri req |> Uri.path |> Uri.pct_decode);
       ("PATH_TRANSLATED", path);
       ("QUERY_STRING", Request.query req |> empty_by_default);
-      ("REMOTE_ADDR", Format.asprintf "%a" Addr.pp (Request.ip req));
-      ("REMOTE_HOST", Request.uri req |> Uri.host |> empty_by_default);
+      ("REMOTE_ADDR", client_addr);
+      ("REMOTE_HOST", client_addr);
       ("REMOTE_IDENT", empty);
       ("REQUEST_METHOD", empty);
       ("REMOTE_USER", empty_by_default common_name_cert);
