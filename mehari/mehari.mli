@@ -144,7 +144,13 @@ val make_mime : ?charset:string -> ?lang:string list -> string -> mime
 (** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
   [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
   [text/]. [lang] parameter is ignored if [mime] is different from
-  "text/gemini". *)
+  "text/gemini".
+
+  @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
+    For a description of the "charset" parameter.
+
+  @see < https://www.ietf.org/rfc/bcp/bcp47.txt >
+    For a description of the "lang" parameter. *)
 
 val from_filename :
   ?charset:string -> ?lang:string list -> string -> mime option
