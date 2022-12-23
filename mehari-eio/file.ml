@@ -1,7 +1,7 @@
 let response_document mime path =
   let chunk_size = 16384 in
   let body =
-    Mehari.delayed (fun consume ->
+    Mehari.stream (fun consume ->
         Eio.Path.with_open_in path (fun flow ->
             let buf = Eio.Buf_read.of_flow flow ~max_size:max_int in
             let n = ref 0 in

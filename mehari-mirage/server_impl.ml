@@ -63,14 +63,18 @@ module Make
 
   module Log = (val Logs.src_log src)
 
+  let flush_channel chan =
+    Channel.flush chan |> Lwt_result.map_error (fun e -> `ChannelWriteErr e)
+
   let write_resp chan resp =
     let write buf = Channel.write_string chan buf 0 (String.length buf) in
-    (match Mehari.Private.view_of_resp resp with
-    | Immediate bufs -> List.iter write bufs
-    | Delayed d -> d write);
-    match%lwt Channel.flush chan with
-    | Ok () -> Lwt.return_ok ()
-    | Error err -> `ChannelWriteErr err |> Lwt.return_error
+    match Mehari.Private.view_of_resp resp with
+    | Immediate bufs ->
+        List.iter write bufs;
+        flush_channel chan
+    | Delayed { body; _ } ->
+        body write;
+        flush_channel chan
 
   let read_client_req flow =
     let buf = Buffer.create 1024 in

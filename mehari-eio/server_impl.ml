@@ -42,10 +42,18 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
 
   let write_resp flow resp =
     Buf_write.with_flow flow @@ fun w ->
-    (match Mehari.Private.view_of_resp resp with
-    | Immediate bufs -> List.iter (fun buf -> Buf_write.string w buf) bufs
-    | Delayed d -> d (Buf_write.string w));
-    Buf_write.flush w
+    match Mehari.Private.view_of_resp resp with
+    | Immediate bufs ->
+        List.iter (fun buf -> Buf_write.string w buf) bufs;
+        Buf_write.flush w
+    | Delayed { body; flush } ->
+        let consume buf =
+          if flush then (
+            Buf_write.string w buf;
+            Buf_write.flush w)
+          else Buf_write.string w buf
+        in
+        body consume
 
   let client_req =
     let crlf = Buf_read.string "\r\n" in

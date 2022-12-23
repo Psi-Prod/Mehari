@@ -1,9 +1,11 @@
 type t =
   | Immediate of string list
   (* A list for avoid ( ^ ) quadatric concatenation. *)
-  | Delayed of ((string -> unit) -> unit)
+  | Delayed of stream
 
-and view = t
+and stream = { body : (string -> unit) -> unit; flush : bool }
+
+type view = t
 
 type 'a status = int * 'a typ
 
@@ -12,26 +14,22 @@ and _ typ =
   | SlowDown : int -> string typ
   | Meta : string typ
 
-and body =
-  | String of string
-  | Gemtext of Gemtext.t
-  | Delayed of ((string -> unit) -> unit)
+and body = String of string | Gemtext of Gemtext.t | Stream of stream
 
 let view_of_resp r = r
 let string t = String t
 let gemtext g = Gemtext g
-let delayed d = Delayed d
+let stream ?(flush = false) body = Stream { body; flush }
 
 let lines l =
-  Delayed
-    (fun consume ->
+  stream ~flush:false (fun consume ->
       List.iter
         (fun line ->
           consume line;
           consume "\n")
         l)
 
-let seq s = Delayed (fun consume -> Seq.iter consume s)
+let seq ?flush s = stream ?flush (fun consume -> Seq.iter consume s)
 
 let page ~title body =
   gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
@@ -56,11 +54,15 @@ let validate code meta body =
     | None -> Immediate [ meta ]
     | Some (String t) -> Immediate [ meta; t ]
     | Some (Gemtext g) -> Immediate [ meta; Gemtext.to_string g ]
-    | Some (Delayed body) ->
+    | Some (Stream { body; flush }) ->
         Delayed
-          (fun consume ->
-            consume meta;
-            body consume)
+          {
+            body =
+              (fun consume ->
+                consume meta;
+                body consume);
+            flush;
+          }
 
 let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =

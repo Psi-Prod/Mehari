@@ -123,13 +123,15 @@ val lines : string list -> body
 (** Creates a {!type:body} from given lines. Each line is written followed by a
     newline ([LF]) character. *)
 
-val seq : string Seq.t -> body
-(** Creates a {!type:body} from a string sequence. *)
+val seq : ?flush:bool -> string Seq.t -> body
+(** Creates a {!type:body} from a string sequence. [flush] decide whether the
+    socket should be flushed at each iteration. It defaults to [false]. *)
 
-val delayed : ((string -> unit) -> unit) -> body
-(** [delayed (fun consume -> ...)] allows the creation of a {!type:body} with a
-    buffering function. Each call to [consume] adds the given input to a
-    buffer. Useful for file chunks streaming. *)
+val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
+(** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
+    Each call to [consume] write the given input on socket. Useful for stream
+    data or file chunk in real time. See {!val:seq} for a description of
+    [flush] parameter. *)
 
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
