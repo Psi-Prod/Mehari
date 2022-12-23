@@ -21,7 +21,16 @@ let view_of_resp r = r
 let string t = String t
 let gemtext g = Gemtext g
 let delayed d = Delayed d
-let lines l = String.concat "\n" l |> string
+
+let lines l =
+  Delayed
+    (fun consume ->
+      List.iter
+        (fun line ->
+          consume line;
+          consume "\n")
+        l)
+
 let seq s = Delayed (fun consume -> Seq.iter consume s)
 
 let page ~title body =

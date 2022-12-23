@@ -117,10 +117,11 @@ val string : string -> body
 (** Creates a {!type:body} from given string. *)
 
 val gemtext : Gemtext.t -> body
-(** Creates a {!type:body} from a Gemtext document. *)
+(** Creates a {!type:body} from a {!type:Gemtext.t} document. *)
 
 val lines : string list -> body
-(** Creates a {!type:body} from Gemtext line as text. *)
+(** Creates a {!type:body} from given lines. Each line is written followed by a
+    newline ([LF]) character. *)
 
 val seq : string Seq.t -> body
 (** Creates a {!type:body} from a string sequence. *)
