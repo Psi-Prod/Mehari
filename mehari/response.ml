@@ -13,15 +13,15 @@ and _ typ =
   | Meta : string typ
 
 and body =
-  | Text of string
+  | String of string
   | Gemtext of Gemtext.t
   | Delayed of ((string -> unit) -> unit)
 
 let view_of_resp r = r
-let text t = Text t
+let string t = String t
 let gemtext g = Gemtext g
 let delayed d = Delayed d
-let lines l = String.concat "\n" l |> text
+let lines l = String.concat "\n" l |> string
 let seq s = Delayed (fun consume -> Seq.iter consume s)
 
 let page ~title body =
@@ -45,7 +45,7 @@ let validate code meta body =
     let meta = fmt_meta code meta in
     match body with
     | None -> Immediate [ meta ]
-    | Some (Text t) -> Immediate [ meta; t ]
+    | Some (String t) -> Immediate [ meta; t ]
     | Some (Gemtext g) -> Immediate [ meta; Gemtext.to_string g ]
     | Some (Delayed body) ->
         Delayed
@@ -88,7 +88,7 @@ let response status info = to_response status info
 let response_body body = response (Status.success body)
 
 let response_text txt =
-  response (Status.success (text txt)) (Mime.text_mime "plain")
+  Mime.text "plain" |> response (Status.success (string txt))
 
 let response_gemtext ?charset ?lang g =
   Mime.gemini ?charset ?lang () |> response (Status.success (gemtext g))

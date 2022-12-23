@@ -113,8 +113,8 @@ val code_of_status : 'a status -> int
 
 (** {1:body Body} *)
 
-val text : string -> body
-(** Creates a {!type:body} from given text. *)
+val string : string -> body
+(** Creates a {!type:body} from given string. *)
 
 val gemtext : Gemtext.t -> body
 (** Creates a {!type:body} from a Gemtext document. *)
@@ -173,8 +173,8 @@ val app_octet_stream : mime
 val plaintext : mime
 (** [plaintext] is a shortcut for [text/plain; charset=utf-8]. *)
 
-val text_mime : string -> mime
-(** [text_mime type] is [text/type; charset=utf-8]. *)
+val text : string -> mime
+(** [text type] is [text/type; charset=utf-8]. *)
 
 val with_charset : mime -> string -> mime
 (** Set charset of given {!type:mime}. *)

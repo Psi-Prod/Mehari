@@ -21,7 +21,7 @@ let response_raw = Response.response_raw
 
 include Response.Status
 
-let text = Response.text
+let string = Response.string
 let gemtext = Response.gemtext
 let lines = Response.lines
 let seq = Response.seq
@@ -34,7 +34,7 @@ let no_mime = Mime.no_mime
 let gemini = Mime.gemini
 let app_octet_stream = Mime.app_octet_stream
 let plaintext = Mime.plaintext
-let text_mime = Mime.text_mime
+let text = Mime.text
 let with_charset = Mime.with_charset
 
 module type NET = sig
