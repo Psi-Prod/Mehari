@@ -59,35 +59,36 @@ val param : 'a request -> int -> string
 
 val response : 'a status -> 'a -> response
 (** Creates a new {!type:response} with given {!type:Mehari.status}.
+
     @raise Invalid_argument if [meta] is more than 1024 bytes.
     @raise Invalid_argument if [meta] starts with [U+FEFF] byte order mark. *)
 
 val response_body : body -> mime -> response
 (** Same as {!val:response} but respond with given {!type:body} and
-        use given {!type:mime} as mime type. *)
+    use given {!type:mime} as mime type. *)
 
 val response_text : string -> response
 (** Same as {!val:response} but respond with given text and use [text/plain] as
-        {!type:mime} type. *)
+    {!type:mime} type. *)
 
 val response_gemtext :
   ?charset:string -> ?lang:string list -> Gemtext.t -> response
 (** Same as {!val:response} but respond with given {!type:Gemtext.t} and use
-        [text/gemini] as {!type:mime} type. *)
+    [text/gemini] as {!type:mime} type. *)
 
 val response_raw :
   [ `Body of string | `Full of int * string * string ] -> response
 (** Creates a new raw {!type:response}. Does not perform any check on validity
-      i.e. length of header or beginning with a byte order mark [U+FEFF].
+    i.e. length of header or beginning with a byte order mark [U+FEFF].
       - [`Body body]: creates a {!val:response} with [body].
       - [`Full (code, meta, body)]: creates a {!val:response} with given arguments. *)
 
 (** {1:status Status} *)
 
 (** A wrapper around Gemini status codes.
-  @see < https://gemini.circumlunar.space/docs/specification.gmi >
-    Section "Appendix 1. Full two digit status codes" for a description of the
-    meaning of each code. *)
+    @see < https://gemini.circumlunar.space/docs/specification.gmi >
+      Section "Appendix 1. Full two digit status codes" for a description of
+      the meaning of each code. *)
 
 val input : string status
 val sensitive_input : string status
@@ -113,6 +114,15 @@ val code_of_status : 'a status -> int
 
 (** {1:body Body} *)
 
+(** {2:note-on-stream A note on data stream response}
+
+    Mehari offers ways to keep client connections open forever and stream
+    data in real time such as {!val:seq} and {!val:stream} functions when the
+    [flush] parameter is specified. It is important to note that most Gemini
+    clients do not support streaming and should be used with caution. That's
+    why this parameter is set to [false] by default in all the functions that
+    Mehari expose. *)
+
 val string : string -> body
 (** Creates a {!type:body} from given string. *)
 
@@ -124,14 +134,14 @@ val lines : string list -> body
     newline ([LF]) character. *)
 
 val seq : ?flush:bool -> string Seq.t -> body
-(** Creates a {!type:body} from a string sequence. [flush] decide whether the
-    socket should be flushed at each iteration. It defaults to [false]. *)
+(** Creates a {!type:body} from a string sequence. See
+    {!label:"note-on-stream"} for a description of [flush] parameter. *)
 
 val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
 (** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
     Each call to [consume] write the given input on socket. Useful for stream
-    data or file chunk in real time. See {!val:seq} for a description of
-    [flush] parameter. *)
+    data or file chunk in real time. See {!label:"note-on-stream"}
+    for a description of [flush] parameter. *)
 
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
@@ -145,15 +155,15 @@ val page : title:string -> string -> body
 
 val make_mime : ?charset:string -> ?lang:string list -> string -> mime
 (** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
-  [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
-  [text/]. [lang] parameter is ignored if [mime] is different from
-  "text/gemini".
+    [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
+    [text/]. [lang] parameter is ignored if [mime] is different from
+    "text/gemini".
 
-  @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
-    For a description of the "charset" parameter.
+    @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
+      For a description of the "charset" parameter.
 
-  @see < https://www.ietf.org/rfc/bcp/bcp47.txt >
-    For a description of the "lang" parameter. *)
+    @see < https://www.ietf.org/rfc/bcp/bcp47.txt >
+      For a description of the "lang" parameter. *)
 
 val from_filename :
   ?charset:string -> ?lang:string list -> string -> mime option
@@ -201,11 +211,11 @@ module type NET = sig
 
   type handler = addr request -> response IO.t
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
-    {!type:Mehari.response}. *)
+      {!type:Mehari.response}. *)
 
   type middleware = handler -> handler
   (** Middlewares take a {!type:handler}, and run some code before or
-        after — producing a “bigger” {!type:handler}. *)
+      after — producing a “bigger” {!type:handler}. *)
 
   (** {1:routing Routing} *)
 
