@@ -60,7 +60,7 @@
   (mirage-channel
    (>= 4.1.0))
   (mirage-time
-   (>= 4.1.0))
+   (>= 3.0.0))
   (re
    (>= 1.10.4))
   (tcpip
