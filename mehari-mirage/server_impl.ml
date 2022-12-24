@@ -110,37 +110,23 @@ module Make
         Ok ()
     | Error err -> Lwt.return_error err
 
-  let handle_client config callback flow ep =
+  let handle_client config callback flow epoch =
     let chan = Channel.create flow in
     match%lwt with_timeout config.timeout (fun () -> read_client_req chan) with
-    | Ok client_req ->
-        let sni, certificates, client_cert =
-          match ep with
-          | Ok data ->
-              ( Option.map Domain_name.to_string data.Tls.Core.own_name,
-                data.Tls.Core.own_certificate,
-                Option.to_list data.Tls.Core.peer_certificate )
-          | Error () -> assert false
-        in
-        let hostnames =
-          List.map Tls.Core.Cert.hostnames certificates
-          |> List.fold_left X509.Host.Set.union X509.Host.Set.empty
-          |> X509.Host.Set.to_seq
-          |> Seq.map (fun (_, d) -> Domain_name.to_string d)
-        in
-        let* resp =
-          match
-            Protocol.static_check_request ~port:config.port ~hostnames
-              client_req
-          with
-          | Ok uri ->
-              Mehari.Private.make_request
-                (module Ipaddr)
-                ~uri ~addr:config.addr ~port:config.port ~sni ~client_cert
-              |> callback
-          | Error err -> Protocol.to_response err |> Lwt.return
-        in
-        write_and_close chan flow resp
+    | Ok client_req -> (
+        match epoch with
+        | Ok ep ->
+            let* resp =
+              match
+                Protocol.make_request
+                  (module Ipaddr)
+                  ~port:config.port ~addr:config.addr ep client_req
+              with
+              | Ok req -> callback req
+              | Error err -> Protocol.to_response err |> Lwt.return
+            in
+            write_and_close chan flow resp
+        | Error () -> Lwt.return_error `ConnectionClosed)
     | Error `BufferLimitExceeded ->
         Protocol.to_response AboveMaxSize |> write_and_close chan flow
     | Error err -> Lwt.return_error err
@@ -152,6 +138,8 @@ module Make
 
   let log_err = function
     | `BufferLimitExceeded -> assert false
+    | `ConnectionClosed ->
+        Log.warn (fun log -> log "Connection has been closed prematurly")
     | `Eof -> Log.warn (fun log -> log "EOF encountered prematurly")
     | `ChannelWriteErr err ->
         Log.warn (fun log ->
@@ -160,14 +148,14 @@ module Make
     | `Timeout ->
         Log.warn (fun log -> log "Timeout while reading client request")
     | `TLSWriteErr err ->
-        Log.warn (fun log -> log "TLSWriteErr%a" TLS.pp_write_error err)
+        Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
 
   let run_lwt ?(port = 1965) ?timeout ?config
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
     let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
       Stack.ip stack |> Stack.IP.get_ip
-      |> Fun.flip List.nth 0 (* List should not be empty. *)
+      |> Fun.flip List.nth 0 (* Should not be empty. *)
     in
     let tls_config =
       match config with

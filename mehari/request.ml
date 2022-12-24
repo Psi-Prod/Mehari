@@ -3,7 +3,7 @@ type 'a t = {
   addrm : (module Types.ADDR with type t = 'a);
   port : int;
   uri : Uri.t;
-  sni : string option;
+  sni : string;
   params : Re.Group.t option;
   client_cert : X509.Certificate.t list;
 }

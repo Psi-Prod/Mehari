@@ -47,4 +47,4 @@ val run :
       - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
         the last one is considered default.
 
-      @raise Invalid_argument if [certchains] is empty. *)
+    @raise Invalid_argument if [certchains] is empty. *)

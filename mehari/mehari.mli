@@ -40,7 +40,7 @@ val ip : 'addr request -> 'addr
 val port : 'a request -> int
 (** Port of client sending the {!type:request}. *)
 
-val sni : 'a request -> string option
+val sni : 'a request -> string
 (** Server name indication TLS extension. *)
 
 val query : 'a request -> string option
@@ -279,15 +279,6 @@ module Private : sig
 
   val view_of_resp : response -> response_view
 
-  val make_request :
-    (module ADDR with type t = 'addr) ->
-    uri:Uri.t ->
-    addr:'addr ->
-    port:int ->
-    sni:string option ->
-    client_cert:X509.Certificate.t list ->
-    'addr request
-
   module Handler : sig
     module Make (IO : Types.IO) : sig
       type 'addr t = 'addr request -> response IO.t
@@ -301,3 +292,5 @@ module Private : sig
   module Rate_limiter_impl = Rate_limiter_impl
   module Router_impl = Router_impl
 end
+
+(** Basics  *)

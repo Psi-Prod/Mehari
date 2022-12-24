@@ -77,7 +77,6 @@ module Private = struct
   type response_view = Response.view
 
   let view_of_resp = Response.view_of_resp
-  let make_request = Request.make
 
   module Cert = Cert
   module CGI = Cgi
