@@ -11,7 +11,7 @@ module type S = sig
     ?config:Tls.Config.server ->
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
     Eio.Net.t ->
-    handler ->
+      handler ->
     unit
 end
 

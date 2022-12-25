@@ -46,10 +46,11 @@ module type S = sig
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
-    handler ->
+      handler ->
     unit IO.t
   (** [run ?port ?config ?certchains stack handler] runs the server using
-      [handler].
+      [host].
+
         - [port] is the port to listen on. Defaults to [1965].
         - [timeout] is the maximum waiting time in seconds for the client to
           write a request after TLS handshake. Unset by default.
@@ -72,7 +73,7 @@ module type S = sig
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
-    handler ->
+      handler ->
     unit
   (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
 end

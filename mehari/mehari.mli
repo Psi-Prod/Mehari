@@ -199,19 +199,19 @@ val with_charset : mime -> string -> mime
 module type NET = sig
   module IO : Types.IO
 
-  type route
-  (** Routes tell {!val:router} which handler to select for each request. See
-      {!section-routing}. *)
-
-  type rate_limiter
-  (** Rate limiter. See {!section-rate_limit}. *)
-
   type addr
   (** Type for IP address. *)
 
   type handler = addr request -> response IO.t
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
       {!type:Mehari.response}. *)
+
+  type route
+  (** Routes tell {!val:router} which handler to select for each request. See
+      {!section-routing}. *)
+
+  type rate_limiter
+  (** Rate limiter. See {!section-rate_limit}. *)
 
   type middleware = handler -> handler
   (** Middlewares take a {!type:handler}, and run some code before or
@@ -252,6 +252,13 @@ module type NET = sig
   make_rate_limit ~period:2 5 `Hour
       ]}
       limits client to 5 requests every 2 hours. *)
+
+  (** {1:host Virtual hosting} *)
+
+  val virtual_hosts : ?default:handler -> (string * handler) list -> handler
+  (** [virtual_hosts ~default [(domain, handler); ...]] produces a
+      {!type:handler} which enables virtual hosting virtual hosting at the
+      TLS-layer using SNI. *)
 
   (** {1 Logging} *)
 

@@ -24,10 +24,11 @@ val run :
   ?config:Tls.Config.server ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
   Eio.Net.t ->
-  handler ->
+    handler ->
   unit
-(** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server using
-    [handler].
+(** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server
+    using [handler].
+
       - [port] is the port to listen on. Defaults to [1965].
       - [backlog] is the the number of pending connections that can be queued
         up. Defaults to [4096].
