@@ -7,15 +7,6 @@ module type S = sig
 
   type handler = Ipaddr.t Private.Handler.Make(IO).t
 
-  val run_lwt :
-    ?port:int ->
-    ?timeout:float ->
-    ?config:Tls.Config.server ->
-    ?certchains:(string * string) list ->
-    stack ->
-    handler ->
-    unit IO.t
-
   val run :
     ?port:int ->
     ?timeout:float ->
@@ -23,7 +14,7 @@ module type S = sig
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    unit
+    unit IO.t
 end
 
 module Make
@@ -162,7 +153,7 @@ module Make
     | `TLSWriteErr err ->
         Log.warn (fun log -> log "TLSWriteErr%a" TLS.pp_write_error err)
 
-  let run_lwt ?(port = 1965) ?timeout ?config
+  let run ?(port = 1965) ?timeout ?config
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
     let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
@@ -188,7 +179,4 @@ module Make
             log_err err;
             Lwt.return_unit);
     Stack.listen stack
-
-  let run ?port ?timeout ?config ?certchains stack callback =
-    run_lwt ?port ?timeout ?config ?certchains stack callback |> Lwt_main.run
 end

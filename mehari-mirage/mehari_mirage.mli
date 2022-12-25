@@ -40,7 +40,7 @@ module type S = sig
 
   (** {1 Entry point} *)
 
-  val run_lwt :
+  val run :
     ?port:int ->
     ?timeout:float ->
     ?config:Tls.Config.server ->
@@ -65,16 +65,6 @@ module type S = sig
           the last one is considered default.
 
       @raise Invalid_argument if [certchains] is empty. *)
-
-  val run :
-    ?port:int ->
-    ?timeout:float ->
-    ?config:Tls.Config.server ->
-    ?certchains:(string * string) list ->
-    stack ->
-    handler ->
-    unit
-  (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
 end
 
 (** A functor building an IO module from Mirage components. *)
