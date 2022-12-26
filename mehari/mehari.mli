@@ -178,32 +178,33 @@ val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
 
 (** {1:mime Mime} *)
 
-val make_mime : ?charset:string -> ?lang:string list -> string -> mime
-(** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
-    [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
-    [text/]. [lang] parameter is ignored if [mime] is different from
-    "text/gemini".
+val make_mime : ?charset:string -> string -> mime
+(** [make_mime ?charset mime] creates a {!type:mime} type from given
+    [charset]. Charset defaults to [utf-8] if mime type begins with
+    [text/].
+
+    @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
+      For a description of the "charset" parameter. *)
+
+val from_filename : ?charset:string -> string -> mime option
+(** [from_filename ?charset fname] tries to create a {!type:mime} by
+    performing a mime lookup based on file extension of [fname]. *)
+
+val from_content : ?charset:string -> string -> mime option
+(** [from_content ?charset c] tries to create a {!type:mime} type by performing
+    a mime lookup based on content [c]. *)
+
+val no_mime : mime
+(** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)
+
+val gemini : ?charset:string -> ?lang:string list -> unit -> mime
+(** [gemini ?charset ?lang ()] is [text/gemini; charset=...; lang=...].
 
     @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
       For a description of the "charset" parameter.
 
     @see < https://www.ietf.org/rfc/bcp/bcp47.txt >
       For a description of the "lang" parameter. *)
-
-val from_filename :
-  ?charset:string -> ?lang:string list -> string -> mime option
-(** [from_filename ?charset ?lang fname] tries to create a {!type:mime} by
-    performing a mime lookup based on file extension of [fname]. *)
-
-val from_content : ?charset:string -> ?lang:string list -> string -> mime option
-(** [from_content ?default ?charset ?lang c] tries to create a {!type:mime}
-    type by performing a mime lookup based on content [c]. *)
-
-val no_mime : mime
-(** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)
-
-val gemini : ?charset:string -> ?lang:string list -> unit -> mime
-(** [gemini] is a shortcut for [make_mime "text/gemini"]. *)
 
 val app_octet_stream : mime
 (** [app_octet_stream] is a shortcut for [application/octet-stream]. *)
@@ -212,7 +213,7 @@ val plaintext : mime
 (** [plaintext] is a shortcut for [text/plain; charset=utf-8]. *)
 
 val text : string -> mime
-(** [text type] is [text/type; charset=utf-8]. *)
+(** [text type] is a shortcut for [text/type; charset=utf-8]. *)
 
 val with_charset : mime -> string -> mime
 (** Set charset of given {!type:mime}. *)
