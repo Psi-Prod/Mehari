@@ -12,13 +12,12 @@ type request_err =
 
 (* Perform some static check on given request *)
 let static_check_request ~port ~hostnames input =
-  try
-    let utf8 = Zed_string.of_utf8 input |> Zed_string.to_utf8 in
-    let length = Bytes.of_string utf8 |> Bytes.length in
+  if String.is_valid_utf_8 input then
+    let length = Bytes.of_string input |> Bytes.length in
     if length = 0 then Error EmptyURL
     else if length > 1024 then Error AboveMaxSize
     else
-      let uri = Uri.of_string utf8 in
+      let uri = Uri.of_string input in
       match Uri.scheme uri with
       | None -> Error MissingScheme
       | Some scheme when scheme <> "gemini" -> Error WrongScheme
@@ -35,7 +34,7 @@ let static_check_request ~port ~hostnames input =
                     | None -> Ok uri
                     | Some p when Int.equal port p -> Ok uri
                     | Some _ -> Error WrongPort)))
-  with Zed_string.Invalid _ | Zed_utf8.Invalid _ -> Error MalformedUTF8
+  else Error MalformedUTF8
 
 let pp_err fmt =
   let fmt = Format.fprintf fmt in
