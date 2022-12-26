@@ -55,7 +55,7 @@ module type S = sig
           write a request after TLS handshake. Unset by default.
         - [config] is the TLS server configuration.
           Defaults to
-          {[
+          {@ocaml[
             Tls.Config.server ~certificates
                 ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
                 ()

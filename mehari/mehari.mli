@@ -1,12 +1,5 @@
-(** Mehari is a {{:https://mirageos.org/ }Mirage OS} friendly library for
-building Gemini servers. It fully implements the
-{{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
-and aims to expose a clean and simple API.
-It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
-a tidy, feature-complete Web framework.
-This module provides the core abstraction, it does not depend on any platform
-code, and does not interact with the environment. Input and output for Unix are
-provided by {!Mehari_lwt_unix}. *)
+(** This module provides the core abstraction, it does not depend on any platform
+code, and does not interact with the environment. *)
 
 (** {1 Types} *)
 
@@ -145,7 +138,7 @@ val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
 
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
-{[
+{@gemini[
   # title
   content
 ]}

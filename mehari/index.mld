@@ -1,0 +1,31 @@
+{0 Mehari}
+
+Mehari is a cross-platform library for building Gemini servers. It fully
+implements the
+{{:https://gemini.circumlunar.space/docs/specification.gmi} Gemini protocol specification}.
+It takes heavy inspiration from {{:https://github.com/aantron/dream} Dream}, a
+tidy, feature-complete Web framework.
+
+Mehari provides several packages:
+
+  - {{:Mehari/index.html} Mehari} provides the core abstraction, it does not
+    depend on any platform code, and does not interact with the environment.
+
+  - {{:Mehari_mirage/index.html} Mehari_mirage} exposes an OS-independent
+    interface.
+
+  - {{:Mehari_lwt_unix/index.html} Mehari_lwt_unix} uses the
+    {{:https://ocsigen.org/lwt/} Lwt} library, and specifically the UNIX
+    bindings. Contains also extra features based on Unix filesystem such as
+    CGI.
+
+  - {{:Mehari_eio/index.html} Mehari_eio} uses the
+    {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
+
+{1 Links}
+
+- {{:https://github.com/Psi-Prod/Mehari} Mehari on Github}
+- {{:https://github.com/Psi-Prod/Mehari/issues} Bugtracker}
+
+The library is released under the
+{{:https://github.com/Psi-Prod/Mehari/blob/master/LICENSE} LGPL-3.0 License}

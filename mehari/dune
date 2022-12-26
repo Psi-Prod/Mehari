@@ -11,3 +11,6 @@
   uri
   x509
   zed))
+
+(documentation
+ (package mehari))

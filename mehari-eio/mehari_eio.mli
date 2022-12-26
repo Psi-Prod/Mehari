@@ -38,7 +38,7 @@ val run :
         [Eio.Net.Ipaddr.V4.loopback].
       - [config] is the TLS server configuration.
         Defaults to
-        {[
+        {@ocaml[
           Tls.Config.server ~certificates
               ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
               ()
