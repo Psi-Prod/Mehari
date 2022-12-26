@@ -3,24 +3,54 @@ code, and does not interact with the environment. *)
 
 (** {1 Types} *)
 
-type 'addr request = 'addr Request.t
+type 'addr request
 (** Gemini request. See {!section-request}. *)
 
-type response = Response.t
+type response
 (** Gemini response. See {!section-response}. *)
 
-type 'a status = 'a Response.status
+type 'a status
 (** Status of a Gemini response. See {!section-status}. *)
 
-type mime = Mime.t
+type mime
 (** Mime type of a document. See {!section-mime}. *)
 
-type body = Response.body
+type body
 (** Body of Gemini response. See {!section-body}. *)
 
 (** {1:gemtext Gemtext} *)
 
-module Gemtext = Gemtext
+module Gemtext : sig
+  (** Implementation of the Gemini own native response format. *)
+
+  type t = line list
+
+  and line =
+    | Text of string
+    | Link of { url : string; name : string option }
+    | Preformat of preformat
+    | Heading of [ `H1 | `H2 | `H3 ] * string
+    | ListItem of string
+    | Quote of string
+
+  and preformat = { alt : string option; text : string }
+
+  val of_string : string -> t
+  val to_string : t -> string
+
+  (** {1 Facilities} *)
+
+  val text : string -> line
+
+  val newline : line
+  (** [newline] is [text ""]. *)
+
+  val link : ?name:string -> string -> line
+  val preformat : ?alt:string -> string -> line
+  val heading : [ `H1 | `H2 | `H3 ] -> string -> line
+  val list_item : string -> line
+  val quote : string -> line
+end
 
 (** {1:request Request} *)
 
@@ -107,7 +137,7 @@ val code_of_status : 'a status -> int
 
 (** {1:body Body} *)
 
-(** {2:note-on-stream A note on data stream response}
+(** {2:note-on-data-stream-response A note on data stream response}
 
     Mehari offers ways to keep client connections open forever and stream
     data in real time such as {!val:seq} and {!val:stream} functions when the
@@ -126,23 +156,25 @@ val lines : string list -> body
 (** Creates a {!type:body} from given lines. Each line is written followed by a
     newline ([LF]) character. *)
 
-val seq : ?flush:bool -> string Seq.t -> body
-(** Creates a {!type:body} from a string sequence. See
-    {!section:"note-on-stream"} for a description of [flush] parameter. *)
-
-val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
-(** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
-    Each call to [consume] write the given input on socket. Useful for stream
-    data or file chunk in real time. See {!section:"note-on-stream"}
-    for a description of [flush] parameter. *)
-
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
-{@gemini[
+{@gemtext[
   # title
   content
 ]}
 *)
+
+val seq : ?flush:bool -> string Seq.t -> body
+(** Creates a {!type:body} from a string sequence. See
+    {!section:"note-on-data-stream-response"} for a description of [flush]
+    parameter. *)
+
+val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
+(** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
+    Each call to [consume] write the given input on socket. Useful for stream
+    data or file chunk in real time. See
+    {!section:"note-on-data-stream-response"} for a description of [flush]
+    parameter. *)
 
 (** {1:mime Mime} *)
 
@@ -363,10 +395,8 @@ module Private : sig
       val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
     end
 
-    module Make
-        (Clock : Mirage_clock.PCLOCK)
-        (IO : IO)
-        (Addr : ADDR) : S with module IO = IO and module Addr = Addr
+    module Make (Clock : Mirage_clock.PCLOCK) (IO : IO) (Addr : ADDR) :
+      S with module IO = IO and module Addr = Addr
   end
 
   module Router_impl : sig
