@@ -135,12 +135,12 @@ val lines : string list -> body
 
 val seq : ?flush:bool -> string Seq.t -> body
 (** Creates a {!type:body} from a string sequence. See
-    {!label:"note-on-stream"} for a description of [flush] parameter. *)
+    {!section:"note-on-stream"} for a description of [flush] parameter. *)
 
 val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
 (** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
     Each call to [consume] write the given input on socket. Useful for stream
-    data or file chunk in real time. See {!label:"note-on-stream"}
+    data or file chunk in real time. See {!section:"note-on-stream"}
     for a description of [flush] parameter. *)
 
 val page : title:string -> string -> body
@@ -289,15 +289,125 @@ module Private : sig
     'addr request
 
   module Handler : sig
-    module Make (IO : Types.IO) : sig
+    module Make (IO : IO) : sig
       type 'addr t = 'addr request -> response IO.t
     end
   end
 
   module Cert = Cert
-  module CGI = Cgi
-  module Logger_impl = Logger_impl
-  module Protocol = Protocol
-  module Rate_limiter_impl = Rate_limiter_impl
-  module Router_impl = Router_impl
+
+  module CGI : sig
+    module type S = sig
+      type addr
+
+      val make_env :
+        addr request -> fullpath:string -> path:string -> string array
+    end
+
+    module Make (Addr : sig
+      type t
+
+      val compare : t -> t -> int
+      val pp : Stdlib.Format.formatter -> t -> unit
+    end) : S with type addr := Addr.t
+  end
+
+  module Logger_impl : sig
+    module type S = sig
+      module IO : IO
+
+      type addr
+      type handler = addr Handler.Make(IO).t
+
+      val set_level : Logs.level -> unit
+      val logger : handler -> handler
+      val debug : 'a Logs.log
+      val info : 'a Logs.log
+      val warning : 'a Logs.log
+      val error : 'a Logs.log
+    end
+
+    module Make
+        (Clock : Mirage_clock.PCLOCK) (IO : sig
+          include IO
+
+          val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
+        end)
+        (Addr : ADDR) : S with module IO = IO and type addr = Addr.t
+  end
+
+  module Protocol : sig
+    type request_err =
+      | AboveMaxSize
+      | EmptyURL
+      | InvalidURL
+      | MalformedUTF8
+      | MissingHost
+      | MissingScheme
+      | RelativePath
+      | WrongHost
+      | WrongPort
+      | WrongScheme
+
+    val static_check_request :
+      port:int ->
+      hostnames:string Seq.t ->
+      string ->
+      (Uri.t, request_err) result
+
+    val to_response : request_err -> response
+  end
+
+  module Rate_limiter_impl : sig
+    module type S = sig
+      module IO : IO
+
+      type t
+
+      module Addr : ADDR
+
+      val check : t -> Addr.t request -> response IO.t option
+      val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
+    end
+
+    module Make
+        (Clock : Mirage_clock.PCLOCK)
+        (IO : IO)
+        (Addr : ADDR) : S with module IO = IO and module Addr = Addr
+  end
+
+  module Router_impl : sig
+    module type S = sig
+      module IO : IO
+
+      type route
+      type rate_limiter
+      type addr
+      type handler = addr Handler.Make(IO).t
+      type middleware = handler -> handler
+
+      val router : route list -> handler
+
+      val route :
+        ?rate_limit:rate_limiter ->
+        ?mw:middleware ->
+        ?typ:[ `Raw | `Regex ] ->
+        string ->
+        handler ->
+        route
+
+      val scope :
+        ?rate_limit:rate_limiter ->
+        ?mw:middleware ->
+        string ->
+        route list ->
+        route
+    end
+
+    module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
+      S
+        with module IO = RateLimiter.IO
+         and type rate_limiter := RateLimiter.t
+         and type addr := RateLimiter.Addr.t
+  end
 end

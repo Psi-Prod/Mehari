@@ -11,7 +11,7 @@ module type S = sig
   (** @closed *)
   include Mehari.NET with module IO := IO and type addr = Ipaddr.t
 
-  (** {1:response Response} *)
+  (** {1 Response} *)
 
   val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
   (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
