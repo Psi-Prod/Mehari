@@ -24,7 +24,7 @@ val run :
   ?config:Tls.Config.server ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
   Eio.Net.t ->
-    handler ->
+  handler ->
   unit
 (** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server
     using [handler].

@@ -103,11 +103,9 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
       Request.uri req |> Uri.host
       |> Option.get (* Guaranteed by [Protocol.make_request]. *)
     in
-    match
-      (List.find_opt (fun (d, _) -> d = req_host) domains_handler)
-    with
+    match List.find_opt (fun (d, _) -> d = req_host) domains_handler with
     | None -> assert false (* Guaranteed by [Protocol.make_request]. *)
-    | Some (_,handler) -> handler req
+    | Some (_, handler) -> handler req
 
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes

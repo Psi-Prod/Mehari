@@ -46,7 +46,7 @@ module type S = sig
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
-      handler ->
+    handler ->
     unit IO.t
   (** [run ?port ?config ?certchains stack handler] runs the server using
       [host].

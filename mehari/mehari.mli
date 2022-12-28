@@ -281,7 +281,7 @@ module type NET = sig
 
   (** {1:host Virtual hosting} *)
 
-  val virtual_hosts :  (string * handler) list -> handler
+  val virtual_hosts : (string * handler) list -> handler
   (** [virtual_hosts [(domain, handler); ...]] produces a {!type:handler}
       which enables virtual hosting at the TLS-layer using SNI. *)
 
