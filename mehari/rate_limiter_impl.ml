@@ -13,7 +13,7 @@ module Make (Clock : Mirage_clock.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
   S with module IO = IO and module Addr = Addr = struct
   module IO = IO
   module Addr = Addr
-  module AddrMap = Map.Make (Addr)
+  module AddrMap = Stdlib.Map.Make (Addr)
 
   type t = {
     mutable requests : int;

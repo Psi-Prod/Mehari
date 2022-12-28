@@ -14,6 +14,19 @@ val response_document : Mehari.mime -> Eio.Fs.dir Eio.Path.t -> Mehari.response
     path and use given {!type:Mehari.mime} as mime type. The whole file content
     is not loaded in memory: response is chunked. *)
 
+val static :
+  ?show_hidden:bool ->
+  Eio.Fs.dir Eio.Path.t ->
+  'a Mehari.request ->
+  Mehari.response
+(** [static ?show_hidden dir] validates the path substituted by the first path
+    parameter of request (by calling [Mehari.param req 1]) by cheking that it
+    is relative and does not contain parent directory references. If these
+    checks fail, responds with {!type:Mehari.status} {!val:Mehari.not_found}.
+
+    A directory listing is generated if the path parameter of the query is a
+    directory. *)
+
 (** {1 Entry point} *)
 
 val run :
