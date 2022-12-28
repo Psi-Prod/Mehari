@@ -33,20 +33,22 @@ Mehari provides several packages:
 
 {1:tutorial Tutorial}
 
-In these tutorial {!Mehari_eio} will be used to not complicate snippet with a
-monadic interface but they can easily be adapted to a {!Mehari_mirage} version.
+In these tutorials, {!Mehari_eio} will be used so as not to complicate 
+the snippets with a monadic interface but they can easily be adapted 
+into a {!Mehari_mirage} version.
 
 {2 Respond to request}
 
-The first form of abstraction is the {!type:Mehari.NET.handler} which are
-essentially asynchronous functions from {!Mehari.type-request} to
-{!type:Mehari.response}. This is the simplest possible handler that responds to
-all requests in the same way:
+The first form of abstraction is the {!type:Mehari.NET.handler} 
+which is essentially an asynchronous function 
+from {!type:Mehari.request} to {!type:Mehari.response}. 
+This is the simplest possible handler that responds 
+to all requests in the same way:
 
 {@ocaml[(fun _ -> Mehari.response_text "Hello from Mehari")]}
 
 As handlers take a {!Mehari.type-request} in parameter we can operate on them.
-Here we retrieve the url of the client request and returns it:
+Here we retrieve the url of the client's request and return it:
 
 {@ocaml[(fun req -> Mehari.uri req |> Uri.to_string |> Mehari.response_text)]}
 
@@ -86,12 +88,12 @@ let successful_resp =
 
 See {!Mehari.section-status} for the complete list of status. Other functions
 described in {!Mehari.section-response} section are mostly convenient functions
-build on top of {!val:Mehari.response}.
+built on top of {!val:Mehari.response}.
 
 {3 Body}
 
-Successful respond are along with a {!type:Mehari.body}. They are many methods
-to create a body, such from a string:
+Successful responses are accompanied by a {!type:Mehari.body}. 
+They are many methods to create a body, for example from a string:
 
 {@ocaml[
 let body = Mehari.string "A response body"
@@ -115,7 +117,7 @@ let body =
   ])
 ]}
 
-Which is rendered as following Gemtext document:
+Which is rendered as the following Gemtext document:
 
 {@gemtext[
 # Index
@@ -141,8 +143,9 @@ real time. Be sure to read this quick warning about this approach:
 
 {3 Mime}
 
-{!type:Mehari.mime} described how response body musts be interpreted by client.
-You can build your own mime with the {!val:Mehari.make_mime} and specify the
+{!type:Mehari.mime} describes how the response body 
+must be interpreted by the client.
+You can build your own mime with {!val:Mehari.make_mime} and specify the
 data encoding with the parameter [charset]:
 
 {@ocaml[
@@ -152,8 +155,8 @@ let mp3 = Mehari.make_mime "audio/mp3"
 Some common MIME type are predefined. See {!Mehari.section-"mime"} section.
 
 The [text/gemini] MIME type allows an additional parameter [lang] to specify
-the languages used in the document according
-{{:https://gemini.circumlunar.space/docs/specification.gmi} gemini specification}:
+the languages used in the document according to the
+{{:https://gemini.circumlunar.space/docs/specification.gmi} Gemini specification}:
 
 {@ocaml[
 let french_ascii_gemini = Mehari.gemini ~charset:"ascii" ~lang:["fr"] ()
@@ -283,8 +286,7 @@ let () =
 
 {3 Virtual hosting}
 
-Mehari supports virtual hosting at the TLS-layer using SNI.
+Mehari supports virtual hosting using "server name indication" (SNI).
 {!val:Mehari.NET.virtual_hosts} takes a list composed of a couple which
 represent a domain and his associated handler and produces a "biggest"
-{!type:Mehari.NET.handler}. Don't forget you need a certificate for each
-hosted domain.
+{!type:Mehari.NET.handler}.
