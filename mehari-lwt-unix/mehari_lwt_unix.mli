@@ -14,14 +14,13 @@ val respond_document : ?mime:Mehari.mime -> string -> Mehari.response Lwt.t
     If [filename] is not present on filesystem, responds with
     {!val:Mehari.not_found}. {!type:Mehari.mime} type is chosen
     according to the filename extension by default. If mime type inference
-    failed, it uses [text/gemini; charset=utf-8]. *)
+    failed, it uses {!val:Mehari.gemini}. *)
 
 (** {1 Mime} *)
 
 val from_filename :
   ?lookup:[ `Ext | `Content | `Both ] ->
   ?charset:string ->
-  ?lang:string list ->
   string ->
   Mehari.mime option Lwt.t
 (** [from_filename ?lookup_into ?charset ?lang fname] tries to create a
@@ -31,7 +30,7 @@ val from_filename :
     - [`Content]: guesses on content of [fname];
     - [`Both]: performs successivly a lookup on content and file extension.
 
-    Returns [make_mime ?charset ?lang "text/gemini"] if one of the previous
+    Returns [Mehari.make_mime ?charset "text/gemini"] if one of the previous
     lookup fails.
 
     @raise Unix.Unix_error if a lookup based on content is performed and

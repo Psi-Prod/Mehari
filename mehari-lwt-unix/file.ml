@@ -94,14 +94,14 @@ let respond_document ?mime path =
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
   else Mehari_io.respond Mehari.not_found ""
 
-let from_filename ?(lookup = `Ext) ?charset ?lang fname =
+let from_filename ?(lookup = `Ext) ?charset fname =
   match lookup with
-  | `Ext -> Mehari.from_filename ?charset ?lang fname |> Lwt.return
+  | `Ext -> Mehari.from_filename ?charset fname |> Lwt.return
   | `Content ->
       let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset ?lang content
+      Mehari.from_content ?charset content
   | `Both -> (
       let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      match Mehari.from_content ?charset ?lang content with
-      | None -> Mehari.from_filename ?charset ?lang fname
+      match Mehari.from_content ?charset content with
+      | None -> Mehari.from_filename ?charset fname
       | Some m -> Some m)

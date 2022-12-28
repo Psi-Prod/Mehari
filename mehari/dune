@@ -9,5 +9,8 @@
   mirage-clock
   tls
   uri
-  x509
-  zed))
+  x509)
+ (wrapped false))
+
+(documentation
+ (package mehari))

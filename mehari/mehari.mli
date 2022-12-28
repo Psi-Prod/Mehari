@@ -1,33 +1,56 @@
-(** Mehari is a {{:https://mirageos.org/ }Mirage OS} friendly library for
-building Gemini servers. It fully implements the
-{{:https://gemini.circumlunar.space/docs/specification.gmi }Gemini protocol specification}
-and aims to expose a clean and simple API.
-It takes heavy inspiration from {{: https://github.com/aantron/dream }Dream},
-a tidy, feature-complete Web framework.
-This module provides the core abstraction, it does not depend on any platform
-code, and does not interact with the environment. Input and output for Unix are
-provided by {!Mehari_lwt_unix}. *)
+(** This module provides the core abstraction, it does not depend on any platform
+code, and does not interact with the environment. *)
 
 (** {1 Types} *)
 
-type 'addr request = 'addr Request.t
+type 'addr request
 (** Gemini request. See {!section-request}. *)
 
-type response = Response.t
+type response
 (** Gemini response. See {!section-response}. *)
 
-type 'a status = 'a Response.status
+type 'a status
 (** Status of a Gemini response. See {!section-status}. *)
 
-type mime = Mime.t
+type mime
 (** Mime type of a document. See {!section-mime}. *)
 
-type body = Response.body
+type body
 (** Body of Gemini response. See {!section-body}. *)
 
 (** {1:gemtext Gemtext} *)
 
-module Gemtext = Gemtext
+module Gemtext : sig
+  (** Implementation of the Gemini own native response format. *)
+
+  type t = line list
+
+  and line =
+    | Text of string
+    | Link of { url : string; name : string option }
+    | Preformat of preformat
+    | Heading of [ `H1 | `H2 | `H3 ] * string
+    | ListItem of string
+    | Quote of string
+
+  and preformat = { alt : string option; text : string }
+
+  val of_string : string -> t
+  val to_string : t -> string
+
+  (** {1 Facilities} *)
+
+  val text : string -> line
+
+  val newline : line
+  (** [newline] is [text ""]. *)
+
+  val link : ?name:string -> string -> line
+  val preformat : ?alt:string -> string -> line
+  val heading : [ `H1 | `H2 | `H3 ] -> string -> line
+  val list_item : string -> line
+  val quote : string -> line
+end
 
 (** {1:request Request} *)
 
@@ -114,7 +137,7 @@ val code_of_status : 'a status -> int
 
 (** {1:body Body} *)
 
-(** {2:note-on-stream A note on data stream response}
+(** {2:note-on-data-stream-response A note on data stream response}
 
     Mehari offers ways to keep client connections open forever and stream
     data in real time such as {!val:seq} and {!val:stream} functions when the
@@ -133,52 +156,55 @@ val lines : string list -> body
 (** Creates a {!type:body} from given lines. Each line is written followed by a
     newline ([LF]) character. *)
 
-val seq : ?flush:bool -> string Seq.t -> body
-(** Creates a {!type:body} from a string sequence. See
-    {!label:"note-on-stream"} for a description of [flush] parameter. *)
-
-val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
-(** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
-    Each call to [consume] write the given input on socket. Useful for stream
-    data or file chunk in real time. See {!label:"note-on-stream"}
-    for a description of [flush] parameter. *)
-
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
-{[
+{@gemtext[
   # title
   content
 ]}
 *)
 
+val seq : ?flush:bool -> string Seq.t -> body
+(** Creates a {!type:body} from a string sequence. See
+    {!section:"note-on-data-stream-response"} for a description of [flush]
+    parameter. *)
+
+val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
+(** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
+    Each call to [consume] write the given input on socket. Useful for stream
+    data or file chunk in real time. See
+    {!section:"note-on-data-stream-response"} for a description of [flush]
+    parameter. *)
+
 (** {1:mime Mime} *)
 
-val make_mime : ?charset:string -> ?lang:string list -> string -> mime
-(** [make_mime?charset ?lang mime] creates a {!type:mime} type from given
-    [charset] and [lang]s. Charset defaults to [utf-8] if mime type begins with
-    [text/]. [lang] parameter is ignored if [mime] is different from
-    "text/gemini".
+val make_mime : ?charset:string -> string -> mime
+(** [make_mime ?charset mime] creates a {!type:mime} type from given
+    [charset]. Charset defaults to [utf-8] if mime type begins with
+    [text/].
+
+    @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
+      For a description of the "charset" parameter. *)
+
+val from_filename : ?charset:string -> string -> mime option
+(** [from_filename ?charset fname] tries to create a {!type:mime} by
+    performing a mime lookup based on file extension of [fname]. *)
+
+val from_content : ?charset:string -> string -> mime option
+(** [from_content ?charset c] tries to create a {!type:mime} type by performing
+    a mime lookup based on content [c]. *)
+
+val no_mime : mime
+(** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)
+
+val gemini : ?charset:string -> ?lang:string list -> unit -> mime
+(** [gemini ?charset ?lang ()] is [text/gemini; charset=...; lang=...].
 
     @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
       For a description of the "charset" parameter.
 
     @see < https://www.ietf.org/rfc/bcp/bcp47.txt >
       For a description of the "lang" parameter. *)
-
-val from_filename :
-  ?charset:string -> ?lang:string list -> string -> mime option
-(** [from_filename ?charset ?lang fname] tries to create a {!type:mime} by
-    performing a mime lookup based on file extension of [fname]. *)
-
-val from_content : ?charset:string -> ?lang:string list -> string -> mime option
-(** [from_content  ?charset ?lang c] tries to create a {!type:mime}
-    type by performing a mime lookup based on content [c]. *)
-
-val no_mime : mime
-(** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)
-
-val gemini : ?charset:string -> ?lang:string list -> unit -> mime
-(** [gemini] is a shortcut for [make_mime "text/gemini"]. *)
 
 val app_octet_stream : mime
 (** [app_octet_stream] is a shortcut for [application/octet-stream]. *)
@@ -187,7 +213,7 @@ val plaintext : mime
 (** [plaintext] is a shortcut for [text/plain; charset=utf-8]. *)
 
 val text : string -> mime
-(** [text type] is [text/type; charset=utf-8]. *)
+(** [text type] is a shortcut for [text/type; charset=utf-8]. *)
 
 val with_charset : mime -> string -> mime
 (** Set charset of given {!type:mime}. *)
@@ -286,17 +312,125 @@ module Private : sig
   val view_of_resp : response -> response_view
 
   module Handler : sig
-    module Make (IO : Types.IO) : sig
+    module Make (IO : IO) : sig
       type 'addr t = 'addr request -> response IO.t
     end
   end
 
   module Cert = Cert
-  module CGI = Cgi
-  module Logger_impl = Logger_impl
-  module Protocol = Protocol
-  module Rate_limiter_impl = Rate_limiter_impl
-  module Router_impl = Router_impl
+
+  module CGI : sig
+    module type S = sig
+      type addr
+
+      val make_env :
+        addr request -> fullpath:string -> path:string -> string array
+    end
+
+    module Make (Addr : sig
+      type t
+
+      val compare : t -> t -> int
+      val pp : Stdlib.Format.formatter -> t -> unit
+    end) : S with type addr := Addr.t
+  end
+
+  module Logger_impl : sig
+    module type S = sig
+      module IO : IO
+
+      type addr
+      type handler = addr Handler.Make(IO).t
+
+      val set_level : Logs.level -> unit
+      val logger : handler -> handler
+      val debug : 'a Logs.log
+      val info : 'a Logs.log
+      val warning : 'a Logs.log
+      val error : 'a Logs.log
+    end
+
+    module Make
+        (Clock : Mirage_clock.PCLOCK) (IO : sig
+          include IO
+
+          val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
+        end)
+        (Addr : ADDR) : S with module IO = IO and type addr = Addr.t
+  end
+
+  module Protocol : sig
+    type request_err =
+      | AboveMaxSize
+      | EmptyURL
+      | InvalidURL
+      | MalformedUTF8
+      | MissingHost
+      | MissingScheme
+      | RelativePath
+      | WrongHost
+      | WrongPort
+      | WrongScheme
+
+    val static_check_request :
+      port:int ->
+      hostnames:string Seq.t ->
+      string ->
+      (Uri.t, request_err) result
+
+    val to_response : request_err -> response
+  end
+
+  module Rate_limiter_impl : sig
+    module type S = sig
+      module IO : IO
+
+      type t
+
+      module Addr : ADDR
+
+      val check : t -> Addr.t request -> response IO.t option
+      val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
+    end
+
+    module Make (Clock : Mirage_clock.PCLOCK) (IO : IO) (Addr : ADDR) :
+      S with module IO = IO and module Addr = Addr
+  end
+
+  module Router_impl : sig
+    module type S = sig
+      module IO : IO
+
+      type route
+      type rate_limiter
+      type addr
+      type handler = addr Handler.Make(IO).t
+      type middleware = handler -> handler
+
+      val router : route list -> handler
+
+      val route :
+        ?rate_limit:rate_limiter ->
+        ?mw:middleware ->
+        ?typ:[ `Raw | `Regex ] ->
+        string ->
+        handler ->
+        route
+
+      val scope :
+        ?rate_limit:rate_limiter ->
+        ?mw:middleware ->
+        string ->
+        route list ->
+        route
+    end
+
+    module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
+      S
+        with module IO = RateLimiter.IO
+         and type rate_limiter := RateLimiter.t
+         and type addr := RateLimiter.Addr.t
+  end
 end
 
 (** Basics  *)

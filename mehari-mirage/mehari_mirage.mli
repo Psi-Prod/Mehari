@@ -11,7 +11,7 @@ module type S = sig
   (** @closed *)
   include Mehari.NET with module IO := IO and type addr = Ipaddr.t
 
-  (** {1:response Response} *)
+  (** {1 Response} *)
 
   val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
   (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
@@ -56,7 +56,7 @@ module type S = sig
           write a request after TLS handshake. Unset by default.
         - [config] is the TLS server configuration.
           Defaults to
-          {[
+          {@ocaml[
             Tls.Config.server ~certificates
                 ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
                 ()
