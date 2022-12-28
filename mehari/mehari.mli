@@ -171,7 +171,7 @@ val from_filename :
     performing a mime lookup based on file extension of [fname]. *)
 
 val from_content : ?charset:string -> ?lang:string list -> string -> mime option
-(** [from_content ?default ?charset ?lang c] tries to create a {!type:mime}
+(** [from_content  ?charset ?lang c] tries to create a {!type:mime}
     type by performing a mime lookup based on content [c]. *)
 
 val no_mime : mime
@@ -255,10 +255,9 @@ module type NET = sig
 
   (** {1:host Virtual hosting} *)
 
-  val virtual_hosts : ?default:handler -> (string * handler) list -> handler
-  (** [virtual_hosts ~default [(domain, handler); ...]] produces a
-      {!type:handler} which enables virtual hosting virtual hosting at the
-      TLS-layer using SNI. *)
+  val virtual_hosts :  (string * handler) list -> handler
+  (** [virtual_hosts [(domain, handler); ...]] produces a {!type:handler}
+      which enables virtual hosting at the TLS-layer using SNI. *)
 
   (** {1 Logging} *)
 

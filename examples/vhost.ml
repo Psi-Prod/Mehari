@@ -1,6 +1,5 @@
 let router =
   Mehari_eio.virtual_hosts
-    ~default:(fun _ -> Mehari.response_text "default")
     [
       ("localhost.foo", fun _ -> Mehari.response_text "foo");
       ("localhost.bar", fun _ -> Mehari.response_text "foo");

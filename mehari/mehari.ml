@@ -62,7 +62,7 @@ module type NET = sig
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
-  val virtual_hosts : ?default:handler -> (string * handler) list -> handler
+  val virtual_hosts : (string * handler) list -> handler
   val set_log_lvl : Logs.level -> unit
   val logger : handler -> handler
   val debug : 'a Logs.log
