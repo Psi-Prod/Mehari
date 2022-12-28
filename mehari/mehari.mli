@@ -63,7 +63,7 @@ val ip : 'addr request -> 'addr
 val port : 'a request -> int
 (** Port of client sending the {!type:request}. *)
 
-val sni : 'a request -> string option
+val sni : 'a request -> string
 (** Server name indication TLS extension. *)
 
 val query : 'a request -> string option
@@ -225,19 +225,19 @@ val with_charset : mime -> string -> mime
 module type NET = sig
   module IO : Types.IO
 
-  type route
-  (** Routes tell {!val:router} which handler to select for each request. See
-      {!section-routing}. *)
-
-  type rate_limiter
-  (** Rate limiter. See {!section-rate_limit}. *)
-
   type addr
   (** Type for IP address. *)
 
   type handler = addr request -> response IO.t
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
       {!type:Mehari.response}. *)
+
+  type route
+  (** Routes tell {!val:router} which handler to select for each request. See
+      {!section-routing}. *)
+
+  type rate_limiter
+  (** Rate limiter. See {!section-rate_limit}. *)
 
   type middleware = handler -> handler
   (** Middlewares take a {!type:handler}, and run some code before or
@@ -279,6 +279,12 @@ module type NET = sig
       ]}
       limits client to 5 requests every 2 hours. *)
 
+  (** {1:host Virtual hosting} *)
+
+  val virtual_hosts : (string * handler) list -> handler
+  (** [virtual_hosts [(domain, handler); ...]] produces a {!type:handler}
+      which enables virtual hosting at the TLS-layer using SNI. *)
+
   (** {1 Logging} *)
 
   val set_log_lvl : Logs.level -> unit
@@ -304,15 +310,6 @@ module Private : sig
   type response_view = Response.view
 
   val view_of_resp : response -> response_view
-
-  val make_request :
-    (module ADDR with type t = 'addr) ->
-    uri:Uri.t ->
-    addr:'addr ->
-    port:int ->
-    sni:string option ->
-    client_cert:X509.Certificate.t list ->
-    'addr request
 
   module Handler : sig
     module Make (IO : IO) : sig
@@ -435,3 +432,5 @@ module Private : sig
          and type addr := RateLimiter.Addr.t
   end
 end
+
+(** Basics  *)

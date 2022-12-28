@@ -8,7 +8,8 @@
   guestbook
   log
   rate_limit
-  stream)
+  stream
+  vhost)
  (libraries
   ipaddr
   eio_main

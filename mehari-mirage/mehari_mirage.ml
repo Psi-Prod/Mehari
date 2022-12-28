@@ -69,5 +69,6 @@ module Make
   let router = Router.router
   let route = Router.route
   let scope = Router.scope
+  let virtual_hosts = Router.virtual_hosts
   let run = Server.run
 end

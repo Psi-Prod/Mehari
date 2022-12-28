@@ -59,24 +59,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
-  let handle_client config callback flow ep =
+  let handle_client config callback flow epoch =
     let reader =
       Buf_read.of_flow flow ~initial_size:1025
         ~max_size:1025 (* Apparently not inclusive *)
     in
     (try
-       let sni, certificates =
-         match ep with
-         | Ok data ->
-             ( Option.map Domain_name.to_string data.Tls.Core.own_name,
-               data.Tls.Core.own_certificate )
-         | Error () -> assert false
-       in
-       let hostnames =
-         List.map Tls.Core.Cert.hostnames certificates
-         |> List.fold_left X509.Host.Set.union X509.Host.Set.empty
-         |> X509.Host.Set.to_seq
-         |> Seq.map (fun (_, d) -> Domain_name.to_string d)
+       let ep =
+         match epoch with Ok data -> data | Error () -> raise End_of_file
        in
        let with_timeout =
          match config.timeout with
@@ -84,20 +74,12 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          | Some (duration, clock) -> Eio.Time.with_timeout_exn clock duration
        in
        match
-         with_timeout (fun () ->
-             client_req reader
-             |> Protocol.static_check_request ~port:config.port ~hostnames)
+         with_timeout (fun () -> client_req reader)
+         |> Protocol.make_request
+              (module Common.Addr)
+              ~port:config.port ~addr:config.addr ep
        with
-       | Ok uri ->
-           let client_cert =
-             match ep with
-             | Ok data -> Option.to_list data.Tls.Core.peer_certificate
-             | Error () -> assert false
-           in
-           Mehari.Private.make_request
-             (module Common.Addr)
-             ~uri ~addr:config.addr ~port:config.port ~sni ~client_cert
-           |> callback |> write_resp flow
+       | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
      with
     | Buf_read.Buffer_limit_exceeded ->

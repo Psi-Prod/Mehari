@@ -19,6 +19,8 @@ module type S = sig
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+
+  val virtual_hosts : (string * handler) list -> handler
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -95,6 +97,15 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
                     log "'%a' is rate limited." Addr.pp (Request.ip req));
                 handler req
             | Some resp -> resp))
+
+  let virtual_hosts domains_handler req =
+    let req_host =
+      Request.uri req |> Uri.host
+      |> Option.get (* Guaranteed by [Protocol.make_request]. *)
+    in
+    match List.find_opt (fun (d, _) -> d = req_host) domains_handler with
+    | None -> assert false (* Guaranteed by [Protocol.make_request]. *)
+    | Some (_, handler) -> handler req
 
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes

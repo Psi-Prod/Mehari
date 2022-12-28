@@ -62,6 +62,7 @@ module type NET = sig
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
+  val virtual_hosts : (string * handler) list -> handler
   val set_log_lvl : Logs.level -> unit
   val logger : handler -> handler
   val debug : 'a Logs.log
@@ -77,7 +78,6 @@ module Private = struct
   type response_view = Response.view
 
   let view_of_resp = Response.view_of_resp
-  let make_request = Request.make
 
   module Cert = Cert
   module CGI = Cgi

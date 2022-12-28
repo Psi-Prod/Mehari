@@ -247,34 +247,44 @@ They are described in depth in section {!Mehari.NET.section-rate_limit}.
 In the same way as shown in section {!section:route}, these features can be
 mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
 
-{2 Running server}
+{2 Hosting}
 
-By default, the server runs on port [1965] on host [localhost]. Don't forget
-to generate a certificate. Mehari looking for it in the current working
-directory if they are not provided.
+By default, the server runs on port [1965] on hostname [localhost]. Mehari
+looks for certificates in the current working directory if they are not
+provided.
 
-This bash command should generate some, then set server common name to
+This bash command should generate certificates, set server common name to
 [localhost] and it should work:
 
 {@bash[
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes
 ]}
 
-Here is the template for using {!Mehari_lwt_unix}:
+Here is what you have to do to start the server:
+
+Using {!Mehari_lwt_unix}:
 
 {@ocaml[
 let () = Mehari_lwt_unix.run handler
 ]}
 
-And for using {!Mehari_eio}:
+Using {!Mehari_eio}:
 
 {@ocaml[
 let main ~net ~cwd =
   Mehari_eio.run ~certchains:Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ]
-    net handler
+    net main_handler
 
 let () =
   Eio_main.run @@ fun env ->
   Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env @@ fun () ->
   main ~net:env#net ~cwd:env#cwd
 ]}
+
+{3 Virtual hosting}
+
+Mehari supports virtual hosting at the TLS-layer using SNI.
+{!val:Mehari.NET.virtual_hosts} takes a list composed of a couple which
+represent a domain and his associated handler and produces a "biggest"
+{!type:Mehari.NET.handler}. Don't forget you need a certificate for each
+hosted domain.
