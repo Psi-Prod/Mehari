@@ -250,7 +250,7 @@ mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
 {2 Hosting}
 
 By default, the server runs on port [1965] on hostname [localhost]. Mehari
-looking for a certificate in the current working directory if they are not
+looks for certificates in the current working directory if they are not
 provided.
 
 This bash command should generate certificates, set server common name to
@@ -285,6 +285,6 @@ let () =
 
 Mehari supports virtual hosting at the TLS-layer using SNI.
 {!val:Mehari.NET.virtual_hosts} takes a list composed of a couple which
-represent a domain and his associated handler produces a "biggest"
+represent a domain and his associated handler and produces a "biggest"
 {!type:Mehari.NET.handler}. Don't forget you need a certificate for each
 hosted domain.
