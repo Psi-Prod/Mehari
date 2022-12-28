@@ -7,9 +7,14 @@ let router =
     ]
 
 let main ~net ~cwd =
-  Mehari_eio.run net
-    ~certchains:Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ]
-    router
+  let certchains =
+    Eio.Path.
+      [
+        (cwd / "cert_foo.pem", cwd / "key_foo.pem");
+        (cwd / "cert_bar.pem", cwd / "key_bar.pem");
+      ]
+  in
+  Mehari_eio.run net ~certchains router
 
 let () =
   Eio_main.run @@ fun env ->
