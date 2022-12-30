@@ -16,10 +16,7 @@ let check_sni epoch =
     ~some:(fun d -> Domain_name.to_string d |> Result.ok)
 
 let check_utf8_encoding url =
-  try
-    let (_ : Zed_string.t) = Zed_string.of_utf8 url in
-    Ok ()
-  with Zed_string.Invalid _ | Zed_utf8.Invalid _ -> Error MalformedUTF8
+  if String.is_valid_utf_8 url then Ok () else Error MalformedUTF8
 
 let check_length url =
   let length = Bytes.of_string url |> Bytes.length in

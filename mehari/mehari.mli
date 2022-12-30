@@ -368,15 +368,18 @@ module Private : sig
       | MissingHost
       | MissingScheme
       | RelativePath
+      | SNIExtRequired
       | WrongHost
       | WrongPort
       | WrongScheme
 
-    val static_check_request :
+    val make_request :
+      (module Types.ADDR with type t = 'a) ->
       port:int ->
-      hostnames:string Seq.t ->
+      addr:'a ->
+      Tls.Core.epoch_data ->
       string ->
-      (Uri.t, request_err) result
+      ('a request, request_err) result
 
     val to_response : request_err -> response
   end
@@ -423,6 +426,8 @@ module Private : sig
         string ->
         route list ->
         route
+
+      val virtual_hosts : (string * handler) list -> handler
     end
 
     module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
