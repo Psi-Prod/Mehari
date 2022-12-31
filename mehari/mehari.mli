@@ -374,7 +374,7 @@ module Private : sig
       | WrongScheme
 
     val make_request :
-      (module Types.ADDR with type t = 'a) ->
+      (module ADDR with type t = 'a) ->
       port:int ->
       addr:'a ->
       Tls.Core.epoch_data ->
