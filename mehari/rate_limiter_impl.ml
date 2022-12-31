@@ -37,9 +37,7 @@ module Make (Clock : Mirage_clock.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
     in
     t.history <- AddrMap.add addr n t.history;
     if n > t.requests then
-      let msg = Printf.sprintf "Wait %i seconds" time_left in
-      Response.(response (Status.slow_down time_left) msg)
-      |> IO.return |> Option.some
+      Response.(response Status.slow_down time_left) |> IO.return |> Option.some
     else None
 
   let make ?(period = 1) requests duration =

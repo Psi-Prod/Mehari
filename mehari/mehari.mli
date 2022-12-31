@@ -122,7 +122,7 @@ val temporary_failure : string status
 val server_unavailable : string status
 val cgi_error : string status
 val proxy_error : string status
-val slow_down : int -> string status
+val slow_down : int status
 val perm_failure : string status
 val not_found : string status
 val gone : string status
