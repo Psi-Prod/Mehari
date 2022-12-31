@@ -3,6 +3,7 @@ open Lwt.Syntax
 let chunk_size = 16384
 
 exception Exited
+(* An error occured during CGI script execution. *)
 
 let read_body proc =
   Lwt_seq.unfold_lwt
@@ -15,7 +16,7 @@ let read_body proc =
           match proc#state with
           | Lwt_process.Running -> Lwt.return_some (data, true)
           | Exited (WEXITED 0) -> Lwt.return_some (data, false)
-          | _ -> Lwt.fail Exited)
+          | _ -> raise Exited)
     false
 
 let meta =
@@ -30,35 +31,40 @@ let parse_header in_chan =
       Lwt.return_none
   | Some header ->
       let$ grp = Re.exec_opt meta header in
-      let$ code = int_of_string_opt (Re.Group.get grp 1) in
+      let$ code = Re.Group.get grp 1 |> int_of_string_opt in
       Lwt.return_some (code, Re.Group.get grp 2)
 
-let with_proc ?timeout ?env cmd f =
-  let proc = Lwt_process.open_process_in ?timeout ?env cmd in
-  Lwt.finalize
-    (fun () -> f proc)
-    (fun () ->
-      let* _ = proc#close in
-      Lwt.return_unit)
-
 module CGI = Mehari.Private.CGI.Make (Ipaddr)
+
+let cgi_err = Mehari_io.respond Mehari.cgi_error ""
 
 let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
   try%lwt
     let* cwd = Lwt_unix.getcwd () in
     let env = CGI.make_env req ~fullpath:(Filename.concat cwd path) ~path in
-    with_proc ~timeout ~env (path, [||]) (fun proc ->
-        if nph then
-          let* chunks = read_body proc |> Lwt_seq.to_list in
-          `Body (String.concat "" chunks) |> Mehari_io.respond_raw
-        else
-          match%lwt parse_header proc#stdout with
-          | None -> Mehari_io.respond Mehari.cgi_error ""
-          | Some (code, meta) ->
+    let timeout =
+      let* () = Lwt_unix.sleep timeout in
+      cgi_err
+    in
+    let cgi_exec =
+      let respond =
+        Lwt_process.with_process_in ~stderr:`Dev_null ~env (path, [||])
+          (fun proc ->
+            if nph then
               let* chunks = read_body proc |> Lwt_seq.to_list in
-              Mehari_io.respond_raw
-                (`Full (code, meta, String.concat "" chunks)))
-  with Exited -> Mehari_io.respond Mehari.cgi_error ""
+              `Body (String.concat "" chunks) |> Mehari_io.respond_raw
+            else
+              match%lwt parse_header proc#stdout with
+              | None -> Mehari_io.respond Mehari.cgi_error ""
+              | Some (code, meta) ->
+                  let* chunks = read_body proc |> Lwt_seq.to_list in
+                  Mehari_io.respond_raw
+                    (`Full (code, meta, String.concat "" chunks)))
+      in
+      respond
+    in
+    Lwt.pick [ timeout; cgi_exec ]
+  with Exited -> cgi_err
 
 (** TODO: true lazyness (is it even possible?) *)
 let rec unfold f u () =

@@ -86,8 +86,9 @@ val run_cgi :
     stdout by script. Responds with {!val:Mehari.cgi_error} in case
     of error or [timeout] exceeding.
 
-    [timeout] defaults to [5.0].
-    [nph] decides if NPH (Non-Parsed Header) is enable. Defaults to [false]. *)
+    - [timeout] defaults to [5.0].
+    - [nph] decides if NPH (Non-Parsed Header) is enable. Defaults to
+      [false]. *)
 
 (** {1 Entry point} *)
 

@@ -1,5 +1,6 @@
 (executables
  (names
+  cgi
   client_cert
   counter
   echo
