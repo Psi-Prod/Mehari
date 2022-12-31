@@ -188,7 +188,10 @@ val make_mime : ?charset:string -> string -> mime
 
 val from_filename : ?charset:string -> string -> mime option
 (** [from_filename ?charset fname] tries to create a {!type:mime} by
-    performing a mime lookup based on file extension of [fname]. *)
+    performing a mime lookup based on file extension of [fname].
+
+    Note that mime {!val:gemini} are not infered from files with [.gmi]
+    extension. See {{:https://github.com/Psi-Prod/Mehari/issues/36}}. *)
 
 val from_content : ?charset:string -> string -> mime option
 (** [from_content ?charset c] tries to create a {!type:mime} type by performing
