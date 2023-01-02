@@ -6,6 +6,7 @@ type body = Response.body
 
 module Gemtext = Gemtext
 
+let paragraph = Gemtext.paragraph
 let uri = Request.uri
 let ip = Request.ip
 let port = Request.port

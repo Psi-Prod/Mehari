@@ -52,6 +52,8 @@ module Gemtext : sig
   val quote : string -> line
 end
 
+val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
+
 (** {1:request Request} *)
 
 val uri : 'a request -> Uri.t
