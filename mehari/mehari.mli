@@ -59,6 +59,8 @@ assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
   val heading : [ `H1 | `H2 | `H3 ] -> string -> line
   val list_item : string -> line
   val quote : string -> line
+
+  val pp : Format.formatter -> t -> unit
 end
 
 val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t

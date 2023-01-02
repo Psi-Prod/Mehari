@@ -130,3 +130,5 @@ let paragraph gemtext str =
   done;
   (match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc)
   |> List.rev
+
+let pp fmt g = Format.fprintf fmt "%s" (to_string g)
