@@ -2,7 +2,7 @@ let src = Logs.Src.create "mehari.eio.static"
 
 module Log = (val Logs.src_log src)
 
-let response_document mime path =
+let response_document ?mime path =
   let chunk_size = 16384 in
   let body =
     Mehari.stream (fun consume ->
@@ -25,7 +25,7 @@ let response_document mime path =
             in
             loop ()))
   in
-  Mehari.response_body body mime
+  Option.value mime ~default:Mehari.no_mime |> Mehari.response_body body
 
 let not_found = Mehari.(response not_found "")
 
