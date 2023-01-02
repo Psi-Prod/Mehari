@@ -124,6 +124,7 @@ let paragraph gemtext str =
         doc := gemtext line :: !doc;
         cr := false
     | c ->
+        if !cr then Buffer.add_char buf '\r';
         Buffer.add_char buf c;
         cr := false
   done;

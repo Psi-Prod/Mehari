@@ -21,7 +21,16 @@ type body
 (** {1:gemtext Gemtext} *)
 
 module Gemtext : sig
-  (** Implementation of the Gemini own native response format. *)
+  (** Implementation of the Gemini own native response format.
+      Note that if a string containing line breaks ([CR] or [CRLF]) is given
+      to functions {!val:heading}, {!val:list_item} and {!val:quote} only the
+      first line will be formatted and the others treated as normal text.
+      To avoid this behavior, see {!val:Mehari.paragraph}.
+
+      {@ocaml[open Mehari.Gemtext
+
+assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
+]} *)
 
   type t = line list
 
@@ -53,6 +62,13 @@ module Gemtext : sig
 end
 
 val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
+(** [paragraph to_gemtext str] is a convenient function to transform a string
+    containing line breaks ([CR] or [CRLF]) into a Gemtext document.
+
+    {@ocaml[open Mehari.Gemtext
+
+assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
+]} *)
 
 (** {1:request Request} *)
 
