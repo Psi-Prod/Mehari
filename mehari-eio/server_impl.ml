@@ -102,9 +102,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Tls_eio.Tls_failure f ->
         Log.warn (fun log ->
             log "Tls failure: %S" (Tls.Engine.string_of_failure f))
-    (*| Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
+    | Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
         Log.warn (fun log -> log "Concurrent connections")
-      FIXME: Removed due to unavailability outside of Linux *)
     | exn -> raise exn
 
   module Cert = Mehari.Private.Cert.Make (struct
