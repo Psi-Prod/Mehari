@@ -53,8 +53,9 @@ val run :
   Eio.Net.t ->
   handler ->
   unit
-(** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server using
-    [handler].
+(** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server
+    using [handler].
+
       - [port] is the port to listen on. Defaults to [1965].
       - [backlog] is the the number of pending connections that can be queued
         up. Defaults to [4096].
@@ -74,4 +75,4 @@ val run :
       - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
         the last one is considered default.
 
-      @raise Invalid_argument if [certchains] is empty. *)
+    @raise Invalid_argument if [certchains] is empty. *)

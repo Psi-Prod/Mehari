@@ -6,6 +6,7 @@ type body = Response.body
 
 module Gemtext = Gemtext
 
+let paragraph = Gemtext.paragraph
 let uri = Request.uri
 let ip = Request.ip
 let port = Request.port
@@ -46,6 +47,8 @@ module type NET = sig
   type handler = addr Request.t -> Response.t IO.t
   type middleware = handler -> handler
 
+  val no_middleware : middleware
+  val pipeline : middleware list -> middleware
   val router : route list -> handler
 
   val route :
@@ -59,9 +62,12 @@ module type NET = sig
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 
+  val no_route : route
+
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
+  val virtual_hosts : (string * handler) list -> handler
   val set_log_lvl : Logs.level -> unit
   val logger : handler -> handler
   val debug : 'a Logs.log
@@ -77,7 +83,6 @@ module Private = struct
   type response_view = Response.view
 
   let view_of_resp = Response.view_of_resp
-  let make_request = Request.make
 
   module Cert = Cert
   module CGI = Cgi

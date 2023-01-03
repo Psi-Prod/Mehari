@@ -21,7 +21,16 @@ type body
 (** {1:gemtext Gemtext} *)
 
 module Gemtext : sig
-  (** Implementation of the Gemini own native response format. *)
+  (** Implementation of the Gemini own native response format.
+      Note that if a string containing line breaks ([CR] or [CRLF]) is given
+      to functions {!val:heading}, {!val:list_item} and {!val:quote} only the
+      first line will be formatted and the others treated as normal text.
+      To avoid this behavior, see {!val:Mehari.paragraph}.
+
+      {@ocaml[open Mehari.Gemtext
+
+assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
+]} *)
 
   type t = line list
 
@@ -50,7 +59,17 @@ module Gemtext : sig
   val heading : [ `H1 | `H2 | `H3 ] -> string -> line
   val list_item : string -> line
   val quote : string -> line
+  val pp : Format.formatter -> t -> unit
 end
+
+val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
+(** [paragraph to_gemtext str] is a convenient function to transform a string
+    containing line breaks ([CR] or [CRLF]) into a Gemtext document.
+
+    {@ocaml[open Mehari.Gemtext
+
+assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
+]} *)
 
 (** {1:request Request} *)
 
@@ -63,7 +82,7 @@ val ip : 'addr request -> 'addr
 val port : 'a request -> int
 (** Port of client sending the {!type:request}. *)
 
-val sni : 'a request -> string option
+val sni : 'a request -> string
 (** Server name indication TLS extension. *)
 
 val query : 'a request -> string option
@@ -122,7 +141,7 @@ val temporary_failure : string status
 val server_unavailable : string status
 val cgi_error : string status
 val proxy_error : string status
-val slow_down : int -> string status
+val slow_down : int status
 val perm_failure : string status
 val not_found : string status
 val gone : string status
@@ -188,7 +207,10 @@ val make_mime : ?charset:string -> string -> mime
 
 val from_filename : ?charset:string -> string -> mime option
 (** [from_filename ?charset fname] tries to create a {!type:mime} by
-    performing a mime lookup based on file extension of [fname]. *)
+    performing a mime lookup based on file extension of [fname].
+
+    Note that mime {!val:gemini} are not infered from files with [.gmi]
+    extension. See {{:https://github.com/Psi-Prod/Mehari/issues/36}}. *)
 
 val from_content : ?charset:string -> string -> mime option
 (** [from_content ?charset c] tries to create a {!type:mime} type by performing
@@ -225,13 +247,6 @@ val with_charset : mime -> string -> mime
 module type NET = sig
   module IO : Types.IO
 
-  type route
-  (** Routes tell {!val:router} which handler to select for each request. See
-      {!section-routing}. *)
-
-  type rate_limiter
-  (** Rate limiter. See {!section-rate_limit}. *)
-
   type addr
   (** Type for IP address. *)
 
@@ -239,9 +254,35 @@ module type NET = sig
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
       {!type:Mehari.response}. *)
 
+  type route
+  (** Routes tell {!val:router} which handler to select for each request. See
+      {!section-routing}. *)
+
+  type rate_limiter
+  (** Rate limiter. See {!section-rate_limit}. *)
+
   type middleware = handler -> handler
   (** Middlewares take a {!type:handler}, and run some code before or
-      after — producing a “bigger” {!type:handler}. *)
+      after — producing a “bigger” {!type:handler}. See
+      {!section-middleware}. *)
+
+  (** {1:middleware} Middleware *)
+
+  val no_middleware : middleware
+  (** Does nothing but call its inner handler. Useful for disabling middleware
+      conditionally during application startup:
+
+      {@ocaml[
+if development then
+  my_middleware
+else
+  Mehari.no_middleware
+]} *)
+
+  val pipeline : middleware list -> middleware
+  (** Combines a list of middlewares into one, such that these two lines are
+      equivalent: [Mehari.pipeline [ mw1 ; mw2 ] @@ handler]
+      [ mw1 @@ mw2 @@ handler]. *)
 
   (** {1:routing Routing} *)
 
@@ -267,6 +308,11 @@ module type NET = sig
   (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
       [prefix], [rate_limit] and [mw]. *)
 
+  val no_route : route
+  (** A dummy value of type {!type:route} that is completely ignored by the
+      router. Useful for disabling routes conditionally during application
+      start. *)
+
   (** {1:rate_limit Rate limit} *)
 
   val make_rate_limit :
@@ -278,6 +324,12 @@ module type NET = sig
   make_rate_limit ~period:2 5 `Hour
       ]}
       limits client to 5 requests every 2 hours. *)
+
+  (** {1:host Virtual hosting} *)
+
+  val virtual_hosts : (string * handler) list -> handler
+  (** [virtual_hosts [(domain, handler); ...]] produces a {!type:handler}
+      which enables virtual hosting at the TLS-layer using SNI. *)
 
   (** {1 Logging} *)
 
@@ -304,15 +356,6 @@ module Private : sig
   type response_view = Response.view
 
   val view_of_resp : response -> response_view
-
-  val make_request :
-    (module ADDR with type t = 'addr) ->
-    uri:Uri.t ->
-    addr:'addr ->
-    port:int ->
-    sni:string option ->
-    client_cert:X509.Certificate.t list ->
-    'addr request
 
   module Handler : sig
     module Make (IO : IO) : sig
@@ -371,15 +414,18 @@ module Private : sig
       | MissingHost
       | MissingScheme
       | RelativePath
+      | SNIExtRequired
       | WrongHost
       | WrongPort
       | WrongScheme
 
-    val static_check_request :
+    val make_request :
+      (module ADDR with type t = 'a) ->
       port:int ->
-      hostnames:string Seq.t ->
+      addr:'a ->
+      Tls.Core.epoch_data ->
       string ->
-      (Uri.t, request_err) result
+      ('a request, request_err) result
 
     val to_response : request_err -> response
   end
@@ -410,6 +456,8 @@ module Private : sig
       type handler = addr Handler.Make(IO).t
       type middleware = handler -> handler
 
+      val no_middleware : middleware
+      val pipeline : middleware list -> middleware
       val router : route list -> handler
 
       val route :
@@ -426,6 +474,9 @@ module Private : sig
         string ->
         route list ->
         route
+
+      val no_route : route
+      val virtual_hosts : (string * handler) list -> handler
     end
 
     module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -435,3 +486,5 @@ module Private : sig
          and type addr := RateLimiter.Addr.t
   end
 end
+
+(** Basics  *)

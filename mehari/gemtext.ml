@@ -105,3 +105,30 @@ let of_string text =
   in
   Re.(split (compile (alt [ char '\n'; str "\r\n" ]))) text
   |> loop [] false { alt = None; text = "" }
+
+let paragraph gemtext str =
+  let doc = ref [] in
+  let cr = ref false in
+  let buf = Buffer.create 4096 in
+  for i = 0 to String.length str - 1 do
+    match String.unsafe_get str i with
+    | '\r' -> cr := true
+    | '\n' when !cr ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | '\n' ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | c ->
+        if !cr then Buffer.add_char buf '\r';
+        Buffer.add_char buf c;
+        cr := false
+  done;
+  (match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc)
+  |> List.rev
+
+let pp fmt g = Format.fprintf fmt "%s" (to_string g)

@@ -7,6 +7,8 @@ module type S = sig
   type handler = addr Handler.Make(IO).t
   type middleware = handler -> handler
 
+  val no_middleware : middleware
+  val pipeline : middleware list -> middleware
   val router : route list -> handler
 
   val route :
@@ -19,6 +21,9 @@ module type S = sig
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+
+  val no_route : route
+  val virtual_hosts : (string * handler) list -> handler
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -39,6 +44,8 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
     handler : handler;
     rate_limit : RateLimiter.t option;
   }
+
+  let no_route = []
 
   let route ?rate_limit ?(mw = Fun.id) ?(typ = `Raw) r handler =
     [ { route = (typ, r); handler = mw handler; rate_limit } ]
@@ -100,4 +107,18 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
     List.concat routes
     |> List.map (fun { route = typ, r; handler; _ } ->
            { route = (typ, prefix ^ r); handler = mw handler; rate_limit })
+
+  let virtual_hosts domains_handler req =
+    let req_host =
+      Request.uri req |> Uri.host
+      |> Option.get (* Guaranteed by [Protocol.make_request]. *)
+    in
+    match List.find_opt (fun (d, _) -> d = req_host) domains_handler with
+    | None -> assert false (* Guaranteed by [Protocol.make_request]. *)
+    | Some (_, handler) -> handler req
+
+  let no_middleware h req = h req
+
+  let rec pipeline mws handler =
+    match mws with [] -> handler | m :: ms -> m (pipeline ms handler)
 end

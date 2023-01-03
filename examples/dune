@@ -1,5 +1,6 @@
 (executables
  (names
+  cgi
   client_cert
   counter
   echo
@@ -8,7 +9,8 @@
   guestbook
   log
   rate_limit
-  stream)
+  stream
+  vhost)
  (libraries
   ipaddr
   eio_main
