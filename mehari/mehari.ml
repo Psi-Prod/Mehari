@@ -47,6 +47,8 @@ module type NET = sig
   type handler = addr Request.t -> Response.t IO.t
   type middleware = handler -> handler
 
+  val no_middleware : middleware
+  val pipeline : middleware list -> middleware
   val router : route list -> handler
 
   val route :
@@ -59,6 +61,8 @@ module type NET = sig
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+
+  val no_route : route
 
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter

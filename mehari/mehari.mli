@@ -59,7 +59,6 @@ assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
   val heading : [ `H1 | `H2 | `H3 ] -> string -> line
   val list_item : string -> line
   val quote : string -> line
-
   val pp : Format.formatter -> t -> unit
 end
 
@@ -264,7 +263,26 @@ module type NET = sig
 
   type middleware = handler -> handler
   (** Middlewares take a {!type:handler}, and run some code before or
-      after — producing a “bigger” {!type:handler}. *)
+      after — producing a “bigger” {!type:handler}. See
+      {!section-middleware}. *)
+
+  (** {1:middleware} Middleware *)
+
+  val no_middleware : middleware
+  (** Does nothing but call its inner handler. Useful for disabling middleware
+      conditionally during application startup:
+
+      {@ocaml[
+if development then
+  my_middleware
+else
+  Mehari.no_middleware
+]} *)
+
+  val pipeline : middleware list -> middleware
+  (** Combines a list of middlewares into one, such that these two lines are
+      equivalent: [Mehari.pipeline [ mw1 ; mw2 ] @@ handler]
+      [ mw1 @@ mw2 @@ handler]. *)
 
   (** {1:routing Routing} *)
 
@@ -289,6 +307,11 @@ module type NET = sig
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
   (** [scope ~rate_limit ~mw prefix routes] groups [routes] under the path
       [prefix], [rate_limit] and [mw]. *)
+
+  val no_route : route
+  (** A dummy value of type {!type:route} that is completely ignored by the
+      router. Useful for disabling routes conditionally during application
+      start. *)
 
   (** {1:rate_limit Rate limit} *)
 
@@ -433,6 +456,8 @@ module Private : sig
       type handler = addr Handler.Make(IO).t
       type middleware = handler -> handler
 
+      val no_middleware : middleware
+      val pipeline : middleware list -> middleware
       val router : route list -> handler
 
       val route :
@@ -450,6 +475,7 @@ module Private : sig
         route list ->
         route
 
+      val no_route : route
       val virtual_hosts : (string * handler) list -> handler
     end
 
