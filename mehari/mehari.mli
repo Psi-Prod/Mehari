@@ -337,7 +337,7 @@ else
   (** Set Mehari's logger to the given log level. *)
 
   val logger : handler -> handler
-  (** Logs and times requests. *)
+  (** Logs and times requests. Time spent logging is included. *)
 
   val debug : 'a Logs.log
   val info : 'a Logs.log
@@ -486,5 +486,3 @@ module Private : sig
          and type addr := RateLimiter.Addr.t
   end
 end
-
-(** Basics  *)

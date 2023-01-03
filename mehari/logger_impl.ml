@@ -38,14 +38,22 @@ module Make
     String.split_on_char '\n' backtrace
     |> List.iter (function "" -> () | l -> f l)
 
+  let now () = Clock.now_d_ps () |> Ptime.v |> Ptime.to_float_s
+
   let logger handler req =
+    let start = now () in
     IO.finally
       (fun () -> handler req)
       (fun resp ->
         Log.info (fun log ->
-            log "%s %a"
+            log "Serve '%s' %a"
               (Request.uri req |> Uri.path_and_query)
               Addr.pp (Request.ip req));
+        (match resp.Response.status with
+        | None -> ()
+        | Some code ->
+            let elapsed = now () -. start in
+            Log.info (fun log -> log "%i in %f µs" code (elapsed *. 1e6)));
         IO.return resp)
       (fun exn ->
         let backtrace = Printexc.get_backtrace () in
