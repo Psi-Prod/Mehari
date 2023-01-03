@@ -78,7 +78,7 @@ let read_dir ~show_hidden path index =
        (Left [])
 
 let static ?(handler = default_handler) ?(dir_listing = default_listing)
-    ?(show_hidden = false) ?(index = "index.gmi") base_path req =
+    ?(index = "index.gmi") ?(show_hidden = false) base_path req =
   let req_path = Mehari.param req 1 in
   if reference_parent req_path then not_found
   else
