@@ -36,40 +36,61 @@ let reference_parent path =
     (false, false) path
   |> fst
 
-let default_handler path fname _req =
+let default_handler path req =
+  let fname = Mehari.param req 1 in
   let mime =
-    Mehari.from_filename fname |> Option.value ~default:Mehari.no_mime
+    match Mehari.from_filename fname with
+    | None when Filename.check_suffix fname ".gmi" -> Mehari.gemini ()
+    | None -> Mehari.no_mime
+    | Some m -> m
   in
   response_document ~mime path
 
-let default_listing dir files =
-  List.map
-    (fun fname ->
-      "/" ^ Filename.concat dir fname |> Mehari.Gemtext.link ~name:fname)
-    files
-  |> List.cons (Printf.sprintf "Index: %s" dir |> Mehari.Gemtext.heading `H1)
-  |> Mehari.response_gemtext
+let default_listing files req =
+  let dirs =
+    List.map
+      (fun fname ->
+        Filename.concat (Mehari.uri req |> Uri.path) fname
+        |> Mehari.Gemtext.link ~name:fname)
+      files
+  in
+  let title =
+    Mehari.param req 1 |> Printf.sprintf "Index: %s"
+    |> Mehari.Gemtext.heading `H1
+  in
+  title :: dirs |> Mehari.response_gemtext
 
 let not_found = Mehari.(response not_found "")
 
-let static ?(handler = default_handler) ?(listing = default_listing)
-    ?(show_hidden = false) base_path req =
-  let req_param = Mehari.param req 1 in
-  if Filename.is_relative req_param && reference_parent req_param then not_found
+let read_dir ~show_hidden path index =
+  let open Either in
+  Eio.Path.read_dir path
+  |> List.fold_left
+       (fun acc fname ->
+         if String.equal fname index then Right Eio.Path.(path / fname)
+         else
+           Either.map_left
+             (fun l ->
+               if (not show_hidden) && String.starts_with ~prefix:"." fname then
+                 l
+               else fname :: l)
+             acc)
+       (Left [])
+
+let static ?(handler = default_handler) ?(dir_listing = default_listing)
+    ?(show_hidden = false) ?(index = "index.gmi") base_path req =
+  let req_path = Mehari.param req 1 in
+  if reference_parent req_path then not_found
   else
-    let path = Eio.Path.(base_path / req_param) in
+    let path = Eio.Path.(base_path / req_path) in
     try
       Eio.Path.with_open_in path (fun flow ->
           match flow#stat.kind with
-          | `Regular_file -> handler path req_param req
-          | `Directory ->
-              Eio.Path.read_dir path
-              |> List.filter_map (fun fname ->
-                     if
-                       (not show_hidden) && String.starts_with ~prefix:"." fname
-                     then None
-                     else Some fname)
-              |> listing req_param
+          | `Regular_file -> handler path req
+          | `Directory -> (
+              match read_dir ~show_hidden path index with
+              | Either.Left files -> dir_listing files req
+              | Right index_path -> handler index_path req)
           | _ -> not_found)
     with Eio.Io _ as err ->
       Log.warn (fun log -> log "%a" Eio.Exn.pp err);
