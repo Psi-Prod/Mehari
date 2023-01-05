@@ -65,10 +65,8 @@ module Make
   let info = Logger.info
   let warning = Logger.warning
   let error = Logger.error
-
   let no_middleware = Router.no_middleware
   let pipeline = Router.pipeline
-
   let router = Router.router
   let route = Router.route
   let scope = Router.scope
