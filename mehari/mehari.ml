@@ -8,6 +8,7 @@ module Gemtext = Gemtext
 
 let paragraph = Gemtext.paragraph
 let uri = Request.uri
+let target = Request.target
 let ip = Request.ip
 let port = Request.port
 let sni = Request.sni

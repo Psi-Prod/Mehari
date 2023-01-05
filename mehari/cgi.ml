@@ -25,7 +25,7 @@ module Make (Addr : Types.ADDR) : S with type addr := Addr.t = struct
       ("CONTENT_LENGTH", empty);
       ("CONTENT_TYPE", empty);
       ("GATEWAY_INTERFACE", "CGI/1.1");
-      ("PATH_INFO", Request.uri req |> Uri.path |> Uri.pct_decode);
+      ("PATH_INFO", Request.target req |> Uri.pct_decode);
       ("PATH_TRANSLATED", path);
       ("QUERY_STRING", Request.query req |> empty_by_default);
       ("REMOTE_ADDR", client_addr);

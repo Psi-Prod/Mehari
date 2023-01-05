@@ -69,7 +69,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
 
   let router routes req =
     let routes = List.concat routes in
-    let path = Request.uri req |> Uri.path in
+    let path = Request.target req in
     let route =
       List.fold_left
         (fun acc { route; handler; rate_limit } ->

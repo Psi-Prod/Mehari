@@ -9,6 +9,7 @@ type 'a t = {
 }
 
 let uri { uri; _ } = uri
+let target { uri; _ } = Uri.path uri
 let ip { addr; _ } = addr
 let port { port; _ } = port
 let sni { sni; _ } = sni

@@ -76,6 +76,9 @@ assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ]
 val uri : 'a request -> Uri.t
 (** Request uri. *)
 
+val target : 'a request -> string
+(** Path of requested URL. For example, "/foo/bar". *)
+
 val ip : 'addr request -> 'addr
 (** Address of client sending the {!type:request}. *)
 

@@ -50,7 +50,7 @@ let default_listing files req =
   let dirs =
     List.map
       (fun fname ->
-        Filename.concat (Mehari.uri req |> Uri.path) fname
+        Filename.concat (Mehari.target req) fname
         |> Mehari.Gemtext.link ~name:fname)
       files
   in
