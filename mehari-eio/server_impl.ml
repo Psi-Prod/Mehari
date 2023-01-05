@@ -136,5 +136,6 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
           |> Net.accept_fork ~sw ~on_error:log_err socket;
           serve ()
         in
+        Log.info (fun log -> log "Listening on port %i" port);
         serve () |> ignore)
 end

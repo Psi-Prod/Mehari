@@ -1,11 +1,13 @@
-type t =
+type t = { status : int option; kind : kind }
+
+and kind =
   | Immediate of string list
   (* A list for avoid ( ^ ) quadatric concatenation. *)
   | Delayed of stream
 
 and stream = { body : (string -> unit) -> unit; flush : bool }
 
-type view = t
+type view = kind
 
 type 'a status = int * 'a typ
 
@@ -16,7 +18,7 @@ and _ typ =
 
 and body = String of string | Gemtext of Gemtext.t | Stream of stream
 
-let view_of_resp r = r
+let view_of_resp r = r.kind
 let string t = String t
 let gemtext g = Gemtext g
 let stream ?(flush = false) body = Stream { body; flush }
@@ -45,7 +47,7 @@ let is_startswith_bom = function
 
 let validate code meta body =
   if is_startswith_bom meta then
-    invalid_arg "meta begins with a U+FEFF byte order mark. "
+    invalid_arg "meta begins with a U+FEFF byte order mark"
   else if Bytes.(of_string meta |> length) > 1024 then
     invalid_arg "too long header"
   else
@@ -71,7 +73,7 @@ let to_response (type a) ((code, status) : a status) (m : a) =
     | SlowDown -> (Int.to_string m, None)
     | Meta -> (m, None)
   in
-  validate code meta body
+  { status = Some code; kind = validate code meta body }
 
 module Status = struct
   let input = (10, Meta)
@@ -97,14 +99,13 @@ end
 
 let response status info = to_response status info
 let response_body body = response (Status.success body)
-
-let response_text txt =
-  Mime.text "plain" |> response (Status.success (string txt))
+let response_text txt = response (Status.success (string txt)) Mime.plaintext
 
 let response_gemtext ?charset ?lang g =
   Mime.gemini ?charset ?lang () |> response (Status.success (gemtext g))
 
 let response_raw raw =
   match raw with
-  | `Body b -> Immediate [ b ]
-  | `Full (code, meta, body) -> Immediate [ fmt_meta code meta; body ]
+  | `Body b -> { status = None; kind = Immediate [ b ] }
+  | `Full (code, meta, body) ->
+      { status = Some code; kind = Immediate [ fmt_meta code meta; body ] }

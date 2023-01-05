@@ -83,23 +83,16 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
         None routes
     in
     match route with
-    | None ->
-        Logger.info (fun log ->
-            log "respond not found for path '%a' to '%a'." Uri.pp
-              (Request.uri req) Addr.pp (Request.ip req));
-        Response.(response Status.not_found "") |> IO.return
+    | None -> Response.(response Status.not_found "") |> IO.return
     | Some (handler, limit_opt, params) -> (
         let req = Request.attach_params req params in
-        Logger.info (fun log ->
-            log "serve '%a' for '%a'" Uri.pp (Request.uri req) Addr.pp
-              (Request.ip req));
         match limit_opt with
         | None -> handler req
         | Some limiter -> (
             match RateLimiter.check limiter req with
             | None ->
                 Logger.info (fun log ->
-                    log "'%a' is rate limited." Addr.pp (Request.ip req));
+                    log "'%a' is rate limited" Addr.pp (Request.ip req));
                 handler req
             | Some resp -> resp))
 

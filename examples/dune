@@ -17,8 +17,7 @@
   mehari
   mehari.eio
   mehari.lwt_unix
-  mirage-clock-unix
   mirage-crypto-rng-eio
-  mirage-logs
   logs
+  logs.fmt
   uri))

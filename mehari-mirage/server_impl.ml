@@ -157,6 +157,7 @@ module Make
             ()
     in
     let config = make_config ~addr ~port ~timeout ~tls_config in
+    Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
         match%lwt handler config callback flow with
         | Ok () -> Lwt.return_unit
