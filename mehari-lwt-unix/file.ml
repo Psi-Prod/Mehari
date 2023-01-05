@@ -1,3 +1,6 @@
+let src = Logs.Src.create "mehari.lwt_unix.static"
+
+module Log = (val Logs.src_log src)
 open Lwt.Syntax
 
 let chunk_size = 16384
@@ -87,18 +90,15 @@ let read_chunks ?(chunk_size = 16384) path =
         else Lwt.return_some (chunk, true))
     false
 
+let not_found = Mehari_io.respond Mehari.not_found ""
+
 let respond_document ?mime path =
   if%lwt Lwt_unix.file_exists path then
-    let mime =
-      match mime with
-      | None ->
-          Mehari.from_filename path |> Option.value ~default:Mehari.no_mime
-      | Some m -> m
-    in
+    let mime = Option.value mime ~default:Mehari.no_mime in
     let* chunks = read_chunks path in
     let* cs = chunks () in
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
-  else Mehari_io.respond Mehari.not_found ""
+  else not_found
 
 let from_filename ?(lookup = `Ext) ?charset fname =
   match lookup with
@@ -111,3 +111,69 @@ let from_filename ?(lookup = `Ext) ?charset fname =
       match Mehari.from_content ?charset content with
       | None -> Mehari.from_filename ?charset fname
       | Some m -> Some m)
+
+let reference_parent path =
+  String.fold_left
+    (fun (acc, dot) -> function
+      | '.' when dot -> (true, dot)
+      | '.' -> (acc, true)
+      | _ -> (acc, dot))
+    (false, false) path
+  |> fst
+
+let default_handler path req =
+  let fname = Mehari.param req 1 in
+  let mime =
+    match Mehari.from_filename fname with
+    | None when Filename.check_suffix fname ".gmi" -> Mehari.gemini ()
+    | None -> Mehari.no_mime
+    | Some m -> m
+  in
+  respond_document ~mime path
+
+let default_listing files req =
+  let dirs =
+    List.map
+      (fun fname ->
+        Filename.concat (Mehari.target req) fname
+        |> Mehari.Gemtext.link ~name:fname)
+      files
+  in
+  let title =
+    Mehari.param req 1 |> Printf.sprintf "Index: %s"
+    |> Mehari.Gemtext.heading `H1
+  in
+  title :: dirs |> Mehari.response_gemtext |> Lwt.return
+
+let read_dir ~show_hidden path index =
+  let files = Lwt_unix.files_of_directory path in
+  let open Either in
+  Lwt_stream.fold
+    (fun fname acc ->
+      if String.equal fname index then Right (Filename.concat path fname)
+      else
+        Either.map_left
+          (fun l ->
+            if (not show_hidden) && String.starts_with ~prefix:"." fname then l
+            else fname :: l)
+          acc)
+    files (Left [])
+
+let static ?(handler = default_handler) ?(dir_listing = default_listing)
+    ?(index = "index.gmi") ?(show_hidden = false) base_path req =
+  let req_path = Mehari.param req 1 in
+  if reference_parent req_path then not_found
+  else
+    let path = Filename.concat base_path req_path in
+    try
+      match%lwt Lwt_unix.lstat path with
+      | { st_kind = S_REG; _ } -> handler path req
+      | { st_kind = S_DIR; _ } -> (
+          match%lwt read_dir ~show_hidden path index with
+          | Either.Left files -> dir_listing files req
+          | Right index_path -> handler index_path req)
+      | _ -> not_found
+    with Unix.Unix_error (err, fun_name, _) ->
+      Log.warn (fun log ->
+          log "Unix_error %S: %s" fun_name (Unix.error_message err));
+      not_found

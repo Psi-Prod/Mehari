@@ -11,9 +11,12 @@ include Mehari.NET with module IO := Direct and type addr = Eio.Net.Ipaddr.v4v6
 
 val response_document :
   ?mime:Mehari.mime -> Eio.Fs.dir Eio.Path.t -> Mehari.response
-(** Same as {!val:Mehari.response} but respond with content of file located at
-    path. If [mime] parameter is not supplied, use {!val:Mehari.no_mime} as
-    mime type. The whole file content is not loaded in memory: response is
+(** Same as {!val:response} but respond with content of file located at path.
+    If [filename] is not present on filesystem, responds with
+    {!val:Mehari.not_found}. If [mime] parameter is not supplied,
+    use {!val:Mehari.no_mime} as mime type.
+
+    The whole file content is not loaded in memory: response is
     chunked. *)
 
 val static :

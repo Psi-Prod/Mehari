@@ -2,30 +2,34 @@ let src = Logs.Src.create "mehari.eio.static"
 
 module Log = (val Logs.src_log src)
 
+let not_found = Mehari.(response not_found "")
+
 let response_document ?mime path =
-  let chunk_size = 16384 in
-  let body =
-    Mehari.stream (fun consume ->
-        Eio.Path.with_open_in path (fun flow ->
-            let buf = Eio.Buf_read.of_flow flow ~max_size:max_int in
-            let n = ref 0 in
-            let rec loop () =
-              let chunk =
-                Eio.Buf_read.take_while
-                  (fun _ ->
-                    incr n;
-                    !n <> chunk_size)
-                  buf
+  try
+    let chunk_size = 16384 in
+    let body =
+      Mehari.stream (fun consume ->
+          Eio.Path.with_open_in path (fun flow ->
+              let buf = Eio.Buf_read.of_flow flow ~max_size:max_int in
+              let n = ref 0 in
+              let rec loop () =
+                let chunk =
+                  Eio.Buf_read.take_while
+                    (fun _ ->
+                      incr n;
+                      !n <> chunk_size)
+                    buf
+                in
+                if String.length chunk = chunk_size then (
+                  consume chunk;
+                  n := 0;
+                  loop ())
+                else consume chunk
               in
-              if String.length chunk = chunk_size then (
-                consume chunk;
-                n := 0;
-                loop ())
-              else consume chunk
-            in
-            loop ()))
-  in
-  Option.value mime ~default:Mehari.no_mime |> Mehari.response_body body
+              loop ()))
+    in
+    Option.value mime ~default:Mehari.no_mime |> Mehari.response_body body
+  with Eio.Io _ -> not_found
 
 let reference_parent path =
   String.fold_left
@@ -59,8 +63,6 @@ let default_listing files req =
     |> Mehari.Gemtext.heading `H1
   in
   title :: dirs |> Mehari.response_gemtext
-
-let not_found = Mehari.(response not_found "")
 
 let read_dir ~show_hidden path index =
   let open Either in
