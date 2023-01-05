@@ -23,8 +23,8 @@ val static :
   ?show_hidden:bool ->
   Eio.Fs.dir Eio.Path.t ->
   handler
-(** [static dir] validates the path parameter (retrieves by
-    calling [Mehari.param req 1]) by cheking that it is relative and does not
+(** [static dir] validates the path parameter (retrieved by
+    calling [Mehari.param req 1]) by checking that it is relative and does not
     contain parent directory references. If these checks fail,
     responds with {!val:Mehari.not_found}.
 
