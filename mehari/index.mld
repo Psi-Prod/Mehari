@@ -257,7 +257,7 @@ mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
 
 By default, the server runs on port [1965] on IP [localhost] (usually [127.0.0.1]).
 
-This command generate certificates ([cert.pem] and [key.pem]), 
+This command generate certificates ([cert.pem] and [key.pem]),
 set server common name to [localhost] and it should work:
 
 {@bash[
