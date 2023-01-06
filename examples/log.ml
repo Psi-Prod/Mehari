@@ -1,4 +1,4 @@
-module M_unix = Mehari_lwt_unix
+module Mehari_io = Mehari_lwt_unix
 
 let n = ref 0
 
@@ -7,11 +7,11 @@ let () =
   Logs.set_reporter (Logs_fmt.reporter ())
 
 let () =
-  M_unix.router
+  Mehari_io.router
     [
-      M_unix.route "/" (fun _ ->
+      Mehari_io.route "/" (fun _ ->
           incr n;
-          M_unix.info (fun log -> log "Request n°: %i" !n);
-          M_unix.respond_text "This request is logged");
+          Mehari_io.info (fun log -> log "Request n°: %i" !n);
+          Mehari_io.respond_text "This request is logged");
     ]
-  |> M_unix.logger |> M_unix.run
+  |> Mehari_io.logger |> Mehari_io.run

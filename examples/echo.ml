@@ -1,9 +1,9 @@
-module M_unix = Mehari_lwt_unix
+module Mehari_io = Mehari_lwt_unix
 
 let () =
-  M_unix.router
+  Mehari_io.router
     [
-      M_unix.route ~typ:`Regex "/echo/(.*)" (fun req ->
-          Mehari.param req 1 |> M_unix.respond_text);
+      Mehari_io.route ~typ:`Regex "/echo/(.*)" (fun req ->
+          Mehari.param req 1 |> Mehari_io.respond_text);
     ]
-  |> M_unix.logger |> M_unix.run
+  |> Mehari_io.logger |> Mehari_io.run

@@ -1,9 +1,9 @@
-module M_unix = Mehari_lwt_unix
+module Mehari_io = Mehari_lwt_unix
 
 let () =
-  M_unix.router
+  Mehari_io.router
     [
-      M_unix.route "/cgi" (fun req ->
-          Mehari_lwt_unix.run_cgi "./examples/cgi_script.py" req);
+      Mehari_io.route "/cgi" (fun req ->
+          Mehari_io.run_cgi "./examples/cgi_script.py" req);
     ]
-  |> M_unix.run
+  |> Mehari_io.run
