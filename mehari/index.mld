@@ -31,18 +31,21 @@ Mehari provides several packages:
   - {{:Mehari_eio/index.html} Mehari_eio} uses the
     {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
 
+  - {{:Mehari_eio_unix/index.html} Mehari_eio_unix} provides UNIX-dependent
+    functions based on Eio.
+
 {1:tutorial Tutorial}
 
-In these tutorials, {!Mehari_eio} will be used so as not to complicate 
-the snippets with a monadic interface but they can easily be adapted 
+In these tutorials, {!Mehari_eio} will be used so as not to complicate
+the snippets with a monadic interface but they can easily be adapted
 into a {!Mehari_mirage} version.
 
 {2 Respond to request}
 
-The first form of abstraction is the {!type:Mehari.NET.handler} 
-which is essentially an asynchronous function 
-from {!type:Mehari.request} to {!type:Mehari.response}. 
-This is the simplest possible handler that responds 
+The first form of abstraction is the {!type:Mehari.NET.handler}
+which is essentially an asynchronous function
+from {!type:Mehari.request} to {!type:Mehari.response}.
+This is the simplest possible handler that responds
 to all requests in the same way:
 
 {@ocaml[(fun _ -> Mehari.response_text "Hello from Mehari")]}
@@ -92,7 +95,7 @@ built on top of {!val:Mehari.response}.
 
 {3 Body}
 
-Successful responses are accompanied by a {!type:Mehari.body}. 
+Successful responses are accompanied by a {!type:Mehari.body}.
 They are many methods to create a body, for example from a string:
 
 {@ocaml[
@@ -143,7 +146,7 @@ real time. Be sure to read this quick warning about this approach:
 
 {3 Mime}
 
-{!type:Mehari.mime} describes how the response body 
+{!type:Mehari.mime} describes how the response body
 must be interpreted by the client.
 You can build your own mime with {!val:Mehari.make_mime} and specify the
 data encoding with the parameter [charset]:

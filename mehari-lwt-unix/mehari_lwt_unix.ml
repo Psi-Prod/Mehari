@@ -1,7 +1,7 @@
 open Lwt.Syntax
 include Mehari_io
 
-let respond_document = File.respond_document
+let response_document = File.respond_document
 let static = File.static
 let from_filename = File.from_filename
 let run_cgi = File.run_cgi
