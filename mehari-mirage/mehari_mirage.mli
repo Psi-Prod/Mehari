@@ -49,13 +49,13 @@ module type S = sig
     stack ->
     handler ->
     unit IO.t
-  (** [run ?port ?timeout ?verifyurlhost ?config ?certchains stack handler] runs the server using
-      [host].
+  (** [run ?port ?timeout ?verify_url_host ?config ?certchains stack handler]
+      runs the server using [host].
 
         - [port] is the port to listen on. Defaults to [1965].
         - [timeout] is the maximum waiting time in seconds for the client to
           write a request after TLS handshake. Unset by default.
-        - [verifyurlhost], if true (by default), will verify if the URL hostname
+        - [verify_url_host], if true (by default), will verify if the URL hostname
           corresponds to the server's certificate
           (chosen according to
           {{: https://github.com/mirleft/ocaml-tls/blob/main/sni.md }ocaml-tls sni.md}).

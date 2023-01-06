@@ -22,7 +22,7 @@ val run :
   Eio.Net.t ->
   handler ->
   unit
-(** [run ?port ?backlog ?addr ?verifyurlhost ?config ~certchains net handler] runs the server
+(** [run ?port ?backlog ?addr ?verify_url_host ?config ~certchains net handler] runs the server
     using [handler].
 
       - [port] is the port to listen on. Defaults to [1965].
