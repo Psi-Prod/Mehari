@@ -25,7 +25,7 @@ module type S = sig
   val no_route : route
 
   val virtual_hosts :
-    ?vhost_method:[ `ByURL | `SNI ] -> (string * handler) list -> handler
+    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -103,9 +103,9 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
     |> List.map (fun { route = typ, r; handler; _ } ->
            { route = (typ, prefix ^ r); handler = mw handler; rate_limit })
 
-  let virtual_hosts ?(vhost_method = `SNI) domains_handler req =
+  let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
-      match vhost_method with
+      match meth with
       | `SNI -> Request.sni req
       | `ByURL ->
           Request.uri req |> Uri.host

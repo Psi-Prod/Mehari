@@ -330,9 +330,12 @@ else
   (** {1:host Virtual hosting} *)
 
   val virtual_hosts :
-    ?vhost_method:[ `ByURL | `SNI ] -> (string * handler) list -> handler
-  (** [virtual_hosts [(domain, handler); ...]] produces a {!type:handler}
-      which enables virtual hosting at the TLS-layer using SNI. *)
+    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
+  (** [virtual_hosts ?meth [(domain, handler); ...]] produces a {!type:handler}
+      which enables virtual hosting at the TLS-layer using SNI.
+      - [meth] can be used to choose 
+        which source to match the hostnames against.
+        Defaults to [`SNI]. *)
 
   (** {1 Logging} *)
 
@@ -525,7 +528,7 @@ module Private : sig
       val no_route : route
 
       val virtual_hosts :
-        ?vhost_method:[ `ByURL | `SNI ] -> (string * handler) list -> handler
+        ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
     end
 
     module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
