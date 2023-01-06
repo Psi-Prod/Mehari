@@ -19,7 +19,7 @@
 
 (package
  (name mehari)
- (synopsis "A Mirage OS friendly library for building Gemini servers")
+ (synopsis "A cross-platform library for building Gemini servers")
  (description
   "Mehari is a Mirage OS friendly library for building Gemini servers.\nIt fully implements the Gemini protocol specification and aims to expose a clean and simple API.\nIt takes heavy inspiration from Dream, a tidy, feature-complete Web framework.")
  (depends
