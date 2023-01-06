@@ -1,48 +1,10 @@
 open Lwt.Syntax
 include Mehari_io
 
-(** TODO: true lazyness (is it even possible?) *)
-let rec unfold f u () =
-  match%lwt f u with
-  | None -> Lwt.return Seq.Nil
-  | Some (x, u') ->
-      let* xs = unfold f u' () in
-      Lwt.return (Seq.Cons (x, fun () -> xs))
-
-let read_chunks ?(chunk_size = 16384) path =
-  let+ ic = Lwt_io.open_file path ~mode:Input in
-  unfold
-    (fun ended ->
-      if ended then
-        let* () = Lwt_io.close ic in
-        Lwt.return_none
-      else
-        let* chunk = Lwt_io.read ~count:chunk_size ic in
-        if String.length chunk = chunk_size then Lwt.return_some (chunk, false)
-        else Lwt.return_some (chunk, true))
-    false
-
-let respond_document ?mime path =
-  if%lwt Lwt_unix.file_exists path then
-    let mime = Option.value ~default:(Mehari.from_filename path) mime in
-    let* chunks = read_chunks path in
-    let* cs = chunks () in
-    respond_body (Mehari.seq (fun () -> cs)) mime
-  else respond Mehari.not_found ""
-
-let from_filename ?(lookup = `Ext) ?charset ?lang fname =
-  match lookup with
-  | `Ext -> Mehari.from_filename ?charset ?lang fname |> Lwt.return
-  | `Content ->
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset ?lang content
-      |> Option.value ~default:Mehari.gemini
-  | `Both ->
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset ?lang content
-      |> Option.value ~default:(Mehari.from_filename ?charset ?lang fname)
-
-let run_cgi = Cgi.run_cgi
+let response_document = File.respond_document
+let static = File.static
+let from_filename = File.from_filename
+let run_cgi = File.run_cgi
 
 let stack ~v4 ~v6 =
   let* tcp =
@@ -57,16 +19,18 @@ let stack ~v4 ~v6 =
   in
   Stack.connect udp tcp
 
-let run_lwt ?port ?certchains ?v4 ?v6 callback =
+let run_lwt ?port ?timeout ?verify_url_host ?certchains ?v4 ?v6 callback =
+  Mirage_crypto_rng_unix.initialize ();
   let* stack =
     let v4 =
       match v4 with
       | Some ip -> Ipaddr.V4.Prefix.of_string_exn ip
-      | None -> Ipaddr.V4.Prefix.loopback
+      | None -> Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
     in
     stack ~v4 ~v6:(Option.map Ipaddr.V6.Prefix.of_string_exn v6)
   in
-  run_lwt ?port ?certchains stack callback
+  run ?port ?timeout ?verify_url_host ?certchains stack callback
 
-let run ?port ?certchains ?v4 ?v6 callback =
-  run_lwt ?port ?certchains ?v4 ?v6 callback |> Lwt_main.run
+let run ?port ?timeout ?verify_url_host ?certchains ?v4 ?v6 callback =
+  run_lwt ?port ?timeout ?verify_url_host ?certchains ?v4 ?v6 callback
+  |> Lwt_main.run

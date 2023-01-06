@@ -1,5 +1,5 @@
 open Mehari
-module M_unix = Mehari_lwt_unix
+module Mehari_io = Mehari_lwt_unix
 
 let counter = ref 0
 
@@ -8,16 +8,16 @@ let incr_count handler req =
   handler req
 
 let () =
-  M_unix.router
+  Mehari_io.router
     [
-      M_unix.route "/" (fun _ ->
-          M_unix.respond_gemtext
+      Mehari_io.route "/" (fun _ ->
+          Mehari_io.respond_gemtext
             Gemtext.
               [
                 link "/incr" ~name:"Increment counter";
                 text (Printf.sprintf "Counter = %i" !counter);
               ]);
-      M_unix.route "/incr" ~mw:incr_count (fun _ ->
-          M_unix.respond Mehari.redirect_temp "/");
+      Mehari_io.route "/incr" ~mw:incr_count (fun _ ->
+          Mehari_io.respond Mehari.redirect_temp "/");
     ]
-  |> M_unix.run
+  |> Mehari_io.run

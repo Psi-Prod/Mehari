@@ -1,13 +1,25 @@
 (executables
- (names counter echo eio_backend hello guestbook log rate_limit stream)
+ (names
+  cgi
+  client_cert
+  counter
+  echo
+  eio_backend
+  hello
+  guestbook
+  log
+  rate_limit
+  stream
+  vhost
+  proxy)
  (libraries
   ipaddr
+  eio_main
   mehari
   mehari.eio
-  eio_main
+  mehari.eio_unix
   mehari.lwt_unix
-  mirage-clock-unix
   mirage-crypto-rng-eio
-  mirage-logs
   logs
+  logs.fmt
   uri))

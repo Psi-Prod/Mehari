@@ -7,4 +7,9 @@
   logs
   magic-mime
   mirage-clock
-  uri))
+  tls
+  uri
+  x509))
+
+(documentation
+ (package mehari))

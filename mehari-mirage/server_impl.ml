@@ -1,4 +1,4 @@
-open Mehari
+module Private = Mehari.Private
 
 module type S = sig
   type stack
@@ -7,18 +7,21 @@ module type S = sig
 
   type handler = Ipaddr.t Private.Handler.Make(IO).t
 
-  val run_lwt :
+  val run :
     ?port:int ->
+    ?timeout:float ->
+    ?verify_url_host:bool ->
+    ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
     unit IO.t
-
-  val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
 end
 
-module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
+module Make
+    (Stack : Tcpip.Stack.V4V6)
+    (Time : Mirage_time.S)
+    (Logger : Private.Logger_impl.S) :
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
 
@@ -26,78 +29,148 @@ module Make (Stack : Tcpip.Stack.V4V6) (Logger : Private.Logger_impl.S) :
 
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
+  module Protocol = Mehari.Private.Protocol
+
+  module Cert = Mehari.Private.Cert.Make (struct
+    module IO = IO
+
+    type path = string
+
+    include X509_lwt
+  end)
+
   open Lwt.Syntax
 
-  let load_certs certs =
-    let rec aux acc = function
-      | [] -> Lwt.return acc
-      | (cert, priv_key) :: tl ->
-          let* certchain = X509_lwt.private_of_pems ~cert ~priv_key in
-          aux (certchain :: acc) tl
-    in
-    aux [] certs
+  type config = {
+    addr : Ipaddr.t;
+    port : int;
+    timeout : float option;
+    tls_config : Tls.Config.server;
+    verify_url_host : bool;
+  }
 
-  let write chan buf =
-    Channel.write_string chan buf 0 (String.length buf - 1);
-    match%lwt Channel.flush chan with
-    | Ok () -> Lwt.return_unit
-    | Error _ -> failwith "writing"
+  let make_config ~addr ~port ~timeout ~tls_config ~verify_url_host =
+    { addr; port; timeout; tls_config; verify_url_host }
+
+  let src = Logs.Src.create "mehari.mirage"
+
+  module Log = (val Logs.src_log src)
+
+  let flush_channel chan =
+    Channel.flush chan |> Lwt_result.map_error (fun e -> `ChannelWriteErr e)
 
   let write_resp chan resp =
+    let write buf = Channel.write_string chan buf 0 (String.length buf) in
     match Mehari.Private.view_of_resp resp with
-    | Immediate bufs -> Lwt_list.iter_s (write chan) bufs
-    | Stream seq -> Lwt_seq.of_seq seq |> Lwt_seq.iter_s (write chan)
+    | Immediate bufs ->
+        List.iter write bufs;
+        flush_channel chan
+    | Delayed { body; _ } ->
+        body write;
+        flush_channel chan
 
-  let read flow =
-    match%lwt Channel.read_some flow with
-    | Ok (`Data buffer) -> Cstruct.to_string buffer |> Lwt.return
-    | Ok `Eof -> failwith "eof"
-    | Error _ -> failwith "reading"
-
-  let serve conf handler flow =
-    let* server =
-      match%lwt TLS.server_of_flow conf flow with
-      | Ok s -> Lwt.return s
-      | Error _ -> failwith "i hate god"
+  let read_client_req flow =
+    let buf = Buffer.create 1024 in
+    let rec loop n cr =
+      match%lwt Channel.read_char flow with
+      | Ok (`Data _) when n > 1024 -> Lwt.return_error `BufferLimitExceeded
+      | Ok (`Data '\n') when cr -> Buffer.contents buf |> Lwt.return_ok
+      | Ok (`Data '\r') -> loop n true
+      | Ok (`Data c) ->
+          Buffer.add_char buf c;
+          loop (n + 1) false
+      | Ok `Eof -> Lwt.return_error `Eof
+      | Error err -> `ChannelErr err |> Lwt.return_error
     in
-    let* () = TLS.epoch server |> handler server (Stack.TCP.dst flow) in
-    TLS.close server
+    loop 0 false
 
-  let client_req = Re.(compile (seq [ group (rep1 any); char '\r'; char '\n' ]))
+  exception Timeout
 
-  let handle_client callback flow (addr, port) ep =
+  let with_timeout _timeout f =
+    match Some 1.0 with
+    | None -> f ()
+    | Some duration ->
+        let timeout =
+          let* () = Time.sleep_ns (Duration.of_f duration) in
+          Lwt.fail Timeout
+        in
+        Lwt.pick [ f (); timeout ]
+
+  let write_and_close chan flow resp =
+    match%lwt write_resp chan resp with
+    | Ok () ->
+        let+ () = TLS.close flow in
+        Ok ()
+    | Error err -> Lwt.return_error err
+
+  let handle_client config callback flow epoch =
     let chan = Channel.create flow in
-    let* request = read chan in
-    let* resp =
-      match Re.exec_opt client_req request with
-      | None -> (response bad_request) "" |> Lwt.return
-      | Some grp ->
-          let uri = Re.Group.get grp 1 |> Uri.of_string in
-          let sni =
-            match ep with
-            | Ok data -> Option.map Domain_name.to_string data.Tls.Core.own_name
-            | Error () -> assert false
-          in
-          Private.make_request (module Ipaddr) ~addr ~port ~uri ~sni |> callback
-    in
-    write_resp chan resp
+    match%lwt with_timeout config.timeout (fun () -> read_client_req chan) with
+    | Ok client_req -> (
+        match epoch with
+        | Ok ep ->
+            let* resp =
+              match
+                Protocol.make_request
+                  (module Ipaddr)
+                  ~port:config.port ~addr:config.addr
+                  ~verify_url_host:config.verify_url_host ep client_req
+              with
+              | Ok req -> callback req
+              | Error err -> Protocol.to_response err |> Lwt.return
+            in
+            write_and_close chan flow resp
+        | Error () -> Lwt.return_error `ConnectionClosed)
+    | Error `BufferLimitExceeded ->
+        Protocol.to_response AboveMaxSize |> write_and_close chan flow
+    | Error err -> Lwt.return_error err
 
-  let start_server ~port ~certchains ~stack callback =
-    let* certs = load_certs certchains in
-    let certificates =
-      match certs with
-      | c :: _ -> `Multiple_default (c, certs)
-      | _ -> invalid_arg "start_server"
+  let handler config callback flow =
+    match%lwt TLS.server_of_flow config.tls_config flow with
+    | Ok server -> TLS.epoch server |> handle_client config callback server
+    | Error err -> `TLSWriteErr err |> Lwt.return_error
+
+  let log_err = function
+    | `BufferLimitExceeded -> assert false
+    | `ConnectionClosed ->
+        Log.warn (fun log -> log "Connection has been closed prematurly")
+    | `Eof -> Log.warn (fun log -> log "EOF encountered prematurly")
+    | `ChannelWriteErr err ->
+        Log.warn (fun log ->
+            log "ChannelWriteErr: %a" Channel.pp_write_error err)
+    | `ChannelErr err -> Log.warn (fun log -> log "%a" Channel.pp_error err)
+    | `Timeout ->
+        Log.warn (fun log -> log "Timeout while reading client request")
+    | `TLSWriteErr err ->
+        Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
+
+  let run ?(port = 1965) ?timeout ?(verify_url_host = true) ?config
+      ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
+    let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
+    let addr =
+      Stack.ip stack |> Stack.IP.get_ip
+      |> Fun.flip List.nth 0 (* Should not be empty. *)
     in
-    handle_client callback
-    |> serve (Tls.Config.server ~certificates ())
-    |> Stack.TCP.listen (Stack.tcp stack) ~port;
+    let tls_config =
+      match config with
+      | Some c -> c
+      | None ->
+          Tls.Config.server ~certificates
+            ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+            ()
+    in
+    let config =
+      make_config ~addr ~port ~timeout ~tls_config ~verify_url_host
+    in
+    Logger.info (fun log -> log "Listening on port %i" port);
+    Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
+        match%lwt handler config callback flow with
+        | Ok () -> Lwt.return_unit
+        | exception Timeout ->
+            log_err `Timeout;
+            Lwt.return_unit
+        | Error err ->
+            log_err err;
+            Lwt.return_unit);
     Stack.listen stack
-
-  let run_lwt ?(port = 1965) ?(certchains = [ ("./cert.pem", "./key.pem") ])
-      stack callback =
-    start_server ~port ~certchains ~stack callback
-
-  let run ?port ?certchains stack callback =
-    run_lwt ?port ?certchains stack callback |> Lwt_main.run
 end

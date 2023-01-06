@@ -4,7 +4,12 @@ module type IO_RESPONSE = sig
   val respond : 'a Mehari.status -> 'a -> Mehari.response Lwt.t
   val respond_body : Mehari.body -> Mehari.mime -> Mehari.response Lwt.t
   val respond_text : string -> Mehari.response Lwt.t
-  val respond_gemtext : Mehari.Gemtext.t -> Mehari.response Lwt.t
+
+  val respond_gemtext :
+    ?charset:string ->
+    ?lang:string list ->
+    Mehari.Gemtext.t ->
+    Mehari.response Lwt.t
 
   val respond_raw :
     [ `Body of string | `Full of int * string * string ] ->
@@ -18,8 +23,10 @@ module type S = sig
   include Server_impl.S with module IO := IO
 end
 
-module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  S with type stack = Stack.t = struct
+module Make
+    (Clock : Mirage_clock.PCLOCK)
+    (Stack : Tcpip.Stack.V4V6)
+    (Time : Mirage_time.S) : S with type stack = Stack.t = struct
   module IO = Lwt
   module Addr = Ipaddr
   module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
@@ -35,7 +42,7 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
       (Addr)
 
   module Router = Router_impl.Make (RateLimiter) (Logger)
-  module Server = Server_impl.Make (Stack) (Logger)
+  module Server = Server_impl.Make (Stack) (Time) (Logger)
 
   type addr = Addr.t
   type handler = Router.handler
@@ -47,18 +54,24 @@ module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
   let respond s i = Mehari.response s i |> IO.return
   let respond_body b m = Mehari.response_body b m |> IO.return
   let respond_text t = Mehari.response_text t |> IO.return
-  let respond_gemtext g = Mehari.response_gemtext g |> IO.return
+
+  let respond_gemtext ?charset ?lang g =
+    Mehari.response_gemtext ?charset ?lang g |> IO.return
+
   let respond_raw g = Mehari.response_raw g |> IO.return
-  let make_rate_limit = RateLimiter.make
   let set_log_lvl = Logger.set_level
   let logger = Logger.logger
   let debug = Logger.debug
   let info = Logger.info
   let warning = Logger.warning
   let error = Logger.error
+  let no_middleware = Router.no_middleware
+  let pipeline = Router.pipeline
   let router = Router.router
   let route = Router.route
   let scope = Router.scope
-  let run_lwt = Server.run_lwt
+  let no_route = Router.no_route
+  let virtual_hosts = Router.virtual_hosts
+  let make_rate_limit = RateLimiter.make
   let run = Server.run
 end

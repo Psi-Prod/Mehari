@@ -11,14 +11,7 @@ module type S = sig
   (** @closed *)
   include Mehari.NET with module IO := IO and type addr = Ipaddr.t
 
-  (** @closed *)
-  include
-    Server_impl.S
-      with module IO := IO
-       and type handler := handler
-       and type stack := stack
-
-  (** {1:response Response} *)
+  (** {1 Response} *)
 
   val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
   (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
@@ -32,7 +25,11 @@ module type S = sig
   (** Same as {!val:respond} but respond with given text and use [text/plain] as
         {!type:Mehari.mime} type. *)
 
-  val respond_gemtext : Mehari.Gemtext.t -> Mehari.response IO.t
+  val respond_gemtext :
+    ?charset:string ->
+    ?lang:string list ->
+    Mehari.Gemtext.t ->
+    Mehari.response IO.t
   (** Same as {!val:respond} but respond with given {!type:Mehari.Gemtext.t} and use
         [text/gemini] as {!type:Mehari.mime} type. *)
 
@@ -43,25 +40,41 @@ module type S = sig
 
   (** {1 Entry point} *)
 
-  val run_lwt :
+  val run :
     ?port:int ->
+    ?timeout:float ->
+    ?verify_url_host:bool ->
+    ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
-    unit Lwt.t
-  (** [run ?port ?certchains stack handler] runs the server using
-      [handler].
+    unit IO.t
+  (** [run ?port ?timeout ?verify_url_host ?config ?certchains stack handler]
+      runs the server using [host].
+
         - [port] is the port to listen on. Defaults to [1965].
-        - [certchains] is the list of form [[(cert_path, privatekey_path); ...]],
+        - [timeout] is the maximum waiting time in seconds for the client to
+          write a request after TLS handshake. Unset by default.
+        - [verify_url_host], if true (by default), will verify if the URL hostname
+          corresponds to the server's certificate
+          (chosen according to
+          {{: https://github.com/mirleft/ocaml-tls/blob/main/sni.md }ocaml-tls sni.md}).
+        - [config] is the TLS server configuration.
+          Defaults to
+          {@ocaml[
+            Tls.Config.server ~certificates
+                ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+                ()
+          ]}
+        To support client certificates, specify the [authenticator].
+        - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
           the last one is considered default.
 
       @raise Invalid_argument if [certchains] is empty. *)
-
-  val run :
-    ?port:int -> ?certchains:(string * string) list -> stack -> handler -> unit
-  (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
 end
 
 (** A functor building an IO module from Mirage components. *)
-module Make (Clock : Mirage_clock.PCLOCK) (Stack : Tcpip.Stack.V4V6) :
-  S with type stack = Stack.t
+module Make
+    (Clock : Mirage_clock.PCLOCK)
+    (Stack : Tcpip.Stack.V4V6)
+    (Time : Mirage_time.S) : S with type stack = Stack.t
