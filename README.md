@@ -18,10 +18,11 @@ Many [examples](https://github.com/Psi-Prod/Mehari/tree/branding/examples) are a
 
 - [Mirage OS friendly](https://docs.heyplzlookat.me/mehari/Mehari_mirage/index.html)
 - [Static files](https://docs.heyplzlookat.me/mehari/Mehari/module-type-UNIX/index.html#static-files)
+- [MIME type inference](https://docs.heyplzlookat.me/mehari/index.html#mime) (using experimental [Conan](https://github.com/mirage/conan/) support)
 - [Rate limit](https://docs.heyplzlookat.me/mehari/index.html#rate-limit)
 - [Virtual hosting](https://docs.heyplzlookat.me/mehari/index.html#virtual-hosting) using SNI
 - [CGI](https://docs.heyplzlookat.me/mehari/Mehari_lwt_unix/index.html#cgi)
-- [MIME type inference](https://docs.heyplzlookat.me/mehari/index.html#mime) (using experimental [Conan](https://github.com/mirage/conan/) support)
+- [Long-running TCP connection](https://docs.heyplzlookat.me/mehari/Mehari/index.html#note-on-data-stream-response)
 
 ## Feedback
 
