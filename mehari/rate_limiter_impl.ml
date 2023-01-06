@@ -32,9 +32,7 @@ module Make (Clock : Mirage_clock.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
     let time_left = t.next_timestamp - now in
     if time_left < 0 then reset t;
     let addr = Request.ip req in
-    let n =
-      match AddrMap.find_opt addr t.history with None -> 1 | Some n -> n + 1
-    in
+    let n = AddrMap.find_opt addr t.history |> Option.fold ~none:1 ~some:succ in
     t.history <- AddrMap.add addr n t.history;
     if n > t.requests then
       Response.(response Status.slow_down time_left) |> IO.return |> Option.some
@@ -47,8 +45,8 @@ module Make (Clock : Mirage_clock.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
       match duration with
       | `Second -> 1
       | `Minute -> 60
-      | `Hour -> 60 * 60
-      | `Day -> 60 * 60 * 24
+      | `Hour -> 3600
+      | `Day -> 3600 * 24
     in
     let t = { requests; period; next_timestamp = 0; history = AddrMap.empty } in
     reset t;

@@ -13,7 +13,7 @@ module Make (Addr : Types.ADDR) : S with type addr := Addr.t = struct
       match Request.client_cert req with
       | [] -> None
       | c :: _ ->
-          (* We pick the first. *)
+          (* We pick the first one. *)
           Option.map
             (fun (_, d) -> Domain_name.to_string d)
             (Tls.Core.Cert.hostnames c |> X509.Host.Set.choose_opt)

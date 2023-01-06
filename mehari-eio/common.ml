@@ -3,6 +3,7 @@ module Direct = struct
 
   let return x = x
   let bind x f = f x
+  let map f x = f x
 end
 
 module Addr = struct
