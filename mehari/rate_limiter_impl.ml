@@ -33,9 +33,9 @@ module Make (Clock : Mirage_clock.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
   let check t req =
     let now =
       let _, ps = Clock.now_d_ps () in
-      Int64.to_int ps / 1_000_000_000_000
+      Int64.div ps (Int64.of_float (10. ** 12.))
     in
-    let time_left = t.next_timestamp - now in
+    let time_left = t.next_timestamp - Int64.to_int now in
     if time_left <= 0 then reset t;
     let addr = Request.ip req in
     let n = AddrMap.find_opt addr t.history |> Option.fold ~none:1 ~some:succ in
