@@ -370,7 +370,8 @@ module type UNIX = sig
 
   val static :
     ?handler:(dir_path -> handler) ->
-    ?dir_listing:(string list -> handler) ->
+    ?dir_listing:
+      (([ `Regular_file | `Directory | `Other ] * string) list -> handler) ->
     ?index:string ->
     ?show_hidden:bool ->
     dir_path ->
@@ -560,7 +561,8 @@ module Private : sig
 
       val static :
         ?handler:(dir_path -> handler) ->
-        ?dir_listing:(string list -> handler) ->
+        ?dir_listing:
+          (([ `Regular_file | `Directory | `Other ] * string) list -> handler) ->
         ?index:string ->
         ?show_hidden:bool ->
         dir_path ->

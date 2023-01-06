@@ -19,7 +19,8 @@ module type S = sig
 
   val static :
     ?handler:(dir_path -> handler) ->
-    ?dir_listing:(string list -> handler) ->
+    ?dir_listing:
+      (([ `Regular_file | `Directory | `Other ] * string) list -> handler) ->
     ?index:string ->
     ?show_hidden:bool ->
     dir_path ->
@@ -37,6 +38,13 @@ module Make (Dir : DIR) (Addr : Types.T) :
 
   module Log = (val Logs.src_log src)
 
+  let ( let* ) = Dir.IO.bind
+
+  let pp_kind fmt = function
+    | `Regular_file -> Format.fprintf fmt "\u{1F4C4}"
+    | `Directory -> Format.fprintf fmt "\u{1F4C1}"
+    | `Other -> Format.fprintf fmt "\u{2753}"
+
   let default_handler path req =
     let fname = Request.param req 1 in
     let mime =
@@ -53,8 +61,9 @@ module Make (Dir : DIR) (Addr : Types.T) :
   let default_listing files req =
     let dirs =
       List.map
-        (fun fname ->
-          Filename.concat (Request.target req) fname |> Gemtext.link ~name:fname)
+        (fun (kind, fname) ->
+          let name = Format.asprintf "%a %s" pp_kind kind fname in
+          Filename.concat (Request.target req) fname |> Gemtext.link ~name)
         files
     in
     let title =
@@ -66,27 +75,32 @@ module Make (Dir : DIR) (Addr : Types.T) :
         match Request.uri req |> Uri.to_string |> Re.exec_opt parent_path with
         | None -> title :: dirs
         | Some grp ->
-            let link =
-              Re.Group.get grp 1 |> Gemtext.link ~name:"Parent directory"
+            let name =
+              Format.asprintf "%a Parent directory" pp_kind `Directory
             in
+            let link = Re.Group.get grp 1 |> Gemtext.link ~name in
             title :: link :: Gemtext.newline :: dirs
     in
     menu |> Response.response_gemtext |> Dir.IO.return
 
   let read_dir ~show_hidden ~index path =
-    Dir.IO.bind (Dir.read path) (fun files ->
-        List.fold_left
-          (fun acc fname ->
-            if String.equal fname index then `Index (Dir.concat path fname)
-            else
-              match acc with
-              | `Index _ -> acc
-              | `Filenames fnames ->
-                  if (not show_hidden) && String.starts_with ~prefix:"." fname
-                  then `Filenames fnames
-                  else `Filenames (fname :: fnames))
-          (`Filenames []) files
-        |> Dir.IO.return)
+    let* files = Dir.read path in
+    List.fold_left
+      (fun acc fname ->
+        let* acc = acc in
+        if String.equal fname index then
+          `Index (Dir.concat path fname) |> Dir.IO.return
+        else
+          match acc with
+          | `Index _ -> Dir.IO.return acc
+          | `Filenames fnames ->
+              if (not show_hidden) && String.starts_with ~prefix:"." fname then
+                `Filenames fnames |> Dir.IO.return
+              else
+                let* kind = Dir.concat path fname |> Dir.kind in
+                `Filenames ((kind, fname) :: fnames) |> Dir.IO.return)
+      (`Filenames [] |> Dir.IO.return)
+      files
 
   let reference_parent path =
     String.fold_left
