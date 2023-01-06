@@ -1,4 +1,6 @@
-# Mehari
+<p align="center">
+  <img src="docs/banner.png" />
+</p>
 
 Mehari is a [Mirage OS](https://mirageos.org/) friendly library for building Gemini servers. It fully implements the [Gemini protocol specification](https://gemini.circumlunar.space/docs/specification.gmi) and aims to expose a clean and simple API.
 
