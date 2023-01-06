@@ -16,12 +16,13 @@ val run :
   ?backlog:int ->
   ?timeout:float * Eio.Time.clock ->
   ?addr:addr ->
+  ?verify_url_host:bool ->
   ?config:Tls.Config.server ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
   Eio.Net.t ->
   handler ->
   unit
-(** [run ?port ?backlog ?addr ?config ~certchains net handler] runs the server
+(** [run ?port ?backlog ?addr ?verify_url_host ?config ~certchains net handler] runs the server
     using [handler].
 
       - [port] is the port to listen on. Defaults to [1965].
@@ -32,6 +33,9 @@ val run :
         after TLS handshake. Unset by default.
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
+      - [verify_url_host], if true (by default), will verify if the URL
+        hostname corresponds to the server's certificate (chosen according to
+        {{: https://github.com/mirleft/ocaml-tls/blob/main/sni.md }ocaml-tls sni.md}).
       - [config] is the TLS server configuration.
         Defaults to
         {@ocaml[
