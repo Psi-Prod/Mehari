@@ -47,6 +47,9 @@ module Make (Dir : DIR) (Addr : Types.T) :
     in
     Dir.response_document ~mime path
 
+  let parent_path =
+    Re.(compile (seq [ Re.group (seq [ rep1 any; char '/' ]); rep1 any ]))
+
   let default_listing files req =
     let dirs =
       List.map
@@ -57,7 +60,18 @@ module Make (Dir : DIR) (Addr : Types.T) :
     let title =
       Request.param req 1 |> Printf.sprintf "Index: %s" |> Gemtext.heading `H1
     in
-    title :: dirs |> Response.response_gemtext |> Dir.IO.return
+    let menu =
+      if Request.target req = "" then title :: dirs
+      else
+        match Request.uri req |> Uri.to_string |> Re.exec_opt parent_path with
+        | None -> title :: dirs
+        | Some grp ->
+            let link =
+              Re.Group.get grp 1 |> Gemtext.link ~name:"Parent directory"
+            in
+            title :: link :: Gemtext.newline :: dirs
+    in
+    menu |> Response.response_gemtext |> Dir.IO.return
 
   let read_dir ~show_hidden ~index path =
     Dir.IO.bind (Dir.read path) (fun files ->
