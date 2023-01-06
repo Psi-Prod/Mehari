@@ -77,6 +77,24 @@ module type NET = sig
   val error : 'a Logs.log
 end
 
+module type UNIX = sig
+  module IO : Types.IO
+
+  type addr
+  type handler = addr Handler.Make(IO).t
+  type dir_path
+
+  val response_document : ?mime:mime -> dir_path -> response IO.t
+
+  val static :
+    ?handler:(dir_path -> handler) ->
+    ?dir_listing:(string list -> handler) ->
+    ?index:string ->
+    ?show_hidden:bool ->
+    dir_path ->
+    handler
+end
+
 module Private = struct
   module type IO = Types.IO
   module type ADDR = Types.ADDR
@@ -92,4 +110,5 @@ module Private = struct
   module Protocol = Protocol
   module Rate_limiter_impl = Rate_limiter_impl
   module Router_impl = Router_impl
+  module Static = Static
 end

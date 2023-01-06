@@ -2,6 +2,9 @@ module Addr = Common.Addr
 module Direct = Common.Direct
 module IO = Common.Direct
 
+module type S =
+  Mehari.NET with module IO := Direct and type addr = Eio.Net.Ipaddr.v4v6
+
 (** TODO: replace Pclock by mirage-clock-eio when it becomes available. *)
 
 module RateLimiter =
@@ -38,8 +41,6 @@ let router = Router.router
 let route = Router.route
 let scope = Router.scope
 let no_route = Router.no_route
-let response_document = File.response_document
 let virtual_hosts = Router.virtual_hosts
 let make_rate_limit = RateLimiter.make
-let static = File.static
 let run = Server.run

@@ -68,7 +68,7 @@
 
 (package
  (name mehari_lwt_unix)
- (synopsis "Mehari IO implementation using Lwt")
+ (synopsis "Mehari IO implementation using Lwt and UNIX bindings")
  (depends
   mehari
   mehari_mirage
@@ -104,3 +104,13 @@
    (>= 0.15.5))
   (uri
    (>= 4.2.0))))
+
+(package
+ (name mehari_eio_unix)
+ (synopsis "Mehari IO implementation using EIO and UNIX bindings")
+ (depends
+  (ocaml
+   (>= 5.0.0))
+  mehari
+  (eio
+   (>= 0.6))))

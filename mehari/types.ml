@@ -11,3 +11,7 @@ module type IO = sig
   val return : 'a -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
+
+module type T = sig
+  type t
+end

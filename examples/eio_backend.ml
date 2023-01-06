@@ -2,8 +2,8 @@ let router cwd =
   Mehari_eio.router
     [
       Mehari_eio.route "/" (fun _ ->
-          Mehari_eio.response_document Eio.Path.(cwd / "README.md"));
-      Mehari_eio.route ~typ:`Regex "/sources/(.*)" (Mehari_eio.static cwd);
+          Mehari_eio_unix.response_document Eio.Path.(cwd / "README.md"));
+      Mehari_eio.route ~typ:`Regex "/sources/(.*)" (Mehari_eio_unix.static cwd);
     ]
 
 let main ~net ~cwd =
