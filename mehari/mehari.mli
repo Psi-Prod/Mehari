@@ -268,8 +268,6 @@ module type NET = sig
       after — producing a “bigger” {!type:handler}. See
       {!section-middleware}. *)
 
-  type vhost_method = [ `SNI | `URL ]
-
   (** {1:middleware Middleware} *)
 
   val no_middleware : middleware
@@ -332,7 +330,7 @@ else
   (** {1:host Virtual hosting} *)
 
   val virtual_hosts :
-    ?vhost_method:vhost_method -> (string * handler) list -> handler
+    ?vhost_method:[ `ByURL | `SNI ] -> (string * handler) list -> handler
   (** [virtual_hosts [(domain, handler); ...]] produces a {!type:handler}
       which enables virtual hosting at the TLS-layer using SNI. *)
 
@@ -504,7 +502,6 @@ module Private : sig
       type addr
       type handler = addr Handler.Make(IO).t
       type middleware = handler -> handler
-      type vhost_method = [ `SNI | `URL ]
 
       val no_middleware : middleware
       val pipeline : middleware list -> middleware
@@ -528,7 +525,7 @@ module Private : sig
       val no_route : route
 
       val virtual_hosts :
-        ?vhost_method:vhost_method -> (string * handler) list -> handler
+        ?vhost_method:[ `ByURL | `SNI ] -> (string * handler) list -> handler
     end
 
     module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :

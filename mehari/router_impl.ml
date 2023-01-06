@@ -6,7 +6,6 @@ module type S = sig
   type addr
   type handler = addr Handler.Make(IO).t
   type middleware = handler -> handler
-  type vhost_method = [ `SNI | `URL ]
 
   val no_middleware : middleware
   val pipeline : middleware list -> middleware
@@ -26,7 +25,7 @@ module type S = sig
   val no_route : route
 
   val virtual_hosts :
-    ?vhost_method:vhost_method -> (string * handler) list -> handler
+    ?vhost_method:[ `ByURL | `SNI ] -> (string * handler) list -> handler
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -47,8 +46,6 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
     handler : handler;
     rate_limit : RateLimiter.t option;
   }
-
-  type vhost_method = [ `SNI | `URL ]
 
   let no_route = []
 
@@ -110,7 +107,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
     let req_host =
       match vhost_method with
       | `SNI -> Request.sni req
-      | `URL ->
+      | `ByURL ->
           Request.uri req |> Uri.host
           |> Option.get (* Guaranteed by [Protocol.make_request]. *)
     in
