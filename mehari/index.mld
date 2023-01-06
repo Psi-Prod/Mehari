@@ -255,12 +255,10 @@ mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
 
 {2 Hosting}
 
-By default, the server runs on port [1965] on hostname [localhost]. Mehari
-looks for certificates in the current working directory if they are not
-provided.
+By default, the server runs on port [1965] on IP [localhost] (usually [127.0.0.1]).
 
-This bash command should generate certificates, set server common name to
-[localhost] and it should work:
+This command generate certificates ([cert.pem] and [key.pem]), 
+set server common name to [localhost] and it should work:
 
 {@bash[
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes

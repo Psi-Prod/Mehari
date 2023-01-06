@@ -8,6 +8,7 @@ module type S = sig
     ?backlog:int ->
     ?timeout:float * Eio.Time.clock ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
+    ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
     Eio.Net.t ->
@@ -31,10 +32,11 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     port : int;
     timeout : (float * Eio.Time.clock) option;
     tls_config : Tls.Config.server;
+    verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config =
-    { addr; port; timeout; tls_config }
+  let make_config ~addr ~port ~timeout ~tls_config ~verify_url_host =
+    { addr; port; timeout; tls_config; verify_url_host }
 
   let src = Logs.Src.create "mehari.eio"
 
@@ -77,7 +79,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          with_timeout (fun () -> client_req reader)
          |> Protocol.make_request
               (module Common.Addr)
-              ~port:config.port ~addr:config.addr ep
+              ~port:config.port ~addr:config.addr
+              ~verify_url_host:config.verify_url_host ep
        with
        | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
@@ -115,7 +118,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   end)
 
   let run ?(port = 1965) ?(backlog = 4096) ?timeout
-      ?(addr = Net.Ipaddr.V4.loopback) ?config ~certchains net callback =
+      ?(addr = Net.Ipaddr.V4.loopback) ?(verify_url_host = true) ?config
+      ~certchains net callback =
     let certificates = Cert.get_certs certchains ~exn_msg:"Mehari_eio.run" in
     let tls_config =
       match config with
@@ -125,7 +129,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
             ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
             ()
     in
-    let config = make_config ~addr ~port ~timeout ~tls_config in
+    let config =
+      make_config ~addr ~port ~timeout ~tls_config ~verify_url_host
+    in
     Eio.Switch.run (fun sw ->
         let socket =
           Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net

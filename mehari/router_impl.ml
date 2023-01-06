@@ -23,7 +23,9 @@ module type S = sig
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 
   val no_route : route
-  val virtual_hosts : (string * handler) list -> handler
+
+  val virtual_hosts :
+    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
@@ -101,10 +103,13 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
     |> List.map (fun { route = typ, r; handler; _ } ->
            { route = (typ, prefix ^ r); handler = mw handler; rate_limit })
 
-  let virtual_hosts domains_handler req =
+  let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
-      Request.uri req |> Uri.host
-      |> Option.get (* Guaranteed by [Protocol.make_request]. *)
+      match meth with
+      | `SNI -> Request.sni req
+      | `ByURL ->
+          Request.uri req |> Uri.host
+          |> Option.get (* Guaranteed by [Protocol.make_request]. *)
     in
     match List.find_opt (fun (d, _) -> d = req_host) domains_handler with
     | None -> assert false (* Guaranteed by [Protocol.make_request]. *)
