@@ -57,14 +57,14 @@ let ( let+ ) x f = match x with Ok x -> f x | Error _ as err -> err
 
 (* Perform some static check on client request *)
 let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
-    ~(addr : a) ~verifyurlhost epoch input =
+    ~(addr : a) ~verify_url_host epoch input =
   let+ sni = check_sni epoch in
   let+ () = check_utf8_encoding input in
   let+ () = check_length input in
   let uri = Uri.of_string input in
   let+ () = check_scheme uri in
   let+ () = check_relative_path uri in
-  let+ () = if verifyurlhost then check_host uri epoch else Ok () in
+  let+ () = if verify_url_host then check_host uri epoch else Ok () in
   let+ () = check_port uri port in
   Request.make
     (module Addr)

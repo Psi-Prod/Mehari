@@ -16,7 +16,7 @@ val run :
   ?backlog:int ->
   ?timeout:float * Eio.Time.clock ->
   ?addr:addr ->
-  ?verifyurlhost:bool ->
+  ?verify_url_host:bool ->
   ?config:Tls.Config.server ->
   certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
   Eio.Net.t ->
@@ -33,9 +33,8 @@ val run :
         after TLS handshake. Unset by default.
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
-      - [verifyurlhost], if true (by default), will verify if the URL hostname
-        corresponds to the server's certificate 
-        (chosen according to 
+      - [verify_url_host], if true (by default), will verify if the URL
+        hostname corresponds to the server's certificate (chosen according to
         {{: https://github.com/mirleft/ocaml-tls/blob/main/sni.md }ocaml-tls sni.md}).
       - [config] is the TLS server configuration.
         Defaults to

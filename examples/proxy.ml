@@ -11,7 +11,7 @@ let router =
 
 let main ~net ~cwd =
   let certchains = Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ] in
-  Mehari_eio.run net ~certchains ~verifyurlhost:false router
+  Mehari_eio.run net ~certchains ~verify_url_host:false router
 
 let () =
   Eio_main.run @@ fun env ->

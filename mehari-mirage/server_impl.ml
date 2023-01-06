@@ -10,7 +10,7 @@ module type S = sig
   val run :
     ?port:int ->
     ?timeout:float ->
-    ?verifyurlhost:bool ->
+    ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
@@ -46,11 +46,11 @@ module Make
     port : int;
     timeout : float option;
     tls_config : Tls.Config.server;
-    verifyurlhost : bool;
+    verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config ~verifyurlhost =
-    { addr; port; timeout; tls_config; verifyurlhost }
+  let make_config ~addr ~port ~timeout ~tls_config ~verify_url_host =
+    { addr; port; timeout; tls_config; verify_url_host }
 
   let src = Logs.Src.create "mehari.mirage"
 
@@ -114,7 +114,7 @@ module Make
                 Protocol.make_request
                   (module Ipaddr)
                   ~port:config.port ~addr:config.addr
-                  ~verifyurlhost:config.verifyurlhost ep client_req
+                  ~verify_url_host:config.verify_url_host ep client_req
               with
               | Ok req -> callback req
               | Error err -> Protocol.to_response err |> Lwt.return
@@ -144,7 +144,7 @@ module Make
     | `TLSWriteErr err ->
         Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
 
-  let run ?(port = 1965) ?timeout ?(verifyurlhost = true) ?config
+  let run ?(port = 1965) ?timeout ?(verify_url_host = true) ?config
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
     let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
@@ -159,7 +159,9 @@ module Make
             ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
             ()
     in
-    let config = make_config ~addr ~port ~timeout ~tls_config ~verifyurlhost in
+    let config =
+      make_config ~addr ~port ~timeout ~tls_config ~verify_url_host
+    in
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
         match%lwt handler config callback flow with
