@@ -12,6 +12,7 @@ tidy, feature-complete Web framework.
 </p>
 
 Mehari provides several packages. See [here](https://docs.heyplzlookat.me/mehari/index.html#interface).
+Many [examples](https://github.com/Psi-Prod/Mehari/tree/branding/examples) are alsoprovided.
 
 ## Features
 
