@@ -28,6 +28,7 @@ type handler = Router.handler
 type middleware = handler -> handler
 type route = Router.route
 type rate_limiter = RateLimiter.t
+type vhost_method = Router.vhost_method
 
 let set_log_lvl = Logger.set_level
 let logger = Logger.logger

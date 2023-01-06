@@ -3,7 +3,7 @@ echo -e "gemini://foo/" | openssl s_client -crlf -connect localhost:1965 -server
 *)
 
 let router =
-  Mehari_eio.virtual_hosts
+  Mehari_eio.virtual_hosts ~vhost_method:`URL
     [
       ("foo", fun _ -> Mehari.response_text "foo");
       ("bar", fun _ -> Mehari.response_text "bar");

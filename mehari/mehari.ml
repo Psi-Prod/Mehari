@@ -47,6 +47,7 @@ module type NET = sig
   type addr
   type handler = addr Request.t -> Response.t IO.t
   type middleware = handler -> handler
+  type vhost_method = [ `SNI | `URL ]
 
   val no_middleware : middleware
   val pipeline : middleware list -> middleware
@@ -68,7 +69,9 @@ module type NET = sig
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
 
-  val virtual_hosts : (string * handler) list -> handler
+  val virtual_hosts :
+    ?vhost_method:vhost_method -> (string * handler) list -> handler
+
   val set_log_lvl : Logs.level -> unit
   val logger : handler -> handler
   val debug : 'a Logs.log

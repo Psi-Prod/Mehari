@@ -50,6 +50,7 @@ module Make
   type route = Router.route
   type rate_limiter = RateLimiter.t
   type stack = Stack.t
+  type vhost_method = Router.vhost_method
 
   let respond s i = Mehari.response s i |> IO.return
   let respond_body b m = Mehari.response_body b m |> IO.return
