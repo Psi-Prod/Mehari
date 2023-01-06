@@ -10,7 +10,8 @@
   log
   rate_limit
   stream
-  vhost)
+  vhost
+  proxy)
  (libraries
   ipaddr
   eio_main

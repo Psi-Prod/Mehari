@@ -43,17 +43,22 @@ module type S = sig
   val run :
     ?port:int ->
     ?timeout:float ->
+    ?verifyurlhost:bool ->
     ?config:Tls.Config.server ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
     unit IO.t
-  (** [run ?port ?config ?certchains stack handler] runs the server using
+  (** [run ?port ?timeout ?verifyurlhost ?config ?certchains stack handler] runs the server using
       [host].
 
         - [port] is the port to listen on. Defaults to [1965].
         - [timeout] is the maximum waiting time in seconds for the client to
           write a request after TLS handshake. Unset by default.
+        - [verifyurlhost], if true (by default), will verify if the URL hostname
+          corresponds to the server's certificate 
+          (chosen according to 
+          {{: https://github.com/mirleft/ocaml-tls/blob/main/sni.md }ocaml-tls sni.md}).
         - [config] is the TLS server configuration.
           Defaults to
           {@ocaml[

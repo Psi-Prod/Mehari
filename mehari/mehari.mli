@@ -468,6 +468,7 @@ module Private : sig
       (module ADDR with type t = 'a) ->
       port:int ->
       addr:'a ->
+      verifyurlhost:bool ->
       Tls.Core.epoch_data ->
       string ->
       ('a request, request_err) result
