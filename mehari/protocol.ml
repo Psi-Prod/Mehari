@@ -45,10 +45,7 @@ let check_user_info uri =
   | Some _ -> Error UserInfoNotAllowed
 
 let check_path uri =
-  match Uri.path uri with
-  | "" -> Uri.with_path uri "/" |> Result.ok
-  | path when Filename.is_relative path -> Error RelativePath
-  | _ -> Ok uri
+  if Uri.path uri |> Filename.is_relative then Error RelativePath else Ok uri
 
 let check_host uri epoch =
   match Uri.host uri with
@@ -79,7 +76,7 @@ let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
   let+ () = check_utf8_encoding input in
   let+ () = check_length input in
   let+ () = check_bom input in
-  let uri = Uri.of_string input in
+  let uri = Uri.of_string input |> Uri.canonicalize in
   let+ () = check_scheme uri in
   let+ () = check_user_info uri in
   let+ uri = check_path uri in
