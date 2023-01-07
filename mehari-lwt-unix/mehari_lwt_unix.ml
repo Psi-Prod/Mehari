@@ -19,16 +19,12 @@ let stack ~v4 ~v6 =
   in
   Stack.connect udp tcp
 
-let run_lwt ?port ?timeout ?verify_url_host ?certchains ?v4 ?v6 callback =
+let default_ipv4 = Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
+
+let run_lwt ?port ?timeout ?verify_url_host ?certchains ?(v4 = default_ipv4) ?v6
+    callback =
   Mirage_crypto_rng_unix.initialize ();
-  let* stack =
-    let v4 =
-      match v4 with
-      | Some ip -> Ipaddr.V4.Prefix.of_string_exn ip
-      | None -> Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
-    in
-    stack ~v4 ~v6:(Option.map Ipaddr.V6.Prefix.of_string_exn v6)
-  in
+  let* stack = stack ~v4 ~v6 in
   run ?port ?timeout ?verify_url_host ?certchains stack callback
 
 let run ?port ?timeout ?verify_url_host ?certchains ?v4 ?v6 callback =

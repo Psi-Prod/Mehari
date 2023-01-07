@@ -94,21 +94,19 @@ val run_lwt :
   ?timeout:float ->
   ?verify_url_host:bool ->
   ?certchains:(string * string) list ->
-  ?v4:string ->
-  ?v6:string ->
+  ?v4:Ipaddr.V4.Prefix.t ->
+  ?v6:Ipaddr.V6.Prefix.t ->
   handler ->
   unit Lwt.t
-(** See {!val:Mehari_mirage.S.run}.
-    - [v4] must be written as an IPv4 CIDR.
-    - [v6] must be written as an IPv6 CIDR. *)
+(** See {!val:Mehari_mirage.S.run}. *)
 
 val run :
   ?port:int ->
   ?timeout:float ->
   ?verify_url_host:bool ->
   ?certchains:(string * string) list ->
-  ?v4:string ->
-  ?v6:string ->
+  ?v4:Ipaddr.V4.Prefix.t ->
+  ?v6:Ipaddr.V6.Prefix.t ->
   handler ->
   unit
 (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
