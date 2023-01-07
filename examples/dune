@@ -23,13 +23,3 @@
   logs
   logs.fmt
   uri))
-
-(alias
- (name all)
- (deps
-  (glob_files *.exe)))
-
-(alias
- (name all.bc)
- (deps
-  (glob_files *.bc)))

@@ -1,4 +1,0 @@
-(alias
- (name examples)
- (deps
-  (alias examples/all)))
