@@ -4,7 +4,7 @@
 
 (name mehari)
 
-(license "GPL-3.0")
+(license "LGPL-3.0")
 
 (authors "The mehari programmers")
 
