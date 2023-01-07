@@ -1,5 +1,6 @@
 type request_err =
   | AboveMaxSize
+  | BeginWithBOM
   | EmptyURL
   | InvalidURL
   | MalformedUTF8
@@ -7,6 +8,7 @@ type request_err =
   | MissingScheme
   | RelativePath
   | SNIExtRequired
+  | UserInfoNotAllowed
   | WrongHost
   | WrongPort
   | WrongScheme
@@ -24,14 +26,29 @@ let check_length url =
   else if length > 1024 then Error AboveMaxSize
   else Ok ()
 
+let check_bom url =
+  if
+    String.get_utf_8_uchar url 0
+    |> Uchar.utf_decode_uchar |> Uchar.equal Uchar.bom
+  then Error BeginWithBOM
+  else Ok ()
+
 let check_scheme uri =
   match Uri.scheme uri with
   | None -> Error MissingScheme
   | Some scheme when scheme <> "gemini" -> Error WrongScheme
   | Some _ -> Ok ()
 
-let check_relative_path uri =
-  if Uri.path uri |> Filename.is_relative then Error RelativePath else Ok ()
+let check_user_info uri =
+  match Uri.userinfo uri with
+  | None -> Ok ()
+  | Some _ -> Error UserInfoNotAllowed
+
+let check_path uri =
+  match Uri.path uri with
+  | "" -> Uri.with_path uri "/" |> Result.ok
+  | path when Filename.is_relative path -> Error RelativePath
+  | _ -> Ok uri
 
 let check_host uri epoch =
   match Uri.host uri with
@@ -61,9 +78,11 @@ let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
   let+ sni = check_sni epoch in
   let+ () = check_utf8_encoding input in
   let+ () = check_length input in
+  let+ () = check_bom input in
   let uri = Uri.of_string input in
   let+ () = check_scheme uri in
-  let+ () = check_relative_path uri in
+  let+ () = check_user_info uri in
+  let+ uri = check_path uri in
   let+ () = if verify_url_host then check_host uri epoch else Ok () in
   let+ () = check_port uri port in
   Request.make
@@ -76,6 +95,7 @@ let pp_err fmt =
   let fmt = Format.fprintf fmt in
   function
   | AboveMaxSize -> fmt "Request has a size higher than 1024 bytes"
+  | BeginWithBOM -> fmt "The request begin with a U+FEFF byte order mark"
   | EmptyURL -> fmt "URL is empty"
   | InvalidURL -> fmt "invalid URL"
   | MalformedUTF8 -> fmt "URL contains non-UTF8 byte sequence"
@@ -83,6 +103,8 @@ let pp_err fmt =
   | MissingHost -> fmt "The host URL subcomponent is required"
   | RelativePath -> fmt "URL path is relative"
   | SNIExtRequired -> fmt "SNI extension to TLS is required"
+  | UserInfoNotAllowed ->
+      fmt "URL contains userinfo subcomponent which is not allowed"
   | WrongHost -> fmt "URL contains a foreign hostname"
   | WrongPort -> fmt "URL has an incorrect port number"
   | WrongScheme -> fmt {|URL scheme is not "gemini://"|}
@@ -91,8 +113,9 @@ let to_response err =
   let body = Format.asprintf "%a" pp_err err in
   let status =
     match err with
-    | AboveMaxSize | EmptyURL | InvalidURL | MalformedUTF8 | MissingHost
-    | MissingScheme | RelativePath | SNIExtRequired ->
+    | AboveMaxSize | BeginWithBOM | EmptyURL | InvalidURL | MalformedUTF8
+    | MissingHost | MissingScheme | RelativePath | SNIExtRequired
+    | UserInfoNotAllowed ->
         Response.Status.bad_request
     | WrongHost | WrongPort | WrongScheme ->
         Response.Status.proxy_request_refused

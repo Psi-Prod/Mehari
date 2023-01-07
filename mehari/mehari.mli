@@ -458,6 +458,7 @@ module Private : sig
   module Protocol : sig
     type request_err =
       | AboveMaxSize
+      | BeginWithBOM
       | EmptyURL
       | InvalidURL
       | MalformedUTF8
@@ -465,6 +466,7 @@ module Private : sig
       | MissingScheme
       | RelativePath
       | SNIExtRequired
+      | UserInfoNotAllowed
       | WrongHost
       | WrongPort
       | WrongScheme
