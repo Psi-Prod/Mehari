@@ -8,7 +8,7 @@ It fully implements the Gemini protocol specification and aims to expose a clean
 It takes heavy inspiration from Dream, a tidy, feature-complete Web framework."""
 maintainer: ["tim.arnouts@protonmail.com" "lelolartichaut@laposte.net"]
 authors: ["The mehari programmers"]
-license: "LGPL-3.0"
+license: "LGPL-3.0-or-later"
 homepage: "https://github.com/Psi-Prod/Mehari"
 bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
