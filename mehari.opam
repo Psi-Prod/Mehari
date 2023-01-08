@@ -3,8 +3,8 @@ opam-version: "2.0"
 version: "0.1"
 synopsis: "A cross-platform library for building Gemini servers"
 description: """
-Mehari is a Mirage OS friendly library for building Gemini servers.
-It fully implements the Gemini protocol specification and aims to expose a clean and simple API.
+Mehari is a cross-platform library for building Gemini servers.
+It fully implements the Gemini protocol specification.
 It takes heavy inspiration from Dream, a tidy, feature-complete Web framework."""
 maintainer: ["tim.arnouts@protonmail.com" "lelolartichaut@laposte.net"]
 authors: ["The mehari programmers"]
