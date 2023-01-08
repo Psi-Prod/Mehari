@@ -12,7 +12,7 @@ depends: [
   "ocaml" {>= "5.0.0"}
   "mehari"
   "mehari_eio"
-  "eio" {>= "0.6"}
+  "eio" {>= "0.7"}
   "odoc" {with-doc}
 ]
 build: [
