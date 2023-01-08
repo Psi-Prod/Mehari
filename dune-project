@@ -45,7 +45,7 @@
    (>= 0.16.2))))
 
 (package
- (name mehari.mirage)
+ (name mehari-mirage)
  (synopsis "Mehari IO implementation for MirageOS")
  (depends
   mehari
@@ -67,11 +67,11 @@
    (>= 0.15.4))))
 
 (package
- (name mehari.lwt_unix)
+ (name mehari-lwt-unix)
  (synopsis "Mehari IO implementation using Lwt and Unix bindings")
  (depends
   mehari
-  mehari.mirage
+  mehari-mirage
   (lwt
    (>= 5.6.1))
   (lwt_ppx
@@ -86,7 +86,7 @@
    (>= 7.1.2))))
 
 (package
- (name mehari.eio)
+ (name mehari-eio)
  (synopsis "Mehari IO implementation using Eio")
  (depends
   (ocaml
@@ -106,12 +106,12 @@
    (>= 4.2.0))))
 
 (package
- (name mehari.eio_unix)
+ (name mehari-eio-unix)
  (synopsis "Mehari IO implementation using Eio and Unix bindings")
  (depends
   (ocaml
    (>= 5.0.0))
   mehari
-  mehari.eio
+  mehari-eio
   (eio
    (>= 0.7))))

@@ -1,10 +1,10 @@
 (library
  (name mehari_lwt_unix)
- (public_name mehari.lwt_unix)
+ (public_name mehari-lwt-unix)
  (libraries
   lwt
   lwt.unix
-  mehari.mirage
+  mehari-mirage
   mirage-clock-unix
   mirage-flow-unix
   mirage-time-unix

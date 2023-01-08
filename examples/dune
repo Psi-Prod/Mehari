@@ -16,9 +16,9 @@
   ipaddr
   eio_main
   mehari
-  mehari.eio
-  mehari.eio_unix
-  mehari.lwt_unix
+  mehari-eio
+  mehari-eio-unix
+  mehari-lwt-unix
   mirage-crypto-rng-eio
   logs
   logs.fmt
