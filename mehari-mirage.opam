@@ -15,7 +15,6 @@ depends: [
   "lwt_ppx" {>= "2.1.0"}
   "mirage-channel" {>= "4.1.0"}
   "mirage-time" {>= "3.0.0"}
-  "re" {>= "1.10.4"}
   "tcpip" {>= "7.1.2"}
   "tls-mirage" {>= "0.15.4"}
   "odoc" {with-doc}
