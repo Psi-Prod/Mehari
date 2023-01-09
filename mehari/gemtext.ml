@@ -36,10 +36,10 @@ let to_string lines =
   |> String.concat "\n"
 
 module Regex = struct
-  let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
+  let space = Re.(alt [ char ' '; char '\t' ])
 
   let line prefix =
-    Re.compile Re.(seq [ bol; prefix; spaces; group (rep1 any) ])
+    Re.compile Re.(seq [ bol; prefix; rep space; group (rep1 any) ])
 
   let h1 = line (Re.char '#')
   let h2 = line (Re.str "##")
@@ -53,9 +53,9 @@ module Regex = struct
         seq
           [
             str "=>";
-            spaces;
+            rep1 space;
             group (rep1 (compl [ space ]));
-            opt (seq [ spaces; group (rep1 any) ]);
+            opt (seq [ rep space; group (rep1 any) ]);
           ])
 end
 
@@ -71,8 +71,7 @@ let of_string text =
             let alt_str = String.sub x 3 (String.length x - 3) in
             let alt = if alt_str = "" then None else Some alt_str in
             loop acc (not is_preformat) { pf with alt } xs
-        | false, true ->
-            loop acc is_preformat { pf with text = pf.text ^ x ^ "\n" } xs
+        | false, true -> loop acc is_preformat { pf with text = pf.text ^ x } xs
         | false, false ->
             let frgmt =
               if x = "" then Text ""
