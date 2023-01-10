@@ -42,12 +42,11 @@ let is_startswith_bom = function
   | "" -> false
   | s ->
       String.get_utf_8_uchar s 0 |> Uchar.utf_decode_uchar
-      |> Fun.flip List.mem
-           [ Uchar.of_int 0xEF; Uchar.of_int 0xBB; Uchar.of_int 0xBF ]
+      |> Uchar.equal Uchar.bom
 
 let validate code meta body =
   if is_startswith_bom meta then
-    invalid_arg "meta begins with a U+FEFF byte order mark"
+    invalid_arg "<META> begins with a U+FEFF byte order mark"
   else if Bytes.(of_string meta |> length) > 1024 then
     invalid_arg "too long header"
   else
