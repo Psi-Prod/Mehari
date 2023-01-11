@@ -1,4 +1,4 @@
-(lang dune 2.9)
+(lang dune 3.0)
 
 (version 0.1)
 
@@ -23,8 +23,6 @@
  (description
   "Mehari is a cross-platform library for building Gemini servers.\nIt fully implements the Gemini protocol specification.\nIt takes heavy inspiration from Dream, a tidy, feature-complete Web framework.")
  (depends
-  (dune
-   (>= 3.0))
   (ocaml
    (>= 4.14))
   (conan-database
@@ -50,7 +48,8 @@
  (name mehari-mirage)
  (synopsis "Mehari IO implementation for MirageOS")
  (depends
-  mehari
+  (mehari
+   (= version))
   (ipaddr
    (>= 5.3.1))
   (lwt
@@ -70,8 +69,10 @@
  (name mehari-lwt-unix)
  (synopsis "Mehari IO implementation using Lwt and Unix bindings")
  (depends
-  mehari
-  mehari-mirage
+  (mehari
+   (= version))
+  (mehari-mirage
+   (= version))
   (lwt
    (>= 5.6.1))
   (lwt_ppx
@@ -91,7 +92,8 @@
  (depends
   (ocaml
    (>= 5.0.0))
-  mehari
+  (mehari
+   (= version))
   (eio
    (>= 0.7))
   (mirage-clock-unix
@@ -111,7 +113,9 @@
  (depends
   (ocaml
    (>= 5.0.0))
-  mehari
-  mehari-eio
+  (mehari
+   (= version))
+  (mehari-eio
+   (= version))
   (eio
    (>= 0.7))))
