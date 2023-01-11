@@ -53,7 +53,7 @@ module Regex = struct
         seq
           [
             str "=>";
-            rep1 space;
+            rep space;
             group (rep1 (compl [ space ]));
             opt (seq [ rep space; group (rep1 any) ]);
           ])

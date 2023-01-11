@@ -24,7 +24,7 @@ let parsing () =
   assert (
     parse "  =>\t \thttps://docs.heyplzlookat.me Docs"
       [ link "https://docs.heyplzlookat.me" ~name:"Docs" ]);
-  assert (parse "=>foo Bar" [ text "=>foo Bar" ]);
+  assert (parse "=>foo Bar" [ link "foo" ~name:"Bar" ]);
   assert (parse "```\n#foo\n```" [ preformat "#foo\n" ]);
   assert (parse "```foo\n# Bar  \n```hello" [ preformat ~alt:"foo" "# Bar  \n" ])
 
