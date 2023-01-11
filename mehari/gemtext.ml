@@ -88,7 +88,7 @@ let split_lines text =
   done;
   if !cr then Buffer.add_char buf '\r';
   acc := (Buffer.contents buf, EOF) :: !acc;
-  List.rev !acc
+  !acc
 
 let of_string text =
   let buf = Buffer.create 4096 in
@@ -99,14 +99,13 @@ let of_string text =
         | true, true ->
             let text = Buffer.contents buf in
             Buffer.reset buf;
-            loop (Preformat { alt; text } :: acc) false None ls
-        | true, false ->
             let alt =
               match String.sub l 3 (String.length l - 3) with
               | "" -> None
               | alt -> Some alt
             in
-            loop acc true alt ls
+            loop (Preformat { alt; text } :: acc) false None ls
+        | true, false -> loop acc true alt ls
         | false, true ->
             Buffer.add_string buf l;
             Buffer.add_string buf (show feed);
