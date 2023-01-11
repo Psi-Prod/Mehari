@@ -25,8 +25,8 @@ let parsing () =
     parse "  =>\t \thttps://docs.heyplzlookat.me Docs"
       [ link "https://docs.heyplzlookat.me" ~name:"Docs" ]);
   assert (parse "=>foo Bar" [ text "=>foo Bar" ]);
-  assert (parse "```\n#foo\n```" [ preformat "#foo" ]);
-  assert (parse "```foo\n# Bar  \n```hello" [ preformat ~alt:"foo" "# Bar  " ])
+  assert (parse "```\n#foo\n```" [ preformat "#foo\n" ]);
+  assert (parse "```foo\n# Bar  \n```hello" [ preformat ~alt:"foo" "# Bar  \n" ])
 
 let show g s = compare s (Mehari.Gemtext.to_string g) |> Int.equal 0
 
