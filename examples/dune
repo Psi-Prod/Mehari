@@ -17,7 +17,6 @@
   eio_main
   mehari
   mehari-eio
-  mehari-eio-unix
   mehari-lwt-unix
   mirage-crypto-rng-eio
   logs

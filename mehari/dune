@@ -13,3 +13,6 @@
 
 (documentation
  (package mehari))
+
+(mdx
+ (files :standard - index.mld mehari.mli))
