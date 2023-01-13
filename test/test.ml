@@ -38,22 +38,35 @@ let client net ~port ~host url =
 
 let pass () =
   let net = Eio_mock.Net.make "mock net" in
-  let socket = Eio_mock.Flow.make "socket" in
-  Eio_mock.Net.on_getaddrinfo net
-    [ `Return [ `Tcp (Eio.Net.Ipaddr.V4.loopback, 1965) ] ];
-  Eio_mock.Net.on_connect net [ `Return socket ];
+  let listening_socket = Eio_mock.Net.listening_socket "tcp/80" in
+  let mock_addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, 1965) in
+  let flow = Eio_mock.Flow.make "connection" in
+
+  Eio_mock.Net.on_accept listening_socket [ `Return (flow, mock_addr) ];
+  Eio_mock.Net.on_listen net [ `Return listening_socket ];
+
   Eio_main.run (fun env ->
-      Eio.Fiber.both
+      Mirage_crypto_rng_eio.run
+        (module Mirage_crypto_rng.Fortuna)
+        env
         (fun () ->
           Mehari_eio.run
-            ~certchains:Eio.Path.[ (env#cwd / "cert.pem", env#cwd / "key.pem") ]
+            ~certchains:
+              Eio.Path.
+                [
+                  ( env#fs / "/home/dogm/Bureau/Mehari/cert.pem",
+                    env#fs / "/home/dogm/Bureau/Mehari/key.pem" );
+                ]
             (net :> Eio.Net.t)
             router)
-        (fun () ->
-          let buf = Buffer.create 8096 in
-          let buf_sink = Eio.Flow.buffer_sink buf in
-          Eio.Flow.copy socket buf_sink;
-          Buffer.contents buf |> print_endline))
+      (* Eio.Fiber.both
+         (fun () ->
+           )
+         (fun () ->
+           let buf = Buffer.create 8096 in
+           let buf_sink = Eio.Flow.buffer_sink buf in
+           Eio.Flow.copy flow buf_sink;
+           Buffer.contents buf |> print_endline) *))
 
 let raising () =
   assert (

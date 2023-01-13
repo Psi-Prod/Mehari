@@ -1,3 +1,9 @@
 (test
  (name test)
- (libraries eio eio_main eio.mock mehari mehari-eio mirage-crypto-rng-eio))
+ (libraries
+  eio
+  eio_main
+  eio.mock
+  mehari
+  mehari-eio
+  mirage-crypto-rng-eio))
