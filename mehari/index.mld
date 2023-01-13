@@ -31,9 +31,6 @@ Mehari provides several packages:
   - {{:Mehari_eio/index.html} Mehari_eio} uses the
     {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
 
-  - {{:Mehari_eio_unix/index.html} Mehari_eio_unix} provides UNIX-dependent
-    functions based on Eio.
-
 {1:tutorial Tutorial}
 
 In these tutorials, {!Mehari_eio} will be used so as not to complicate

@@ -29,7 +29,7 @@ module Gemtext : sig
 
       {@ocaml[open Mehari.Gemtext
 
-assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
+let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
 ]} *)
 
   type t = line list
@@ -68,7 +68,7 @@ val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
 
     {@ocaml[open Mehari.Gemtext
 
-assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
+let () = assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
 ]} *)
 
 (** {1:request Request} *)
