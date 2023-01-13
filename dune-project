@@ -104,14 +104,3 @@
    (>= 0.15.5))
   (uri
    (>= 4.2.0))))
-
-(package
- (name mehari-eio-unix)
- (synopsis "Mehari IO implementation using Eio and Unix bindings")
- (depends
-  (ocaml
-   (>= 5.0.0))
-  mehari
-  mehari-eio
-  (eio
-   (>= 0.7))))

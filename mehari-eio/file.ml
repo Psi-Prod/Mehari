@@ -30,7 +30,7 @@ let response_document ?mime path =
 include
   Mehari.Private.Static.Make
     (struct
-      module IO = Mehari_eio.Direct
+      module IO = Common.Direct
 
       type path = Eio.Fs.dir Eio.Path.t
 
@@ -45,4 +45,4 @@ include
       let response_document = response_document
       let pp_io_err = Eio.Exn.pp
     end)
-    (Mehari_eio.Addr)
+    (Common.Addr)

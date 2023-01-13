@@ -1,4 +1,0 @@
-(library
- (name mehari_eio_unix)
- (public_name mehari-eio-unix)
- (libraries eio mehari mehari-eio))
