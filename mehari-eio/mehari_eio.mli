@@ -10,7 +10,7 @@ include Mehari.NET with module IO := Direct and type addr = Addr.t
 
 (** @closed *)
 include
-  Mehari.UNIX
+  Mehari.FS
     with module IO := Direct
      and type addr = Addr.t
      and type dir_path := Eio.Fs.dir Eio.Path.t

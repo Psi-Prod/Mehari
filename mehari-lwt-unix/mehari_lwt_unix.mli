@@ -8,7 +8,7 @@ include Mehari_mirage.S with type addr = Ipaddr.t
 
 (** @closed *)
 include
-  Mehari.UNIX
+  Mehari.FS
     with module IO := IO
      and type addr := addr
      and type dir_path := string

@@ -351,8 +351,8 @@ else
   val error : 'a Logs.log
 end
 
-(** Module type containing all UNIX-dependent functions. *)
-module type UNIX = sig
+(** Module type containing all file system dependent functions. *)
+module type FS = sig
   module IO : Types.IO
 
   type addr

@@ -79,7 +79,7 @@ module type NET = sig
   val error : 'a Logs.log
 end
 
-module type UNIX = sig
+module type FS = sig
   module IO : Types.IO
 
   type addr
