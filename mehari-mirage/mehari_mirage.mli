@@ -42,19 +42,17 @@ module type S = sig
 
   val run :
     ?port:int ->
-    ?timeout:float ->
     ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
+    ?timeout:float ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
     unit IO.t
-  (** [run ?port ?timeout ?verify_url_host ?config ?certchains stack handler]
+  (** [run ?port ?verify_url_host  ?config ?timeout ?certchains stack handler]
       runs the server using [host].
 
         - [port] is the port to listen on. Defaults to [1965].
-        - [timeout] is the maximum waiting time in seconds for the client to
-          write a request after TLS handshake. Unset by default.
         - [verify_url_host], if true (by default), will verify if the URL hostname
           corresponds to the server's certificate
           (chosen according to
@@ -66,6 +64,8 @@ module type S = sig
                 ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
                 ()
           ]}
+        - [timeout] is the maximum waiting time in seconds for the client to
+          write a request after TLS handshake. Unset by default.
         To support client certificates, specify the [authenticator].
         - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
           the last one is considered default.

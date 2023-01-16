@@ -5,11 +5,11 @@ module type S = sig
 
   val run :
     ?port:int ->
-    ?backlog:int ->
-    ?timeout:float * Eio.Time.clock ->
-    ?addr:Eio.Net.Ipaddr.v4v6 ->
     ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
+    ?timeout:float * Eio.Time.clock ->
+    ?backlog:int ->
+    ?addr:Eio.Net.Ipaddr.v4v6 ->
     certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
     Eio.Net.t ->
     handler ->
@@ -117,9 +117,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     include X509_eio
   end)
 
-  let run ?(port = 1965) ?(backlog = 4096) ?timeout
-      ?(addr = Net.Ipaddr.V4.loopback) ?(verify_url_host = true) ?config
-      ~certchains net callback =
+  let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
+      ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
+      callback =
     let certificates = Cert.get_certs certchains ~exn_msg:"Mehari_eio.run" in
     let tls_config =
       match config with
@@ -143,5 +143,6 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
           serve ()
         in
         Log.info (fun log -> log "Listening on port %i" port);
-        serve () |> ignore)
+        let (_ : 'a) = serve () in
+        ())
 end

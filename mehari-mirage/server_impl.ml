@@ -9,9 +9,9 @@ module type S = sig
 
   val run :
     ?port:int ->
-    ?timeout:float ->
     ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
+    ?timeout:float ->
     ?certchains:(string * string) list ->
     stack ->
     handler ->
@@ -144,7 +144,7 @@ module Make
     | `TLSWriteErr err ->
         Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
 
-  let run ?(port = 1965) ?timeout ?(verify_url_host = true) ?config
+  let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
       ?(certchains = [ ("./cert.pem", "./key.pem") ]) stack callback =
     let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
