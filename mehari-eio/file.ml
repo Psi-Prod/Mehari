@@ -16,7 +16,7 @@ let response_document ?mime path =
                       !n <> chunk_size)
                     buf
                 in
-                if String.length chunk = chunk_size then (
+                if String.length chunk = chunk_size - 1 then (
                   consume chunk;
                   n := 0;
                   loop ())
