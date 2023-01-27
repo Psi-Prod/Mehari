@@ -86,7 +86,7 @@ let read_chunks ?(chunk_size = 16384) path =
         Lwt.return_none
       else
         let* chunk = Lwt_io.read ~count:chunk_size ic in
-        if String.length chunk = chunk_size then Lwt.return_some (chunk, false)
+        if String.length chunk = chunk_size - 1 then Lwt.return_some (chunk, false)
         else Lwt.return_some (chunk, true))
     false
 
