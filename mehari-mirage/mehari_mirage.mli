@@ -45,7 +45,7 @@ module type S = sig
     ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
     ?timeout:float ->
-    ?certchains:(string * string) list ->
+    certchains:Tls.Config.certchain list ->
     stack ->
     handler ->
     unit IO.t

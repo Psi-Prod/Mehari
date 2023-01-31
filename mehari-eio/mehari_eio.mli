@@ -24,7 +24,7 @@ val run :
   ?timeout:float * Eio.Time.clock ->
   ?backlog:int ->
   ?addr:addr ->
-  certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
+  certchains:Tls.Config.certchain list ->
   Eio.Net.t ->
   handler ->
   unit
