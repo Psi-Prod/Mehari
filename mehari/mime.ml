@@ -25,7 +25,7 @@ let from_filename ?charset fname =
   | "" -> None
   | mime -> make_mime mime ~charset |> Option.some
 
-let from_content ?(tree = Conan_light.tree) ?charset content =
+let from_content ?charset ~tree content =
   match Conan_string.run ~database:(Conan.Process.database ~tree) content with
   | Ok meta -> Conan.Metadata.mime meta |> Option.map (make_mime ?charset)
   | Error _ -> None
