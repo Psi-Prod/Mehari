@@ -215,11 +215,10 @@ val from_filename : ?charset:string -> string -> mime option
     Note that mime {!val:gemini} are not infered from files with [.gmi]
     extension. See {{:https://github.com/Psi-Prod/Mehari/issues/36}}. *)
 
-val from_content :
-  ?tree:Conan.Tree.t -> ?charset:string -> string -> mime option
-(** [from_content ?tree ?charset c] tries to create a {!type:mime} type by performing
-    a mime lookup based on content [c]. [tree] is the tree used to build the
-    MIME database. It defaults to [Conan_light.tree]. *)
+val from_content : ?charset:string -> tree:Conan.Tree.t -> string -> mime option
+(** [from_content ?charset ~tree c] tries to create a {!type:mime} type by
+    performing a mime lookup based on content [c]. [tree] is the tree used to
+    build the MIME database. *)
 
 val no_mime : mime
 (** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)

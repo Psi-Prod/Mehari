@@ -3,7 +3,6 @@ include Mehari_io
 
 let response_document = File.respond_document
 let static = File.static
-let from_filename = File.from_filename
 let run_cgi = File.run_cgi
 
 let stack ~v4 ~v6 =

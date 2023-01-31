@@ -86,7 +86,7 @@ let read_chunks ?(chunk_size = 16384) path =
         Lwt.return_none
       else
         let* chunk = Lwt_io.read ~count:chunk_size ic in
-        if String.length chunk = chunk_size - 1 then Lwt.return_some (chunk, false)
+        if String.length chunk = chunk_size then Lwt.return_some (chunk, false)
         else Lwt.return_some (chunk, true))
     false
 
@@ -99,18 +99,6 @@ let respond_document ?mime path =
     let* cs = chunks () in
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
   else not_found
-
-let from_filename ?(lookup = `Ext) ?charset fname =
-  match lookup with
-  | `Ext -> Mehari.from_filename ?charset fname |> Lwt.return
-  | `Content ->
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset content
-  | `Both -> (
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      match Mehari.from_content ?charset content with
-      | None -> Mehari.from_filename ?charset fname
-      | Some m -> Some m)
 
 include
   Mehari.Private.Static.Make
