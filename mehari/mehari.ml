@@ -108,7 +108,7 @@ module Private = struct
 
   module Cert = struct
     let get_certs ~exn_msg = function
-      | c :: tl -> `Multiple_default (c, c :: tl)
+      | default :: mult -> `Multiple_default (default, mult)
       | _ -> invalid_arg exn_msg
   end
 
