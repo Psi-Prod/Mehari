@@ -109,12 +109,12 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
         Log.warn (fun log -> log "Concurrent connections")
     | exn -> raise exn
 
-  module Cert = Mehari.Private.Cert.Make (IO)
-
   let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
       ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
       callback =
-    let certificates = Cert.get_certs certchains ~exn_msg:"Mehari_eio.run" in
+    let certificates =
+      Mehari.Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
+    in
     let tls_config =
       match config with
       | Some c -> c

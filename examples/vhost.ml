@@ -9,8 +9,10 @@ let main ~net ~cwd =
   let certchains =
     Eio.Path.
       [
-        (cwd / "cert_foo.pem", cwd / "key_foo.pem");
-        (cwd / "cert_bar.pem", cwd / "key_bar.pem");
+        X509_eio.private_of_pems ~cert:(cwd / "cert_foo.pem")
+          ~priv_key:(cwd / "key_foo.pem");
+        X509_eio.private_of_pems ~cert:(cwd / "cert_bar.pem")
+          ~priv_key:(cwd / "key_bar.pem");
       ]
   in
   Mehari_eio.run net ~certchains router

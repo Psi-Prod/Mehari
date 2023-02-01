@@ -415,7 +415,10 @@ module Private : sig
     end
   end
 
-  module Cert = Cert
+  module Cert : sig
+    val get_certs :
+      exn_msg:string -> Tls.Config.certchain list -> Tls.Config.own_cert
+  end
 
   module CGI : sig
     module type S = sig

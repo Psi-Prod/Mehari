@@ -30,7 +30,6 @@ module Make
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
   module Protocol = Mehari.Private.Protocol
-  module Cert = Mehari.Private.Cert.Make (IO)
   open Lwt.Syntax
 
   type config = {
@@ -138,7 +137,7 @@ module Make
 
   let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout ~certchains
       stack callback =
-    let* certificates = Cert.get_certs ~exn_msg:"run_lwt" certchains in
+    let certificates = Private.Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
       Stack.ip stack |> Stack.IP.get_ip
       |> Fun.flip List.nth 0 (* Should not be empty. *)

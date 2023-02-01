@@ -106,7 +106,12 @@ module Private = struct
 
   let view_of_resp = Response.view_of_resp
 
-  module Cert = Cert
+  module Cert = struct
+    let get_certs ~exn_msg = function
+      | c :: tl -> `Multiple_default (c, c :: tl)
+      | _ -> invalid_arg exn_msg
+  end
+
   module CGI = Cgi
   module Handler = Handler
   module Logger_impl = Logger_impl
