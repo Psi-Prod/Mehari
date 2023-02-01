@@ -13,26 +13,6 @@ include
      and type addr := addr
      and type dir_path := string
 
-(** {1 Mime} *)
-
-val from_filename :
-  ?lookup:[ `Ext | `Content | `Both ] ->
-  ?charset:string ->
-  string ->
-  Mehari.mime option Lwt.t
-(** [from_filename ?lookup_into ?charset ?lang fname] tries to create a
-    {!type:Mehari.mime} by performing a mime lookup depending of the value of
-    [lookup]:
-    - [`Ext]: guesses on the file extension of [fname];
-    - [`Content]: guesses on content of [fname];
-    - [`Both]: performs successivly a lookup on content and file extension.
-
-    Returns [Mehari.make_mime ?charset "text/gemini"] if one of the previous
-    lookup fails.
-
-    @raise Unix.Unix_error if a lookup based on content is performed and
-      reading of [fname] fails *)
-
 (** {1:cgi CGI} *)
 
 (** Mehari supports CGI scripting as described in RFC 3875

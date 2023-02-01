@@ -2,7 +2,6 @@
  (name mehari)
  (public_name mehari)
  (libraries
-  conan-database.light
   conan.string
   logs
   magic-mime

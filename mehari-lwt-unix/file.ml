@@ -101,18 +101,6 @@ let respond_document ?mime path =
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
   else not_found
 
-let from_filename ?(lookup = `Ext) ?charset fname =
-  match lookup with
-  | `Ext -> Mehari.from_filename ?charset fname |> Lwt.return
-  | `Content ->
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset content
-  | `Both -> (
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      match Mehari.from_content ?charset content with
-      | None -> Mehari.from_filename ?charset fname
-      | Some m -> Some m)
-
 include
   Mehari.Private.Static.Make
     (struct
