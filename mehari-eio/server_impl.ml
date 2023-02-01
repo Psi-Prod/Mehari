@@ -137,12 +137,6 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
           Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net
             (`Tcp (addr, port))
         in
-        let rec serve () =
-          handler ~config callback
-          |> Net.accept_fork ~sw ~on_error:log_err socket;
-          serve ()
-        in
         Log.info (fun log -> log "Listening on port %i" port);
-        let (_ : 'a) = serve () in
-        ())
+        handler ~config callback |> Eio.Net.run_server ~on_error:log_err socket)
 end
