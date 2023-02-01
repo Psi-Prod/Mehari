@@ -551,6 +551,7 @@ module Private : sig
 
       type path
 
+      val exists : path -> bool IO.t
       val kind : path -> [ `Regular_file | `Directory | `Other ] IO.t
       val read : path -> string list IO.t
       val concat : path -> string -> path

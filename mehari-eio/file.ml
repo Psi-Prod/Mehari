@@ -40,6 +40,7 @@ include
             | (`Regular_file | `Directory) as f -> f
             | _ -> `Other)
 
+      let exists _ = true
       let read = Eio.Path.read_dir
       let concat = Eio.Path.( / )
       let response_document = response_document
