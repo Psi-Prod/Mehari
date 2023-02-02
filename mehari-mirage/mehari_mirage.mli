@@ -4,7 +4,7 @@ module type S = sig
   module IO = Lwt
 
   type stack
-  (** Tcpip stack. *)
+  (** TCP/IP stack. *)
 
   (** {1 Net} *)
 
@@ -15,15 +15,15 @@ module type S = sig
 
   val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
   (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
-        wrapped in a promise. *)
+      wrapped in a promise. *)
 
   val respond_body : Mehari.body -> Mehari.mime -> Mehari.response IO.t
   (** Same as {!val:respond} but respond with given {!type:Mehari.body}
-        and use given {!type:Mehari.mime} as mime type. *)
+      and use given {!type:Mehari.mime} as mime type. *)
 
   val respond_text : string -> Mehari.response IO.t
   (** Same as {!val:respond} but respond with given text and use [text/plain] as
-        {!type:Mehari.mime} type. *)
+      {!type:Mehari.mime} type. *)
 
   val respond_gemtext :
     ?charset:string ->
@@ -31,12 +31,12 @@ module type S = sig
     Mehari.Gemtext.t ->
     Mehari.response IO.t
   (** Same as {!val:respond} but respond with given {!type:Mehari.Gemtext.t} and use
-        [text/gemini] as {!type:Mehari.mime} type. *)
+      [text/gemini] as {!type:Mehari.mime} type. *)
 
   val respond_raw :
     [ `Body of string | `Full of int * string * string ] -> Mehari.response IO.t
   (** Same as {!val:Mehari.response_raw}, but the new {!type:Mehari.response}
-        is wrapped in a promise. *)
+      is wrapped in a promise. *)
 
   (** {1 Entry point} *)
 
