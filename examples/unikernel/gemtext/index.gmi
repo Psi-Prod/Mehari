@@ -1,0 +1,5 @@
+# Welcome
+
+This file is serving by a Mirage OS server!
+
+=> /gemlog.gmi My gemlog
