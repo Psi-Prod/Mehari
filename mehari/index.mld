@@ -17,18 +17,18 @@ Consult the {!section-tutorial} and
 
 Mehari provides several packages:
 
-  - {!Mehari} provides the core abstraction, it does not
-    depend on any platform code, and does not interact with the environment.
+  - {!Mehari} provides the core abstraction, it does not depend on any platform
+    code, and does not interact with the environment.
 
-  - {{:Mehari_mirage/index.html} Mehari_mirage} exposes an OS-independent
+  - {{:../mehari-mirage/index.html} Mehari_mirage} exposes an OS-independent
     interface.
 
-  - {{:Mehari_lwt_unix/index.html} Mehari_lwt_unix} uses the
+  - {{:../mehari-lwt-unix/index.html} Mehari_lwt_unix} uses the
     {{:https://ocsigen.org/lwt/} Lwt} library, and specifically the UNIX
-    bindings. Contains also extra features based on Unix filesystem such as
+    bindings. Contains also extra features based on UNIX filesystem such as
     CGI.
 
-  - {{:Mehari_eio/index.html} Mehari_eio} uses the
+  - {{:../mehari-eio/index.html} Mehari_eio} uses the
     {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
 
 {2 Implementation choice}
