@@ -1,12 +1,9 @@
-let () =
-  Mehari_lwt_unix.set_log_lvl Warning;
-  Logs.set_level ~all:true (Some Warning);
-  Logs.set_reporter (Logs_fmt.reporter ())
+open Lwt.Infix
 
-let () =
-  Mehari_lwt_unix.router
-    [
-      Mehari_lwt_unix.route ~typ:`Regex "/(.*)" (fun req ->
-          Mehari_lwt_unix.static "." req);
-    ]
-  |> Mehari_lwt_unix.logger |> Mehari_lwt_unix.run
+let main () =
+  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
+  >>= fun certchain ->
+  (fun _ -> Mehari_lwt_unix.respond_text "Hello")
+  |> Mehari_lwt_unix.run_lwt ~certchains:[ certchain ]
+
+let () = Lwt_main.run (main ())

@@ -24,7 +24,7 @@ val run :
   ?timeout:float * Eio.Time.clock ->
   ?backlog:int ->
   ?addr:addr ->
-  certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
+  certchains:Tls.Config.certchain list ->
   Eio.Net.t ->
   handler ->
   unit
@@ -50,7 +50,7 @@ val run :
         up. Defaults to [4096].
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback].
-      - [certchains] is the list of form [[(cert_path, private_key_path); ...]],
-        the last one is considered default.
+      - [certchains] is the list of form [[(certs, key); ...]], the last one is
+        considered default.
 
     @raise Invalid_argument if [certchains] is empty. *)

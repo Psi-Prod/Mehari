@@ -10,7 +10,7 @@ module type S = sig
     ?timeout:float * Eio.Time.clock ->
     ?backlog:int ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
-    certchains:(Eio.Fs.dir Eio.Path.t * Eio.Fs.dir Eio.Path.t) list ->
+    certchains:Tls.Config.certchain list ->
     Eio.Net.t ->
     handler ->
     unit
@@ -109,18 +109,12 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
         Log.warn (fun log -> log "Concurrent connections")
     | exn -> raise exn
 
-  module Cert = Mehari.Private.Cert.Make (struct
-    module IO = Common.Direct
-
-    type path = Eio.Fs.dir Eio.Path.t
-
-    include X509_eio
-  end)
-
   let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
       ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
       callback =
-    let certificates = Cert.get_certs certchains ~exn_msg:"Mehari_eio.run" in
+    let certificates =
+      Mehari.Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
+    in
     let tls_config =
       match config with
       | Some c -> c

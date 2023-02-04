@@ -74,7 +74,7 @@ val run_lwt :
   ?verify_url_host:bool ->
   ?config:Tls.Config.server ->
   ?timeout:float ->
-  ?certchains:(string * string) list ->
+  certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
   handler ->
@@ -86,7 +86,7 @@ val run :
   ?verify_url_host:bool ->
   ?config:Tls.Config.server ->
   ?timeout:float ->
-  ?certchains:(string * string) list ->
+  certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
   handler ->
