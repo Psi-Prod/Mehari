@@ -64,9 +64,9 @@ module type S = sig
                 ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
                 ()
           ]}
+          To support client certificates, specify the [authenticator].
         - [timeout] is the maximum waiting time in seconds for the client to
           write a request after TLS handshake. Unset by default.
-        To support client certificates, specify the [authenticator].
         - [certchains] is the list of form [[(certs, key); ...]],
           the last one is considered default.
 
