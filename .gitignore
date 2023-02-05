@@ -30,6 +30,7 @@ _opam/
 .DS_Store
 
 # Certificates
+*.key
 *.pem
 
 # Sublime Text
