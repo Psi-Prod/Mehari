@@ -16,12 +16,7 @@ let certs = generic_kv_ro ~key:certs_key "tls"
 let main =
   foreign
     ~keys:Key.[ v port ]
-    ~packages:
-      [
-        package "mehari" ~pin:"https://github.com/Psi-Prod/Mehari.git#dev";
-        package "mehari-mirage"
-          ~pin:"https://github.com/Psi-Prod/Mehari.git#dev";
-      ]
+    ~packages:[ package "mehari"; package "mehari-mirage" ]
     "Unikernel.GeminiServer"
     (random @-> kv_ro @-> kv_ro @-> pclock @-> stackv4v6 @-> time @-> job)
 
