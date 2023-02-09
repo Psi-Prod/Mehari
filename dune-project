@@ -93,7 +93,7 @@
    (>= 5.0.0))
   mehari
   (eio
-   (>= 0.7))
+   (>= 0.8))
   (mirage-clock-unix
    (>= 4.2.0))
   (logs
