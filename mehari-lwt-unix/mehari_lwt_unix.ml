@@ -23,7 +23,7 @@ let default_ipv4 = Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
 
 let run_lwt ?port ?timeout ?verify_url_host ?certchains ?(v4 = default_ipv4) ?v6
     callback =
-  Mirage_crypto_rng_unix.initialize ();
+  Mirage_crypto_rng_unix.initialize (module Mirage_crypto_rng.Fortuna);
   let* stack = stack ~v4 ~v6 in
   run ?port ?timeout ?verify_url_host ?certchains stack callback
 

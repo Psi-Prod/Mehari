@@ -8,7 +8,7 @@
   mirage-time
   mehari
   tcpip
-  tls.lwt
+  tls-lwt
   tls-mirage)
  (preprocess
   (pps lwt_ppx)))
