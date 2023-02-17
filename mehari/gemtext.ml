@@ -88,7 +88,7 @@ let split_lines text =
   done;
   if !cr then Buffer.add_char buf '\r';
   acc := (Buffer.contents buf, EOF) :: !acc;
-  List.rev !acc
+  !acc
 
 let of_string text =
   let buf = Buffer.create 4096 in
