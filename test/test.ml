@@ -50,15 +50,14 @@ let pass () =
         (module Mirage_crypto_rng.Fortuna)
         env
         (fun () ->
-          Mehari_eio.run
-            ~certchains:
-              Eio.Path.
-                [
-                  ( env#fs / "/home/dogm/Bureau/Mehari/cert.pem",
-                    env#fs / "/home/dogm/Bureau/Mehari/key.pem" );
-                ]
-            (net :> Eio.Net.t)
-            router)
+          let certchains =
+            Eio.Path.
+              [
+                X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
+                  ~priv_key:(env#cwd / "key.pem");
+              ]
+          in
+          Mehari_eio.run ~certchains (net :> Eio.Net.t) router)
       (* Eio.Fiber.both
          (fun () ->
            )
