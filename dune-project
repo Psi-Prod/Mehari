@@ -1,6 +1,8 @@
 (lang dune 2.9)
 
-(version 0.1)
+(using mdx 0.1)
+
+(version 0.2)
 
 (name mehari)
 
@@ -27,24 +29,22 @@
    (>= 3.0))
   (ocaml
    (>= 4.14))
-  (conan-database
-   (>= 0.0.1))
   (conan
-   (>= 0.0.1))
+   (>= 0.0.2))
   (logs
    (>= 0.7.0))
   (magic-mime
    (>= 1.3.0))
   (mirage-clock
    (>= 4.2.0))
+  (re
+   (>= 1.10.4))
   (tls
    (>= 0.15.4))
   (uri
    (>= 4.2.0))
   (x509
-   (>= 0.16.2))
-  (re
-   (>= 1.10.4))))
+   (>= 0.16.2))))
 
 (package
  (name mehari-mirage)
@@ -93,7 +93,7 @@
    (>= 5.0.0))
   mehari
   (eio
-   (>= 0.7))
+   (>= 0.8))
   (mirage-clock-unix
    (>= 4.2.0))
   (logs
@@ -104,14 +104,3 @@
    (>= 0.15.5))
   (uri
    (>= 4.2.0))))
-
-(package
- (name mehari-eio-unix)
- (synopsis "Mehari IO implementation using Eio and Unix bindings")
- (depends
-  (ocaml
-   (>= 5.0.0))
-  mehari
-  mehari-eio
-  (eio
-   (>= 0.7))))

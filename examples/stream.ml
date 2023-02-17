@@ -19,9 +19,14 @@ let router clock req =
           Mehari.(response_body body plaintext))
 
 let main ~clock ~cwd ~net =
-  Mehari_eio.run net
-    ~certchains:Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ]
-    (router clock)
+  let certchains =
+    Eio.Path.
+      [
+        X509_eio.private_of_pems ~cert:(cwd / "cert.pem")
+          ~priv_key:(cwd / "key.pem");
+      ]
+  in
+  Mehari_eio.run net ~certchains (router clock)
 
 let () =
   Eio_main.run @@ fun env ->

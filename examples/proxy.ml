@@ -10,7 +10,13 @@ let router =
     ]
 
 let main ~net ~cwd =
-  let certchains = Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ] in
+  let certchains =
+    Eio.Path.
+      [
+        X509_eio.private_of_pems ~cert:(cwd / "cert.pem")
+          ~priv_key:(cwd / "key.pem");
+      ]
+  in
   Mehari_eio.run net ~certchains ~verify_url_host:false router
 
 let () =

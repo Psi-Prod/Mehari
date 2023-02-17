@@ -1,15 +1,10 @@
 (library
  (name mehari)
  (public_name mehari)
- (libraries
-  conan-database.light
-  conan.string
-  logs
-  magic-mime
-  mirage-clock
-  tls
-  uri
-  x509))
+ (libraries conan.string logs magic-mime mirage-clock tls uri x509))
 
 (documentation
  (package mehari))
+
+(mdx
+ (files :standard - index.mld mehari.mli))

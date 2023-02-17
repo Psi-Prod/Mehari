@@ -8,30 +8,10 @@ include Mehari_mirage.S with type addr = Ipaddr.t
 
 (** @closed *)
 include
-  Mehari.UNIX
+  Mehari.FS
     with module IO := IO
      and type addr := addr
      and type dir_path := string
-
-(** {1 Mime} *)
-
-val from_filename :
-  ?lookup:[ `Ext | `Content | `Both ] ->
-  ?charset:string ->
-  string ->
-  Mehari.mime option Lwt.t
-(** [from_filename ?lookup_into ?charset ?lang fname] tries to create a
-    {!type:Mehari.mime} by performing a mime lookup depending of the value of
-    [lookup]:
-    - [`Ext]: guesses on the file extension of [fname];
-    - [`Content]: guesses on content of [fname];
-    - [`Both]: performs successivly a lookup on content and file extension.
-
-    Returns [Mehari.make_mime ?charset "text/gemini"] if one of the previous
-    lookup fails.
-
-    @raise Unix.Unix_error if a lookup based on content is performed and
-      reading of [fname] fails *)
 
 (** {1:cgi CGI} *)
 
@@ -91,9 +71,10 @@ val run_cgi :
 
 val run_lwt :
   ?port:int ->
-  ?timeout:float ->
   ?verify_url_host:bool ->
-  ?certchains:(string * string) list ->
+  ?config:Tls.Config.server ->
+  ?timeout:float ->
+  certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
   handler ->
@@ -102,9 +83,10 @@ val run_lwt :
 
 val run :
   ?port:int ->
-  ?timeout:float ->
   ?verify_url_host:bool ->
-  ?certchains:(string * string) list ->
+  ?config:Tls.Config.server ->
+  ?timeout:float ->
+  certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
   handler ->

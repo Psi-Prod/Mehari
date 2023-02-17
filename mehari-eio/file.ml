@@ -16,7 +16,7 @@ let response_document ?mime path =
                       !n <> chunk_size)
                     buf
                 in
-                if String.length chunk = chunk_size then (
+                if String.length chunk = chunk_size - 1 then (
                   consume chunk;
                   n := 0;
                   loop ())
@@ -30,7 +30,7 @@ let response_document ?mime path =
 include
   Mehari.Private.Static.Make
     (struct
-      module IO = Mehari_eio.Direct
+      module IO = Common.Direct
 
       type path = Eio.Fs.dir Eio.Path.t
 
@@ -40,9 +40,10 @@ include
             | (`Regular_file | `Directory) as f -> f
             | _ -> `Other)
 
+      let exists _ = true
       let read = Eio.Path.read_dir
       let concat = Eio.Path.( / )
       let response_document = response_document
       let pp_io_err = Eio.Exn.pp
     end)
-    (Mehari_eio.Addr)
+    (Common.Addr)
