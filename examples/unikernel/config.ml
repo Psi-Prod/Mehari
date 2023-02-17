@@ -6,7 +6,7 @@ let port =
       ~doc:"The TCP port on which to listen for incoming connections."
       [ "port" ]
   in
-  Key.(create "port" Arg.(opt int 1965 doc))
+  Key.(create "port" Arg.(opt (some int) None doc))
 
 let static_key = Key.(value @@ kv_ro ~group:"static" ())
 let static = generic_kv_ro ~key:static_key "gemtext"
