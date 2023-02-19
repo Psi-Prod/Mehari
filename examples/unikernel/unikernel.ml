@@ -42,5 +42,5 @@ struct
   let start _ fs keys _ stack _ =
     X509.certificate keys `Default >>= fun cert ->
     router fs |> Mehari_io.logger
-    |> Mehari_io.run ~port:(Key_gen.port ()) ~certchains:[ cert ] stack
+    |> Mehari_io.run ?port:(Key_gen.port ()) ~certchains:[ cert ] stack
 end
