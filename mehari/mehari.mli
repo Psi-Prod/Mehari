@@ -296,13 +296,13 @@ else
   val route :
     ?rate_limit:rate_limiter ->
     ?mw:middleware ->
-    ?typ:[ `Raw | `Regex ] ->
+    ?regex:bool ->
     string ->
     handler ->
     route
-  (** [route ~rate_limit ~mw ~typ path handler] forwards requests for [path] to
-      [handler]. [path] can be a string literal or a regex in Perl style
-      depending of [typ].
+  (** [route ~rate_limit ~mw ~regex path handler] forwards requests for [path]
+      to [handler]. [path] can be a string literal or a regex in Perl style
+      depending of value of [regex].
       If rate limit is in effect, [handler] is not executed and a respond with
       {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
 
@@ -520,7 +520,7 @@ module Private : sig
       val route :
         ?rate_limit:rate_limiter ->
         ?mw:middleware ->
-        ?typ:[ `Raw | `Regex ] ->
+        ?regex:bool ->
         string ->
         handler ->
         route

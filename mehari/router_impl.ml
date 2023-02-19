@@ -14,7 +14,7 @@ module type S = sig
   val route :
     ?rate_limit:rate_limiter ->
     ?mw:middleware ->
-    ?typ:[ `Raw | `Regex ] ->
+    ?regex:bool ->
     string ->
     handler ->
     route
@@ -42,15 +42,15 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   type route = route' list
 
   and route' = {
-    route : [ `Raw | `Regex ] * string;
+    route : bool * string;
     handler : handler;
     rate_limit : RateLimiter.t option;
   }
 
   let no_route = []
 
-  let route ?rate_limit ?(mw = Fun.id) ?(typ = `Raw) r handler =
-    [ { route = (typ, r); handler = mw handler; rate_limit } ]
+  let route ?rate_limit ?(mw = Fun.id) ?(regex = false) r handler =
+    [ { route = (regex, r); handler = mw handler; rate_limit } ]
 
   let compare_url u u' =
     match (u, u') with
@@ -64,10 +64,9 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
           String.equal (String.sub u' 0 (String.length u' - 1)) u
         else false
 
-  let match_ (typ, route) path =
-    match typ with
-    | `Raw -> `Bool (compare_url route path)
-    | `Regex -> `Grp (Re.exec_opt (Re.Perl.re route |> Re.Perl.compile) path)
+  let match_ (regex, route) path =
+    if regex then `Grp (Re.exec_opt (Re.Perl.re route |> Re.Perl.compile) path)
+    else `Bool (compare_url route path)
 
   let router routes req =
     let routes = List.concat routes in

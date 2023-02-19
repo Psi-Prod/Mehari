@@ -187,7 +187,7 @@ regex starting from index [1]. It is possible to have as many groups as desired
 in the route path.
 
 {@ocaml[
-Mehari_eio.route ~typ:`Regex "/articles/([a-z][A-Z])+" (fun req ->
+Mehari_eio.route ~regex:true "/articles/([a-z][A-Z])+" (fun req ->
   Mehari.param req 1
   |> Printf.sprintf "Get article %S"
   |> Mehari.response_text)

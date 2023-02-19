@@ -55,7 +55,7 @@ module type NET = sig
   val route :
     ?rate_limit:rate_limiter ->
     ?mw:middleware ->
-    ?typ:[ `Raw | `Regex ] ->
+    ?regex:bool ->
     string ->
     handler ->
     route
