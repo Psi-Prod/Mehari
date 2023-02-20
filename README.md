@@ -14,10 +14,16 @@ tidy, feature-complete Web framework.
 Mehari provides several packages. See [here](https://docs.heyplzlookat.me/mehari/index.html#interface).
 Many [examples](https://github.com/Psi-Prod/Mehari/tree/master/examples) are also provided.
 
+## Installation
+
+```
+opam install mehari
+```
+
 ## Features
 
 - [Mirage OS friendly](https://docs.heyplzlookat.me/mehari/Mehari_mirage/index.html)
-- [Static files](https://docs.heyplzlookat.me/mehari/Mehari/module-type-UNIX/index.html#static-files)
+- [Static files serving](https://docs.heyplzlookat.me/mehari/Mehari/module-type-UNIX/index.html#static-files)
 - [MIME type inference](https://docs.heyplzlookat.me/mehari/index.html#mime) (using experimental [Conan](https://github.com/mirage/conan/) support)
 - [Rate limit](https://docs.heyplzlookat.me/mehari/index.html#rate-limit)
 - [Virtual hosting](https://docs.heyplzlookat.me/mehari/index.html#virtual-hosting) using SNI

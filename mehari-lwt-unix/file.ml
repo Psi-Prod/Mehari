@@ -3,8 +3,6 @@ let src = Logs.Src.create "mehari.lwt_unix.static"
 module Log = (val Logs.src_log src)
 open Lwt.Syntax
 
-let chunk_size = 16384
-
 exception Exited
 (* An error occured during CGI script execution. *)
 
@@ -13,8 +11,8 @@ let read_body proc =
     (fun finished ->
       if finished then Lwt.return_none
       else
-        let* data = Lwt_io.read ~count:chunk_size proc#stdout in
-        if String.length data = chunk_size then Lwt.return_some (data, true)
+        let* data = Lwt_io.read ~count:4096 proc#stdout in
+        if String.length data = 4096 then Lwt.return_some (data, true)
         else
           match proc#state with
           | Lwt_process.Running -> Lwt.return_some (data, true)
@@ -69,15 +67,15 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
     Lwt.pick [ timeout; cgi_exec ]
   with Exited -> cgi_err
 
-(** TODO: true lazyness (is it even possible?) *)
+(* TODO: true lazyness (is it even possible?) *)
 let rec unfold f u () =
   match%lwt f u with
   | None -> Lwt.return Seq.Nil
   | Some (x, u') ->
-      let* xs = unfold f u' () in
-      Lwt.return (Seq.Cons (x, fun () -> xs))
+      let+ xs = unfold f u' () in
+      Seq.Cons (x, fun () -> xs)
 
-let read_chunks ?(chunk_size = 16384) path =
+let read_chunks path =
   let+ ic = Lwt_io.open_file path ~mode:Input in
   unfold
     (fun ended ->
@@ -85,8 +83,8 @@ let read_chunks ?(chunk_size = 16384) path =
         let* () = Lwt_io.close ic in
         Lwt.return_none
       else
-        let* chunk = Lwt_io.read ~count:chunk_size ic in
-        if String.length chunk = chunk_size then Lwt.return_some (chunk, false)
+        let* chunk = Lwt_io.read ~count:4096 ic in
+        if String.length chunk = 4096 then Lwt.return_some (chunk, false)
         else Lwt.return_some (chunk, true))
     false
 
@@ -100,18 +98,6 @@ let respond_document ?mime path =
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
   else not_found
 
-let from_filename ?(lookup = `Ext) ?charset fname =
-  match lookup with
-  | `Ext -> Mehari.from_filename ?charset fname |> Lwt.return
-  | `Content ->
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      Mehari.from_content ?charset content
-  | `Both -> (
-      let+ content = Lwt_io.with_file ~mode:Input fname Lwt_io.read in
-      match Mehari.from_content ?charset content with
-      | None -> Mehari.from_filename ?charset fname
-      | Some m -> Some m)
-
 include
   Mehari.Private.Static.Make
     (struct
@@ -121,11 +107,14 @@ include
 
       let kind path =
         let open Lwt.Infix in
-        Lwt_unix.lstat path >|= function
-        | { st_kind = S_REG; _ } -> `Regular_file
-        | { st_kind = S_DIR; _ } -> `Directory
-        | _ -> `Other
+        try%lwt
+          Lwt_unix.lstat path >|= function
+          | { st_kind = S_REG; _ } -> `Regular_file
+          | { st_kind = S_DIR; _ } -> `Directory
+          | _ -> `Other
+        with _ -> Lwt.return `Other
 
+      let exists = Lwt_unix.file_exists
       let read path = Lwt_unix.files_of_directory path |> Lwt_stream.to_list
       let concat = Filename.concat
       let response_document = respond_document

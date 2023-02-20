@@ -24,16 +24,16 @@ module type S = sig
 end
 
 module Make
-    (Clock : Mirage_clock.PCLOCK)
+    (PClock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
     (Time : Mirage_time.S) : S with type stack = Stack.t = struct
   module IO = Lwt
   module Addr = Ipaddr
-  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
+  module RateLimiter = Rate_limiter_impl.Make (PClock) (IO) (Addr)
 
   module Logger =
     Logger_impl.Make
-      (Clock)
+      (PClock)
       (struct
         include Lwt
 

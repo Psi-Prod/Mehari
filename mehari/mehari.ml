@@ -55,7 +55,7 @@ module type NET = sig
   val route :
     ?rate_limit:rate_limiter ->
     ?mw:middleware ->
-    ?typ:[ `Raw | `Regex ] ->
+    ?regex:bool ->
     string ->
     handler ->
     route
@@ -79,7 +79,7 @@ module type NET = sig
   val error : 'a Logs.log
 end
 
-module type UNIX = sig
+module type FS = sig
   module IO : Types.IO
 
   type addr
@@ -106,7 +106,12 @@ module Private = struct
 
   let view_of_resp = Response.view_of_resp
 
-  module Cert = Cert
+  module Cert = struct
+    let get_certs ~exn_msg = function
+      | default :: mult -> `Multiple_default (default, mult)
+      | _ -> invalid_arg exn_msg
+  end
+
   module CGI = Cgi
   module Handler = Handler
   module Logger_impl = Logger_impl

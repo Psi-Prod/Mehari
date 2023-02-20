@@ -29,7 +29,7 @@ module Gemtext : sig
 
       {@ocaml[open Mehari.Gemtext
 
-assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
+let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
 ]} *)
 
   type t = line list
@@ -68,7 +68,7 @@ val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
 
     {@ocaml[open Mehari.Gemtext
 
-assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
+let () = assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
 ]} *)
 
 (** {1:request Request} *)
@@ -215,9 +215,10 @@ val from_filename : ?charset:string -> string -> mime option
     Note that mime {!val:gemini} are not infered from files with [.gmi]
     extension. See {{:https://github.com/Psi-Prod/Mehari/issues/36}}. *)
 
-val from_content : ?charset:string -> string -> mime option
-(** [from_content ?charset c] tries to create a {!type:mime} type by performing
-    a mime lookup based on content [c]. *)
+val from_content : ?charset:string -> tree:Conan.Tree.t -> string -> mime option
+(** [from_content ?charset ~tree c] tries to create a {!type:mime} type by
+    performing a mime lookup based on content [c]. [tree] is the tree used to
+    build the MIME database. *)
 
 val no_mime : mime
 (** Represents the absence of a mime. This is a shortcut for [make_mime ""]. *)
@@ -295,13 +296,13 @@ else
   val route :
     ?rate_limit:rate_limiter ->
     ?mw:middleware ->
-    ?typ:[ `Raw | `Regex ] ->
+    ?regex:bool ->
     string ->
     handler ->
     route
-  (** [route ~rate_limit ~mw ~typ path handler] forwards requests for [path] to
-      [handler]. [path] can be a string literal or a regex in Perl style
-      depending of [typ].
+  (** [route ~rate_limit ~mw ~regex path handler] forwards requests for [path]
+      to [handler]. [path] can be a string literal or a regex in Perl style
+      depending of value of [regex].
       If rate limit is in effect, [handler] is not executed and a respond with
       {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
 
@@ -351,8 +352,8 @@ else
   val error : 'a Logs.log
 end
 
-(** Module type containing all UNIX-dependent functions. *)
-module type UNIX = sig
+(** Module type containing all file system dependent functions. *)
+module type FS = sig
   module IO : Types.IO
 
   type addr
@@ -413,7 +414,10 @@ module Private : sig
     end
   end
 
-  module Cert = Cert
+  module Cert : sig
+    val get_certs :
+      exn_msg:string -> Tls.Config.certchain list -> Tls.Config.own_cert
+  end
 
   module CGI : sig
     module type S = sig
@@ -516,7 +520,7 @@ module Private : sig
       val route :
         ?rate_limit:rate_limiter ->
         ?mw:middleware ->
-        ?typ:[ `Raw | `Regex ] ->
+        ?regex:bool ->
         string ->
         handler ->
         route
@@ -547,6 +551,7 @@ module Private : sig
 
       type path
 
+      val exists : path -> bool IO.t
       val kind : path -> [ `Regular_file | `Directory | `Other ] IO.t
       val read : path -> string list IO.t
       val concat : path -> string -> path

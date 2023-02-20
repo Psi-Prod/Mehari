@@ -3,6 +3,7 @@ module type DIR = sig
 
   type path
 
+  val exists : path -> bool IO.t
   val kind : path -> [ `Regular_file | `Directory | `Other ] IO.t
   val read : path -> string list IO.t
   val concat : path -> string -> path
@@ -120,13 +121,17 @@ module Make (Dir : DIR) (Addr : Types.T) :
     else
       let path = Dir.concat base_path req_path in
       try
-        Dir.IO.bind (Dir.kind path) (function
+        let* is_exists = Dir.exists path in
+        if is_exists then
+          let* kind = Dir.kind path in
+          match kind with
           | `Regular_file -> handler path req
           | `Directory ->
               Dir.IO.bind (read_dir ~show_hidden ~index path) (function
                 | `Filenames fnames -> dir_listing fnames req
                 | `Index index_path -> handler index_path req)
-          | `Other -> not_found)
+          | `Other -> not_found
+        else not_found
       with io ->
         Log.warn (fun log -> log "%a" Dir.pp_io_err io);
         not_found

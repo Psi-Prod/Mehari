@@ -1,6 +1,8 @@
 (lang dune 3.0)
 
-(version 0.1)
+(using mdx 0.1)
+
+(version 0.2)
 
 (name mehari)
 
@@ -25,31 +27,29 @@
  (depends
   (ocaml
    (>= 4.14))
-  (conan-database
-   (>= 0.0.1))
   (conan
-   (>= 0.0.1))
+   (>= 0.0.2))
   (logs
    (>= 0.7.0))
   (magic-mime
    (>= 1.3.0))
   (mirage-clock
    (>= 4.2.0))
+  (re
+   (>= 1.10.4))
   (tls
-   (>= 0.15.4))
+   (>= 0.16.0))
   (uri
    (>= 4.2.0))
   (x509
-   (>= 0.16.2))
-  (re
-   (>= 1.10.4))))
+   (>= 0.16.2))))
 
 (package
  (name mehari-mirage)
  (synopsis "Mehari IO implementation for MirageOS")
  (depends
   (mehari
-   (= version))
+   (= :version))
   (ipaddr
    (>= 5.3.1))
   (lwt
@@ -70,9 +70,9 @@
  (synopsis "Mehari IO implementation using Lwt and Unix bindings")
  (depends
   (mehari
-   (= version))
+   (= :version))
   (mehari-mirage
-   (= version))
+   (= :version))
   (lwt
    (>= 5.6.1))
   (lwt_ppx
@@ -93,9 +93,9 @@
   (ocaml
    (>= 5.0.0))
   (mehari
-   (= version))
+   (= :version))
   (eio
-   (>= 0.7))
+   (>= 0.8))
   (mirage-clock-unix
    (>= 4.2.0))
   (logs
@@ -106,16 +106,3 @@
    (>= 0.15.5))
   (uri
    (>= 4.2.0))))
-
-(package
- (name mehari-eio-unix)
- (synopsis "Mehari IO implementation using Eio and Unix bindings")
- (depends
-  (ocaml
-   (>= 5.0.0))
-  (mehari
-   (= version))
-  (mehari-eio
-   (= version))
-  (eio
-   (>= 0.7))))

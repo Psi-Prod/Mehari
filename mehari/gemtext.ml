@@ -59,41 +59,78 @@ module Regex = struct
           ])
 end
 
+type line_feed = LF | CRLF | EOF
+
+(* Preserve line feed information to not erase it in pre-formatted blocks. *)
+let show = function LF -> "\n" | CRLF -> "\r\n" | EOF -> ""
+
+let split_lines text =
+  let buf = Buffer.create 8192 in
+  let acc = ref [] in
+  let cr = ref false in
+  for i = 0 to String.length text - 1 do
+    match String.unsafe_get text i with
+    | '\r' -> cr := true
+    | '\n' when !cr ->
+        let content = Buffer.contents buf in
+        Buffer.reset buf;
+        cr := false;
+        acc := (content, CRLF) :: !acc
+    | '\n' ->
+        let content = Buffer.contents buf in
+        Buffer.reset buf;
+        acc := (content, LF) :: !acc
+    | c when !cr ->
+        cr := false;
+        Buffer.add_char buf '\r';
+        Buffer.add_char buf c
+    | c -> Buffer.add_char buf c
+  done;
+  if !cr then Buffer.add_char buf '\r';
+  acc := (Buffer.contents buf, EOF) :: !acc;
+  List.rev !acc
+
 let of_string text =
-  let rec loop acc is_preformat pf = function
+  let buf = Buffer.create 4096 in
+  let rec loop acc is_preformat alt = function
     | [] -> List.rev acc
-    | x :: xs -> (
-        match (String.starts_with ~prefix:"```" x, is_preformat) with
+    | (l, feed) :: ls -> (
+        match (String.starts_with ~prefix:"```" l, is_preformat) with
         | true, true ->
-            loop (Preformat pf :: acc) (not is_preformat)
-              { alt = None; text = "" } xs
-        | true, false ->
-            let alt_str = String.sub x 3 (String.length x - 3) in
-            let alt = if alt_str = "" then None else Some alt_str in
-            loop acc (not is_preformat) { pf with alt } xs
+            let text = Buffer.contents buf in
+            Buffer.reset buf;
+            let alt =
+              match String.sub l 3 (String.length l - 3) with
+              | "" -> None
+              | alt -> Some alt
+            in
+            loop (Preformat { alt; text } :: acc) false None ls
+        | true, false -> loop acc true alt ls
         | false, true ->
-            loop acc is_preformat { pf with text = pf.text ^ x ^ "\n" } xs
+            Buffer.add_string buf l;
+            Buffer.add_string buf (show feed);
+            loop acc is_preformat alt ls
         | false, false ->
             let frgmt =
-              if x = "" then Text ""
+              if l = "" then Text ""
               else
-                match Re.exec_opt Regex.h3 x with
+                match Re.exec_opt Regex.h3 l with
                 | Some grp -> Heading (`H3, Re.Group.get grp 1)
                 | None -> (
-                    match Re.exec_opt Regex.h2 x with
+                    match Re.exec_opt Regex.h2 l with
                     | Some grp -> Heading (`H2, Re.Group.get grp 1)
                     | None -> (
-                        match Re.exec_opt Regex.h1 x with
+                        match Re.exec_opt Regex.h1 l with
                         | Some grp -> Heading (`H1, Re.Group.get grp 1)
                         | None -> (
-                            match Re.exec_opt Regex.item x with
+                            match Re.exec_opt Regex.item l with
                             | Some grp -> ListItem (Re.Group.get grp 1)
                             | None -> (
-                                match Re.exec_opt Regex.quote x with
+                                match Re.exec_opt Regex.quote l with
                                 | Some grp -> Quote (Re.Group.get grp 1)
                                 | None -> (
-                                    match Re.exec_opt Regex.link x with
-                                    | None -> Text x
+                                    match Re.exec_opt Regex.link l with
+                                    | None -> Text l
                                     | Some grp ->
                                         let url, name =
                                           ( Re.Group.get grp 1,
@@ -101,10 +138,9 @@ let of_string text =
                                         in
                                         Link { url; name })))))
             in
-            loop (frgmt :: acc) is_preformat pf xs)
+            loop (frgmt :: acc) is_preformat alt ls)
   in
-  Re.(split (compile (alt [ char '\n'; str "\r\n" ]))) text
-  |> loop [] false { alt = None; text = "" }
+  split_lines text |> loop [] false None
 
 let paragraph gemtext str =
   let doc = ref [] in

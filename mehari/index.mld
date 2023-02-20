@@ -17,22 +17,26 @@ Consult the {!section-tutorial} and
 
 Mehari provides several packages:
 
-  - {{:Mehari/index.html} Mehari} provides the core abstraction, it does not
-    depend on any platform code, and does not interact with the environment.
+  - {!Mehari} provides the core abstraction, it does not depend on any platform
+    code, and does not interact with the environment.
 
-  - {{:Mehari_mirage/index.html} Mehari_mirage} exposes an OS-independent
+  - {{:../mehari-mirage/index.html} Mehari_mirage} exposes an OS-independent
     interface.
 
-  - {{:Mehari_lwt_unix/index.html} Mehari_lwt_unix} uses the
+  - {{:../mehari-lwt-unix/index.html} Mehari_lwt_unix} uses the
     {{:https://ocsigen.org/lwt/} Lwt} library, and specifically the UNIX
-    bindings. Contains also extra features based on Unix filesystem such as
+    bindings. Contains also extra features based on UNIX filesystem such as
     CGI.
 
-  - {{:Mehari_eio/index.html} Mehari_eio} uses the
+  - {{:../mehari-eio/index.html} Mehari_eio} uses the
     {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
 
-  - {{:Mehari_eio_unix/index.html} Mehari_eio_unix} provides UNIX-dependent
-    functions based on Eio.
+{2 Implementation choice}
+
+IO implementations of Mehari are roughly equivalent in terms of features.
+However, some differences exist, e.g. {{:Mehari_eio/index.html} Mehari_eio}
+supports concurrent connections and should be preferred for a high performance
+server.
 
 {1:tutorial Tutorial}
 
@@ -51,7 +55,7 @@ to all requests in the same way:
 {@ocaml[(fun _ -> Mehari.response_text "Hello from Mehari")]}
 
 As handlers take a {!Mehari.type-request} in parameter we can operate on them.
-Here we retrieve the url of the client's request and return it:
+Here we retrieve the URL of the client's request and return it:
 
 {@ocaml[(fun req -> Mehari.uri req |> Uri.to_string |> Mehari.response_text)]}
 
@@ -77,7 +81,7 @@ input response, a [string] is needed:
 
 {@ocaml[
 let input_resp =
-  Mehari.(response input "Enter a message")
+  Mehari.(response input) "Enter a message"
 ]}
 
 In the same way, a {!type:Mehari.body} and a {!type:Mehari.mime} are required
@@ -106,16 +110,14 @@ Or from a Gemtext object:
 {@ocaml[
 let body =
   Mehari.(gemtext Gemtext.[
-    heading `H1 "Index";
-    link "index.gmi";
-    link "gemlog.gmi" ~name:"Go back";
-    newline;
-    heading `H2 "Thought on Gemtext markup";
+    heading `H1 "Thought on Gemtext markup";
     list_item "Date: February 2021";
     list_item "Tags: gemini, reviews";
     newline;
+    heading `H2 "Introduction";
+    newline;
     quote "The format permits richer typographic possibilities than the plain text of Gopher, but remains extremely easy to parse.";
-    text "Here is an example of a Python parser that shows that this is true:";
+    text "Here is an example of a Python parser that demonstrates the truth of that statement:";
     preformat "..." ~alt:"python"
   ])
 ]}
@@ -123,16 +125,14 @@ let body =
 Which is rendered as the following Gemtext document:
 
 {@gemtext[
-# Index
-=> index.gmi
-=> gemlog.gmi Go back
-
-## Thought on Gemtext markup
+# Thought on Gemtext markup
 * Date: February 2021
 * Tags: gemini, reviews
 
+## Introduction
+
 > The format permits richer typographic possibilities than the plain text of Gopher, but remains extremely easy to parse.
-Here is an example of a Python parser that shows that this is true:
+Here is an example of a Python parser that demonstrates the truth of that statement:
 ```python
 ...
 ```
@@ -180,16 +180,16 @@ requested by the client. Currently, two types of route exist: "raw" route which
 are interpreted literally and route supplied as a Perl style regex. Note that
 routes are "raw" by default:
 
-{@ocaml[Mehari_eio.route "/home/projects" (fun _ -> ...)]}
+{@ocaml[Mehari_eio.route "/var/gemini" (fun _ -> ...)]}
 
 In the following snippet, {!val:Mehari.param} retrieves the first group of the
 regex starting from index [1]. It is possible to have as many groups as desired
 in the route path.
 
 {@ocaml[
-Mehari_eio.route ~typ:`Regex "/posts/([a-z][A-Z])+" (fun req ->
+Mehari_eio.route ~regex:true "/articles/([a-z][A-Z])+" (fun req ->
   Mehari.param req 1
-  |> Printf.sprintf "Serving post %S"
+  |> Printf.sprintf "Get article %S"
   |> Mehari.response_text)
 ]}
 
@@ -199,7 +199,7 @@ produce a bigger handler:
 {@ocaml[
 Mehari_eio.router [
   Mehari_eio.route "/" index_handler;
-  Mehari_eio.route "/blog" blog_handler
+  Mehari_eio.route "/gemlog" gemlog_handler
 ]
 ]}
 
@@ -207,9 +207,9 @@ In the same way {!val:Mehari.NET.scope} groups several routes in one under the
 given prefix:
 
 {@ocaml[
-Mehari_eio.scope "/articles" [
-  Mehari_eio.route "/search" search_handler;
-  Mehari_eio.route "/about" about_handler
+Mehari_eio.scope "/blog" [
+  Mehari_eio.route "/articles" articles_handler;
+  Mehari_eio.route "/gemlog" gemlog_handler
 ]
 ]}
 
@@ -269,15 +269,27 @@ Here is what you have to do to start the server:
 Using {!Mehari_lwt_unix}:
 
 {@ocaml[
-let () = Mehari_lwt_unix.run handler
+let ( >>= ) = Lwt.Infix.( >>= )
+
+let main () =
+  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
+  |> Mehari_io.run_lwt router ~certchains:[ cert ]
+
+let () = Lwt_main.run (main ())
 ]}
 
 Using {!Mehari_eio}:
 
 {@ocaml[
 let main ~net ~cwd =
-  Mehari_eio.run ~certchains:Eio.Path.[ (cwd / "cert.pem", cwd / "key.pem") ]
-    net main_handler
+  let certchains =
+    Eio.Path.
+      [
+        X509_eio.private_of_pems ~cert:(cwd / "cert.pem")
+          ~priv_key:(cwd / "key.pem");
+      ]
+  in
+  Mehari_eio.run net ~certchains router
 
 let () =
   Eio_main.run @@ fun env ->
