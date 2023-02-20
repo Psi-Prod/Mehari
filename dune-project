@@ -63,7 +63,9 @@
   (tcpip
    (>= 7.1.2))
   (tls-mirage
-   (>= 0.15.4))))
+   (>= 0.15.4))
+  (tls-lwt
+   (>= 0.16.0))))
 
 (package
  (name mehari-lwt-unix)
