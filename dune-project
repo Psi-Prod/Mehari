@@ -49,7 +49,7 @@
  (synopsis "Mehari IO implementation for MirageOS")
  (depends
   (mehari
-   (= version))
+   (= :version))
   (ipaddr
    (>= 5.3.1))
   (lwt
@@ -70,9 +70,9 @@
  (synopsis "Mehari IO implementation using Lwt and Unix bindings")
  (depends
   (mehari
-   (= version))
+   (= :version))
   (mehari-mirage
-   (= version))
+   (= :version))
   (lwt
    (>= 5.6.1))
   (lwt_ppx
@@ -93,7 +93,7 @@
   (ocaml
    (>= 5.0.0))
   (mehari
-   (= version))
+   (= :version))
   (eio
    (>= 0.8))
   (mirage-clock-unix
