@@ -9,6 +9,4 @@
   mehari
   tcpip
   tls-lwt
-  tls-mirage)
- (preprocess
-  (pps lwt_ppx)))
+  tls-mirage))

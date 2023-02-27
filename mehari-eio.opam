@@ -16,7 +16,6 @@ depends: [
   "logs" {>= "0.7.0"}
   "tls" {>= "0.15.4"}
   "tls-eio" {>= "0.15.5"}
-  "uri" {>= "4.2.0"}
   "odoc" {with-doc}
 ]
 build: [

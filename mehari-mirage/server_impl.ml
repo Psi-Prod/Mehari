@@ -30,6 +30,7 @@ module Make
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
   module Protocol = Mehari.Private.Protocol
+  open Lwt.Infix
   open Lwt.Syntax
 
   type config = {
@@ -63,7 +64,7 @@ module Make
   let read_client_req flow =
     let buf = Buffer.create 1024 in
     let rec loop n cr =
-      match%lwt Channel.read_char flow with
+      Channel.read_char flow >>= function
       | Ok (`Data _) when n > 1024 -> Lwt.return_error `BufferLimitExceeded
       | Ok (`Data '\n') when cr -> Buffer.contents buf |> Lwt.return_ok
       | Ok (`Data '\r') -> loop n true
@@ -88,7 +89,7 @@ module Make
         Lwt.pick [ f (); timeout ]
 
   let write_and_close chan flow resp =
-    match%lwt write_resp chan resp with
+    write_resp chan resp >>= function
     | Ok () ->
         let+ () = TLS.close flow in
         Ok ()
@@ -96,7 +97,7 @@ module Make
 
   let handle_client config callback flow epoch =
     let chan = Channel.create flow in
-    match%lwt with_timeout config.timeout (fun () -> read_client_req chan) with
+    with_timeout config.timeout (fun () -> read_client_req chan) >>= function
     | Ok client_req -> (
         match epoch with
         | Ok ep ->
@@ -117,7 +118,7 @@ module Make
     | Error err -> Lwt.return_error err
 
   let handler config callback flow =
-    match%lwt TLS.server_of_flow config.tls_config flow with
+    TLS.server_of_flow config.tls_config flow >>= function
     | Ok server -> TLS.epoch server |> handle_client config callback server
     | Error err -> `TLSWriteErr err |> Lwt.return_error
 
@@ -155,13 +156,12 @@ module Make
     in
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
-        match%lwt handler config callback flow with
-        | Ok () -> Lwt.return_unit
-        | exception Timeout ->
-            log_err `Timeout;
-            Lwt.return_unit
-        | Error err ->
-            log_err err;
-            Lwt.return_unit);
+        Lwt.catch
+          (fun () -> handler config callback flow >|= Result.iter_error log_err)
+          (function
+            | Timeout ->
+                log_err `Timeout;
+                Lwt.return_unit
+            | exn -> raise exn));
     Stack.listen stack
 end

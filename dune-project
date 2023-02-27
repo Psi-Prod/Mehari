@@ -52,8 +52,6 @@
    (>= 5.3.1))
   (lwt
    (>= 5.6.1))
-  (lwt_ppx
-   (>= 2.1.0))
   (mirage-channel
    (>= 4.1.0))
   (mirage-time
@@ -75,8 +73,6 @@
    (= :version))
   (lwt
    (>= 5.6.1))
-  (lwt_ppx
-   (>= 2.1.0))
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-flow-unix
@@ -103,6 +99,4 @@
   (tls
    (>= 0.15.4))
   (tls-eio
-   (>= 0.15.5))
-  (uri
-   (>= 4.2.0))))
+   (>= 0.15.5))))
