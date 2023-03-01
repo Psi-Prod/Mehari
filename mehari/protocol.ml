@@ -52,7 +52,7 @@ let check_host uri epoch =
   | None -> Error MissingHost
   | Some h -> (
       let hostnames =
-        List.map Tls.Core.Cert.hostnames epoch.Tls.Core.own_certificate
+        List.map X509.Certificate.hostnames epoch.Tls.Core.own_certificate
         |> List.fold_left X509.Host.Set.union X509.Host.Set.empty
         |> X509.Host.Set.to_seq
         |> Seq.map (fun (_, d) -> Domain_name.to_string d)
