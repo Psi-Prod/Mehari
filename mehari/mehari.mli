@@ -396,6 +396,8 @@ module type FS = sig
   [false] for security reasons. *)
 end
 
+(**/**)
+
 (** {1 Private} *)
 
 (** You can ignore it, unless you are porting [Mehari] to a new platform not
@@ -586,3 +588,5 @@ module Private : sig
          and type dir_path := Dir.path
   end
 end
+
+(**/**)
