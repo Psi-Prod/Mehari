@@ -16,3 +16,9 @@ end
 module type T = sig
   type t
 end
+
+module type PCLOCK = sig
+  type t
+
+  val now_d_ps : t -> int * int64
+end

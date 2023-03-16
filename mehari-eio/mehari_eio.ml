@@ -3,16 +3,34 @@ module Direct = Common.Direct
 module IO = Common.Direct
 
 module type S =
-  Mehari.NET with module IO := Direct and type addr = Eio.Net.Ipaddr.v4v6
+  Mehari.NET
+    with module IO := Direct
+     and type addr = Eio.Net.Ipaddr.v4v6
+     and type clock := Eio.Time.clock
 
-(** TODO: replace Pclock by mirage-clock-eio when it becomes available. *)
+module Clock = struct
+  type t = Eio.Time.clock
+
+  (* Taken from mirage-clock-unix https://github.com/mirage/mirage-clock/blob/main/unix/pclock.ml#L17 *)
+  let ps_count_in_s = 1_000_000_000_000L
+
+  let now_d_ps clock =
+    let ns, secs = clock#now |> Float.modf in
+    let ns = Int64.of_float (ns *. 1000.) in
+    let secs = Int64.of_float secs in
+    let days = Int64.div secs 86_400L in
+    let rem_s = Int64.rem secs 86_400L in
+    let frac_ps = Int64.mul ns 1000L in
+    let rem_ps = Int64.mul rem_s ps_count_in_s in
+    (Int64.to_int days, Int64.add rem_ps frac_ps)
+end
 
 module RateLimiter =
-  Mehari.Private.Rate_limiter_impl.Make (Pclock) (Direct) (Addr)
+  Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct) (Addr)
 
 module Logger =
   Mehari.Private.Logger_impl.Make
-    (Pclock)
+    (Clock)
     (struct
       include Direct
 

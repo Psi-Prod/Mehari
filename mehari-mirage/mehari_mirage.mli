@@ -9,7 +9,24 @@ module type S = sig
   (** {1 Net} *)
 
   (** @closed *)
-  include Mehari.NET with module IO := IO and type addr = Ipaddr.t
+  include
+    Mehari.NET
+      with module IO := IO
+       and type addr = Ipaddr.t
+       and type clock := unit
+
+  (** {1 Rate limit} *)
+
+  val make_rate_limit :
+    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+  (** Same as {!val:Mehari.NET.make_rate_limit} but without the required trailing
+  unit parameter. *)
+
+  (** {1 Logging} *)
+
+  val logger : handler -> handler
+  (** Same as {!val:Mehari.NET.logger} but without the required trailing unit
+      parameter. *)
 
   (** {1 Response} *)
 

@@ -1,7 +1,7 @@
 (library
  (name mehari)
  (public_name mehari)
- (libraries conan.string logs magic-mime mirage-clock tls uri x509))
+ (libraries conan.string logs magic-mime tls uri x509))
 
 (documentation
  (package mehari))

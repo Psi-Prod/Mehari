@@ -47,6 +47,7 @@ module type NET = sig
   type addr
   type handler = addr Request.t -> Response.t IO.t
   type middleware = handler -> handler
+  type clock
 
   val no_middleware : middleware
   val pipeline : middleware list -> middleware
@@ -66,13 +67,17 @@ module type NET = sig
   val no_route : route
 
   val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+    clock ->
+    ?period:int ->
+    int ->
+    [ `Second | `Minute | `Hour | `Day ] ->
+    rate_limiter
 
   val virtual_hosts :
     ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
 
   val set_log_lvl : Logs.level -> unit
-  val logger : handler -> handler
+  val logger : clock -> handler -> handler
   val debug : 'a Logs.log
   val info : 'a Logs.log
   val warning : 'a Logs.log
@@ -101,6 +106,7 @@ end
 module Private = struct
   module type IO = Types.IO
   module type ADDR = Types.ADDR
+  module type PCLOCK = Types.PCLOCK
 
   type response_view = Response.view
 

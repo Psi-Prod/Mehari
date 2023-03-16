@@ -31,8 +31,6 @@
    (>= 0.7.0))
   (magic-mime
    (>= 1.3.0))
-  (mirage-clock
-   (>= 4.2.0))
   (re
    (>= 1.10.4))
   (tls
@@ -92,8 +90,6 @@
    (= :version))
   (eio
    (>= 0.8))
-  (mirage-clock-unix
-   (>= 4.2.0))
   (logs
    (>= 0.7.0))
   (tls
