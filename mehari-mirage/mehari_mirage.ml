@@ -18,7 +18,16 @@ end
 
 module type S = sig
   module IO = Lwt
-  include Mehari.NET with module IO := IO and type addr = Ipaddr.t
+
+  include
+    Mehari.NET
+      with module IO := IO
+       and type addr = Ipaddr.t
+       and type clock := unit
+
+  val make_rate_limit : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+  val logger : handler -> handler
+
   include IO_RESPONSE
   include Server_impl.S with module IO := IO
 end
@@ -29,11 +38,18 @@ module Make
     (Time : Mirage_time.S) : S with type stack = Stack.t = struct
   module IO = Lwt
   module Addr = Ipaddr
-  module RateLimiter = Rate_limiter_impl.Make (PClock) (IO) (Addr)
+
+  module Clock = struct
+    type t = unit
+
+    let now_d_ps () = PClock.now_d_ps ()
+  end
+
+  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
 
   module Logger =
     Logger_impl.Make
-      (PClock)
+      (Clock)
       (struct
         include Lwt
 
@@ -60,7 +76,7 @@ module Make
 
   let respond_raw g = Mehari.response_raw g |> IO.return
   let set_log_lvl = Logger.set_level
-  let logger = Logger.logger
+  let logger = Logger.logger ()
   let debug = Logger.debug
   let info = Logger.info
   let warning = Logger.warning
@@ -72,6 +88,6 @@ module Make
   let scope = Router.scope
   let no_route = Router.no_route
   let virtual_hosts = Router.virtual_hosts
-  let make_rate_limit = RateLimiter.make
+  let make_rate_limit = RateLimiter.make ()
   let run = Server.run
 end
