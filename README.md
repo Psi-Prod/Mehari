@@ -22,13 +22,13 @@ opam install mehari
 
 ## Features
 
-- [Mirage OS friendly](https://docs.heyplzlookat.me/mehari/Mehari_mirage/index.html)
-- [Static files serving](https://docs.heyplzlookat.me/mehari/Mehari/module-type-UNIX/index.html#static-files)
-- [MIME type inference](https://docs.heyplzlookat.me/mehari/index.html#mime) (using experimental [Conan](https://github.com/mirage/conan/) support)
-- [Rate limit](https://docs.heyplzlookat.me/mehari/index.html#rate-limit)
-- [Virtual hosting](https://docs.heyplzlookat.me/mehari/index.html#virtual-hosting) using SNI
-- [CGI](https://docs.heyplzlookat.me/mehari/Mehari_lwt_unix/index.html#cgi)
-- [Long-running TCP connection](https://docs.heyplzlookat.me/mehari/Mehari/index.html#note-on-data-stream-response)
+- Mirage OS friendly
+- Static files serving
+- MIME type inference from file content (using experimental [Conan](https://github.com/mirage/conan/) support)
+- Rate limit
+- Virtual hosting using SNI
+- CGI
+- Long-running TCP connection
 
 ## Feedback
 
