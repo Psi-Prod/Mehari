@@ -42,7 +42,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   type route = route' list
 
   and route' = {
-    route : bool * string;
+    route : [ `Regex of Re.re | `Literal ] * string;
     handler : handler;
     rate_limit : RateLimiter.t option;
   }
@@ -50,38 +50,38 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   let no_route = []
 
   let route ?rate_limit ?(mw = Fun.id) ?(regex = false) r handler =
-    [ { route = (regex, r); handler = mw handler; rate_limit } ]
+    let kind =
+      if regex then `Regex (Re.Perl.re r |> Re.Perl.compile) else `Literal
+    in
+    [ { route = (kind, r); handler = mw handler; rate_limit } ]
 
   let compare_url u u' =
     match (u, u') with
     | "", "/" | "/", "" | "", "" -> true
     | "", _ | _, "" -> false
-    | _, _ ->
-        if String.equal u u' then true
-        else if String.ends_with ~suffix:"/" u then
-          String.equal (String.sub u 0 (String.length u - 1)) u'
-        else if String.ends_with ~suffix:"/" u' then
-          String.equal (String.sub u' 0 (String.length u' - 1)) u
-        else false
-
-  let match_ (regex, route) path =
-    if regex then `Grp (Re.exec_opt (Re.Perl.re route |> Re.Perl.compile) path)
-    else `Bool (compare_url route path)
+    | _, _ when String.equal u u' -> true
+    | _, _ when String.ends_with ~suffix:"/" u ->
+        String.equal (String.sub u 0 (String.length u - 1)) u'
+    | _, _ when String.ends_with ~suffix:"/" u' ->
+        String.equal (String.sub u' 0 (String.length u' - 1)) u
+    | _, _ -> false
 
   let router routes req =
     let routes = List.concat routes in
     let path = Request.target req in
     let route =
-      List.fold_left
-        (fun acc { route; handler; rate_limit } ->
-          match acc with
-          | None -> (
-              match match_ route path with
-              | `Bool true -> Some (handler, rate_limit, None)
-              | `Grp (Some _ as g) -> Some (handler, rate_limit, g)
-              | `Bool false | `Grp None -> None)
-          | Some _ -> acc)
-        None routes
+      let rec loop = function
+        | [] -> None
+        | { route = `Regex re, _; handler; rate_limit } :: rs -> (
+            match Re.exec_opt re path with
+            | None -> loop rs
+            | Some _ as grp -> Some (handler, rate_limit, grp))
+        | { route = `Literal, r; handler; rate_limit } :: _
+          when compare_url r path ->
+            Some (handler, rate_limit, None)
+        | { route = `Literal, _; _ } :: rs -> loop rs
+      in
+      loop routes
     in
     match route with
     | None -> Response.(response Status.not_found "") |> IO.return
@@ -99,8 +99,16 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
 
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes
-    |> List.map (fun { route = typ, r; handler; _ } ->
-           { route = (typ, prefix ^ r); handler = mw handler; rate_limit })
+    |> List.map (fun { route = kind, r; handler; _ } ->
+           let r = prefix ^ r in
+           let kind =
+             match kind with
+             | `Regex _ ->
+                 `Regex (Re.Perl.re r |> Re.Perl.compile)
+                 (* Recompile route with given prefix. *)
+             | `Literal as l -> l
+           in
+           { route = (kind, r); handler = mw handler; rate_limit })
 
   let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
@@ -110,11 +118,13 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
           Request.uri req |> Uri.host
           |> Option.get (* Guaranteed by [Protocol.make_request]. *)
     in
-    match List.find_opt (fun (d, _) -> d = req_host) domains_handler with
-    | None -> assert false (* Guaranteed by [Protocol.make_request]. *)
-    | Some (_, handler) -> handler req
+    let _, handler =
+      (* Guaranteed by [Protocol.make_request]. *)
+      List.find (fun (d, _) -> String.equal d req_host) domains_handler
+    in
+    handler req
 
-  let no_middleware h req = h req
+  let no_middleware = ( @@ )
 
   let rec pipeline mws handler =
     match mws with [] -> handler | m :: ms -> m (pipeline ms handler)
