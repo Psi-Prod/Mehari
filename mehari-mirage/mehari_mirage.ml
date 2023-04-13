@@ -25,7 +25,9 @@ module type S = sig
        and type addr = Ipaddr.t
        and type clock := unit
 
-  val make_rate_limit : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+  val make_rate_limit :
+    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+
   val logger : handler -> handler
 
   include IO_RESPONSE
