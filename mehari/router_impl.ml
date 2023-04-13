@@ -102,12 +102,15 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
   let scope ?rate_limit ?(mw = Fun.id) prefix routes =
     List.concat routes
     |> List.map (fun { route = kind, r; handler; _ } ->
+           let r = prefix ^ r in
            let kind =
              match kind with
-             | `Regex _ -> `Regex (Re.Perl.re r |> Re.Perl.compile)
+             | `Regex _ ->
+                 `Regex (Re.Perl.re r |> Re.Perl.compile)
+                 (* Recompile route to add given prefix. *)
              | `Literal as l -> l
            in
-           { route = (kind, prefix ^ r); handler = mw handler; rate_limit })
+           { route = (kind, r); handler = mw handler; rate_limit })
 
   let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
