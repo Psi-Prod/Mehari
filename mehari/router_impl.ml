@@ -118,11 +118,13 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
           Request.uri req |> Uri.host
           |> Option.get (* Guaranteed by [Protocol.make_request]. *)
     in
-    match List.find_opt (fun (d, _) -> d = req_host) domains_handler with
-    | None -> assert false (* Guaranteed by [Protocol.make_request]. *)
-    | Some (_, handler) -> handler req
+    let _, handler =
+      (* Guaranteed by [Protocol.make_request]. *)
+      List.find (fun (d, _) -> String.equal d req_host) domains_handler
+    in
+    handler req
 
-  let no_middleware h req = h req
+  let no_middleware = ( @@ )
 
   let rec pipeline mws handler =
     match mws with [] -> handler | m :: ms -> m (pipeline ms handler)
