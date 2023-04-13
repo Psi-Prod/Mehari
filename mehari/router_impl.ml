@@ -105,7 +105,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
              match kind with
              | `Regex _ ->
                  `Regex (Re.Perl.re r |> Re.Perl.compile)
-                 (* Recompile route to add given prefix. *)
+                 (* Recompile route with given prefix. *)
              | `Literal as l -> l
            in
            { route = (kind, r); handler = mw handler; rate_limit })
