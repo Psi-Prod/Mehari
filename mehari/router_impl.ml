@@ -66,22 +66,20 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
         String.equal (String.sub u' 0 (String.length u' - 1)) u
     | _, _ -> false
 
-  let match_ (kind, route) path =
-    match kind with
-    | `Regex re -> `Grp (Re.exec_opt re path)
-    | `Literal -> `Bool (compare_url route path)
-
   let router routes req =
     let routes = List.concat routes in
     let path = Request.target req in
     let route =
       let rec loop = function
         | [] -> None
-        | { route; handler; rate_limit } :: rs -> (
-            match match_ route path with
-            | `Bool true -> Some (handler, rate_limit, None)
-            | `Grp (Some _ as g) -> Some (handler, rate_limit, g)
-            | `Bool false | `Grp None -> loop rs)
+        | { route = `Regex re, _; handler; rate_limit } :: rs -> (
+            match Re.exec_opt re path with
+            | None -> loop rs
+            | Some _ as grp -> Some (handler, rate_limit, grp))
+        | { route = `Literal, r; handler; rate_limit } :: _
+          when compare_url r path ->
+            Some (handler, rate_limit, None)
+        | { route = `Literal, _; _ } :: rs -> loop rs
       in
       loop routes
     in
