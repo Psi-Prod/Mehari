@@ -18,22 +18,26 @@ let heading h text = Heading (h, text)
 let list_item text = ListItem text
 let quote text = Quote text
 
-let to_string lines =
-  List.map
-    (function
-      | Text t -> t
-      | Link { url; name } ->
-          Option.fold name ~none:"" ~some:(Printf.sprintf " %s")
-          |> Printf.sprintf "=> %s%s" url
-      | Preformat { alt; text } ->
-          Printf.sprintf "```%s\n%s\n```" (Option.value alt ~default:"") text
-      | Heading (`H1, text) -> Printf.sprintf "# %s" text
-      | Heading (`H2, text) -> Printf.sprintf "## %s" text
-      | Heading (`H3, text) -> Printf.sprintf "### %s" text
-      | ListItem text -> Printf.sprintf "* %s" text
-      | Quote text -> Printf.sprintf ">%s" text)
-    lines
-  |> String.concat "\n"
+let pp_line ppf =
+  let open Format in
+  function
+  | Text t -> pp_print_string ppf t
+  | Link { url; name } ->
+      fprintf ppf "=> %s%a" url
+        (pp_print_option (fun ppf -> fprintf ppf " %s"))
+        name
+  | Preformat { alt; text } ->
+      fprintf ppf "```%a@\n%s@\n```" (pp_print_option pp_print_string) alt text
+  | Heading (`H1, t) -> fprintf ppf "# %s" t
+  | Heading (`H2, t) -> fprintf ppf "## %s" t
+  | Heading (`H3, t) -> fprintf ppf "### %s" t
+  | ListItem t -> fprintf ppf "* %s" t
+  | Quote t -> fprintf ppf ">%s" t
+
+let pp ppf t =
+  Format.pp_print_list ~pp_sep:Format.pp_force_newline pp_line ppf t
+
+let to_string t = Format.asprintf "%a" pp t
 
 module Regex = struct
   let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
@@ -68,7 +72,7 @@ let split_lines text =
   let buf = Buffer.create 8192 in
   let acc = ref [] in
   let cr = ref false in
-  for i = 0 to String.length text - 1 do
+  for i = String.length text - 1 downto 0 do
     match String.unsafe_get text i with
     | '\r' -> cr := true
     | '\n' when !cr ->
@@ -88,10 +92,10 @@ let split_lines text =
   done;
   if !cr then Buffer.add_char buf '\r';
   acc := (Buffer.contents buf, EOF) :: !acc;
-  List.rev !acc
+  !acc
 
 let of_string text =
-  let buf = Buffer.create 4096 in
+  let buf = Buffer.create (String.length text) in
   let rec loop acc is_preformat alt = function
     | [] -> List.rev acc
     | (l, feed) :: ls -> (
@@ -114,40 +118,44 @@ let of_string text =
             let frgmt =
               if l = "" then Text ""
               else
-                match Re.exec_opt Regex.h3 l with
-                | Some grp -> Heading (`H3, Re.Group.get grp 1)
-                | None -> (
-                    match Re.exec_opt Regex.h2 l with
-                    | Some grp -> Heading (`H2, Re.Group.get grp 1)
-                    | None -> (
-                        match Re.exec_opt Regex.h1 l with
-                        | Some grp -> Heading (`H1, Re.Group.get grp 1)
-                        | None -> (
-                            match Re.exec_opt Regex.item l with
-                            | Some grp -> ListItem (Re.Group.get grp 1)
-                            | None -> (
-                                match Re.exec_opt Regex.quote l with
-                                | Some grp -> Quote (Re.Group.get grp 1)
-                                | None -> (
-                                    match Re.exec_opt Regex.link l with
-                                    | None -> Text l
-                                    | Some grp ->
-                                        let url, name =
-                                          ( Re.Group.get grp 1,
-                                            Re.Group.get_opt grp 2 )
-                                        in
-                                        Link { url; name })))))
+                try
+                  let grp = Re.exec Regex.h3 l in
+                  Heading (`H3, Re.Group.get grp 1)
+                with Not_found -> (
+                  try
+                    let grp = Re.exec Regex.h2 l in
+                    Heading (`H2, Re.Group.get grp 1)
+                  with Not_found -> (
+                    try
+                      let grp = Re.exec Regex.h1 l in
+                      Heading (`H1, Re.Group.get grp 1)
+                    with Not_found -> (
+                      try
+                        let grp = Re.exec Regex.item l in
+                        ListItem (Re.Group.get grp 1)
+                      with Not_found -> (
+                        try
+                          let grp = Re.exec Regex.quote l in
+                          Quote (Re.Group.get grp 1)
+                        with Not_found -> (
+                          try
+                            let grp = Re.exec Regex.link l in
+                            let url, name =
+                              (Re.Group.get grp 1, Re.Group.get_opt grp 2)
+                            in
+                            Link { url; name }
+                          with Not_found -> Text l)))))
             in
             loop (frgmt :: acc) is_preformat alt ls)
   in
   split_lines text |> loop [] false None
 
-let paragraph gemtext str =
+let paragraph gemtext s =
   let doc = ref [] in
   let cr = ref false in
-  let buf = Buffer.create 4096 in
-  for i = 0 to String.length str - 1 do
-    match String.unsafe_get str i with
+  let buf = Buffer.create (String.length s) in
+  for i = String.length s - 1 downto 0 do
+    match String.unsafe_get s i with
     | '\r' -> cr := true
     | '\n' when !cr ->
         let line = Buffer.contents buf in
@@ -164,7 +172,4 @@ let paragraph gemtext str =
         Buffer.add_char buf c;
         cr := false
   done;
-  (match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc)
-  |> List.rev
-
-let pp fmt g = Format.fprintf fmt "%s" (to_string g)
+  match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc
