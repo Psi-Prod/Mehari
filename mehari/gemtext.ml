@@ -95,7 +95,7 @@ let split_lines text =
   !acc
 
 let of_string text =
-  let buf = Buffer.create (String.length text) in
+  let buf = Buffer.create 4096 in
   let rec loop acc is_preformat alt = function
     | [] -> List.rev acc
     | (l, feed) :: ls -> (
