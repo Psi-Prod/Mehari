@@ -23,9 +23,7 @@ let pp_line ppf =
   function
   | Text t -> pp_print_string ppf t
   | Link { url; name } ->
-      fprintf ppf "=> %s%a" url
-        (pp_print_option (fun ppf -> fprintf ppf " %s"))
-        name
+      fprintf ppf "=> %s%a" url (pp_print_option (Fun.flip fprintf " %s")) name
   | Preformat { alt; text } ->
       fprintf ppf "```%a@\n%s@\n```" (pp_print_option pp_print_string) alt text
   | Heading (`H1, t) -> fprintf ppf "# %s" t
@@ -74,6 +72,7 @@ let split_lines text =
   let cr = ref false in
   for i = 0 to String.length text - 1 do
     match String.unsafe_get text i with
+    | '\r' when !cr -> Buffer.add_char buf '\r'
     | '\r' -> cr := true
     | '\n' when !cr ->
         let content = Buffer.contents buf in
@@ -101,52 +100,56 @@ let of_string text =
     | (l, feed) :: ls -> (
         match (String.starts_with ~prefix:"```" l, is_preformat) with
         | true, true ->
-            let text = Buffer.contents buf in
+            let text =
+              match Buffer.contents buf with
+              | "" -> ""
+              | s -> String.sub s 0 (String.length s - 1)
+            in
             Buffer.reset buf;
+            loop (Preformat { alt; text } :: acc) false None ls
+        | true, false ->
             let alt =
               match String.sub l 3 (String.length l - 3) with
               | "" -> None
               | alt -> Some alt
             in
-            loop (Preformat { alt; text } :: acc) false None ls
-        | true, false -> loop acc true alt ls
+            loop acc true alt ls
         | false, true ->
             Buffer.add_string buf l;
             Buffer.add_string buf (show feed);
             loop acc is_preformat alt ls
+        | false, false when l = "" -> loop (Text "" :: acc) is_preformat alt ls
         | false, false ->
-            let frgmt =
-              if l = "" then Text ""
-              else
+            let line =
+              try
+                let grp = Re.exec Regex.h3 l in
+                Heading (`H3, Re.Group.get grp 1)
+              with Not_found -> (
                 try
-                  let grp = Re.exec Regex.h3 l in
-                  Heading (`H3, Re.Group.get grp 1)
+                  let grp = Re.exec Regex.h2 l in
+                  Heading (`H2, Re.Group.get grp 1)
                 with Not_found -> (
                   try
-                    let grp = Re.exec Regex.h2 l in
-                    Heading (`H2, Re.Group.get grp 1)
+                    let grp = Re.exec Regex.h1 l in
+                    Heading (`H1, Re.Group.get grp 1)
                   with Not_found -> (
                     try
-                      let grp = Re.exec Regex.h1 l in
-                      Heading (`H1, Re.Group.get grp 1)
+                      let grp = Re.exec Regex.item l in
+                      ListItem (Re.Group.get grp 1)
                     with Not_found -> (
                       try
-                        let grp = Re.exec Regex.item l in
-                        ListItem (Re.Group.get grp 1)
+                        let grp = Re.exec Regex.quote l in
+                        Quote (Re.Group.get grp 1)
                       with Not_found -> (
                         try
-                          let grp = Re.exec Regex.quote l in
-                          Quote (Re.Group.get grp 1)
-                        with Not_found -> (
-                          try
-                            let grp = Re.exec Regex.link l in
-                            let url, name =
-                              (Re.Group.get grp 1, Re.Group.get_opt grp 2)
-                            in
-                            Link { url; name }
-                          with Not_found -> Text l)))))
+                          let grp = Re.exec Regex.link l in
+                          let url, name =
+                            (Re.Group.get grp 1, Re.Group.get_opt grp 2)
+                          in
+                          Link { url; name }
+                        with Not_found -> Text l)))))
             in
-            loop (frgmt :: acc) is_preformat alt ls)
+            loop (line :: acc) is_preformat alt ls)
   in
   split_lines text |> loop [] false None
 
