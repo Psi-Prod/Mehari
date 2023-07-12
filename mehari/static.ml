@@ -116,7 +116,7 @@ module Make (Dir : DIR) (Addr : Types.T) :
 
   let static ?(handler = default_handler) ?(dir_listing = default_listing)
       ?(index = "index.gmi") ?(show_hidden = false) base_path req =
-    let req_path = Request.param req 1 in
+    let req_path = Request.param req 1 |> Uri.pct_decode in
     if reference_parent req_path then not_found
     else
       let path = Dir.concat base_path req_path in
