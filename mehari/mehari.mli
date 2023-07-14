@@ -269,6 +269,9 @@ module type NET = sig
       after — producing a “bigger” {!type:handler}. See
       {!section-middleware}. *)
 
+  type clock
+  (** System clock used by rate limiter. *)
+
   (** {1:middleware Middleware} *)
 
   val no_middleware : middleware
@@ -319,9 +322,13 @@ else
   (** {1:rate_limit Rate limit} *)
 
   val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-  (** [make_rate_limit ~period n unit] creates a {!type:rate_limiter} which
-      limits client to [n] request per [period * unit].
+    clock ->
+    ?period:int ->
+    int ->
+    [ `Second | `Minute | `Hour | `Day ] ->
+    rate_limiter
+  (** [make_rate_limit clock ~period n unit] creates a {!type:rate_limiter}
+      which limits client to [n] request per [period * unit].
       For example,
       {[
   make_rate_limit ~period:2 5 `Hour
@@ -343,7 +350,7 @@ else
   val set_log_lvl : Logs.level -> unit
   (** Set Mehari's logger to the given log level. *)
 
-  val logger : handler -> handler
+  val logger : clock -> handler -> handler
   (** Logs and times requests. Time spent logging is included. *)
 
   val debug : 'a Logs.log
@@ -396,6 +403,8 @@ module type FS = sig
   [false] for security reasons. *)
 end
 
+(**/**)
+
 (** {1 Private} *)
 
 (** You can ignore it, unless you are porting [Mehari] to a new platform not
@@ -403,6 +412,7 @@ end
 module Private : sig
   module type IO = Types.IO
   module type ADDR = Types.ADDR
+  module type PCLOCK = Types.PCLOCK
 
   type response_view = Response.view
 
@@ -441,9 +451,10 @@ module Private : sig
 
       type addr
       type handler = addr Handler.Make(IO).t
+      type clock
 
       val set_level : Logs.level -> unit
-      val logger : handler -> handler
+      val logger : clock -> handler -> handler
       val debug : 'a Logs.log
       val info : 'a Logs.log
       val warning : 'a Logs.log
@@ -451,12 +462,13 @@ module Private : sig
     end
 
     module Make
-        (Clock : Mirage_clock.PCLOCK) (IO : sig
+        (Clock : Types.PCLOCK) (IO : sig
           include IO
 
           val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
         end)
-        (Addr : ADDR) : S with module IO = IO and type addr = Addr.t
+        (Addr : ADDR) :
+      S with module IO = IO and type addr = Addr.t and type clock = Clock.t
   end
 
   module Protocol : sig
@@ -492,15 +504,18 @@ module Private : sig
       module IO : IO
 
       type t
+      type clock
 
       module Addr : ADDR
 
       val check : t -> Addr.t request -> response IO.t option
-      val make : ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
+
+      val make :
+        clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
     end
 
-    module Make (Clock : Mirage_clock.PCLOCK) (IO : IO) (Addr : ADDR) :
-      S with module IO = IO and module Addr = Addr
+    module Make (Clock : PCLOCK) (IO : IO) (Addr : ADDR) :
+      S with module IO = IO and module Addr = Addr and type clock = Clock.t
   end
 
   module Router_impl : sig
@@ -586,3 +601,5 @@ module Private : sig
          and type dir_path := Dir.path
   end
 end
+
+(**/**)

@@ -16,7 +16,7 @@ module Make (Addr : Types.ADDR) : S with type addr := Addr.t = struct
           (* We pick the first one. *)
           Option.map
             (fun (_, d) -> Domain_name.to_string d)
-            (Tls.Core.Cert.hostnames c |> X509.Host.Set.choose_opt)
+            (X509.Certificate.hostnames c |> X509.Host.Set.choose_opt)
     in
     let client_addr = Format.asprintf "%a" Addr.pp (Request.ip req) in
     [|

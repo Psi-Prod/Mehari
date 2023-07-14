@@ -22,5 +22,5 @@ $ cd unikernel/
 $ mirage configure -t unix # initial setup for UNIX backend
 $ make depend # install dependencies
 $ make # build the program
-$ ./gemini-srv # run the program
+$ dist/gemini-srv # run the program
 ```

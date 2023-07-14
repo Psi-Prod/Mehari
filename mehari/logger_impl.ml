@@ -3,9 +3,10 @@ module type S = sig
 
   type addr
   type handler = addr Handler.Make(IO).t
+  type clock
 
   val set_level : Logs.level -> unit
-  val logger : handler -> handler
+  val logger : clock -> handler -> handler
   val debug : 'a Logs.log
   val info : 'a Logs.log
   val warning : 'a Logs.log
@@ -13,16 +14,18 @@ module type S = sig
 end
 
 module Make
-    (Clock : Mirage_clock.PCLOCK) (IO : sig
+    (Clock : Types.PCLOCK) (IO : sig
       include Types.IO
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
     end)
-    (Addr : Types.ADDR) : S with module IO = IO and type addr = Addr.t = struct
+    (Addr : Types.ADDR) :
+  S with module IO = IO and type addr = Addr.t and type clock = Clock.t = struct
   module IO = IO
 
   type addr = Addr.t
   type handler = addr Handler.Make(IO).t
+  type clock = Clock.t
 
   let src = Logs.Src.create "mehari.log"
 
@@ -38,10 +41,10 @@ module Make
     String.split_on_char '\n' backtrace
     |> List.iter (function "" -> () | l -> f l)
 
-  let now () = Clock.now_d_ps () |> Ptime.v |> Ptime.to_float_s
+  let now clock = Clock.now_d_ps clock |> Ptime.v |> Ptime.to_float_s
 
-  let logger handler req =
-    let start = now () in
+  let logger clock handler req =
+    let start = now clock in
     IO.finally
       (fun () -> handler req)
       (fun resp ->
@@ -52,7 +55,7 @@ module Make
         (match resp.Response.status with
         | None -> ()
         | Some code ->
-            let elapsed = now () -. start in
+            let elapsed = now clock -. start in
             Log.info (fun log -> log "%i in %f µs" code (elapsed *. 1e6)));
         IO.return resp)
       (fun exn ->

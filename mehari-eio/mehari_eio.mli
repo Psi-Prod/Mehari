@@ -6,7 +6,11 @@ module Direct = Common.Direct
 (** {1 Net} *)
 
 (** @closed *)
-include Mehari.NET with module IO := Direct and type addr = Addr.t
+include
+  Mehari.NET
+    with module IO := Direct
+     and type addr = Addr.t
+     and type clock := Eio.Time.clock
 
 (** @closed *)
 include

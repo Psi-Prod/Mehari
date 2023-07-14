@@ -1,6 +1,7 @@
 let src = Logs.Src.create "mehari.lwt_unix.static"
 
 module Log = (val Logs.src_log src)
+open Lwt.Infix
 open Lwt.Syntax
 
 exception Exited
@@ -11,65 +12,65 @@ let read_body proc =
     (fun finished ->
       if finished then Lwt.return_none
       else
-        let* data = Lwt_io.read ~count:4096 proc#stdout in
-        if String.length data = 4096 then Lwt.return_some (data, true)
+        let+ data = Lwt_io.read ~count:4096 proc#stdout in
+        if String.length data = 4096 then Some (data, true)
         else
           match proc#state with
-          | Lwt_process.Running -> Lwt.return_some (data, true)
-          | Exited (WEXITED 0) -> Lwt.return_some (data, false)
+          | Lwt_process.Running -> Some (data, true)
+          | Exited (WEXITED 0) -> Some (data, false)
           | _ -> raise Exited)
     false
 
 let meta =
   Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
 
-let ( let$ ) opt f = match opt with None -> Lwt.return_none | Some x -> f x
+let ( let$ ) = Option.bind
 
 let parse_header in_chan =
-  match%lwt Lwt_io.read_line_opt in_chan with
-  | None -> Lwt.return_none
-  | Some header when Bytes.(of_string header |> length) > 1024 ->
-      Lwt.return_none
+  Lwt_io.read_line_opt in_chan >|= function
+  | None -> None
+  | Some header when Bytes.(of_string header |> length) > 1024 -> None
   | Some header ->
       let$ grp = Re.exec_opt meta header in
       let$ code = Re.Group.get grp 1 |> int_of_string_opt in
-      Lwt.return_some (code, Re.Group.get grp 2)
+      Some (code, Re.Group.get grp 2)
 
 module CGI = Mehari.Private.CGI.Make (Ipaddr)
 
 let cgi_err = Mehari_io.respond Mehari.cgi_error ""
 
 let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
-  try%lwt
-    let* cwd = Lwt_unix.getcwd () in
-    let env = CGI.make_env req ~fullpath:(Filename.concat cwd path) ~path in
-    let timeout =
-      let* () = Lwt_unix.sleep timeout in
-      cgi_err
-    in
-    let cgi_exec =
-      let respond =
-        Lwt_process.with_process_in ~stderr:`Dev_null ~env (path, [||])
-          (fun proc ->
-            if nph then
-              let* chunks = read_body proc |> Lwt_seq.to_list in
-              `Body (String.concat "" chunks) |> Mehari_io.respond_raw
-            else
-              match%lwt parse_header proc#stdout with
-              | None -> Mehari_io.respond Mehari.cgi_error ""
-              | Some (code, meta) ->
-                  let* chunks = read_body proc |> Lwt_seq.to_list in
-                  Mehari_io.respond_raw
-                    (`Full (code, meta, String.concat "" chunks)))
+  Lwt.catch
+    (fun () ->
+      let* cwd = Lwt_unix.getcwd () in
+      let env = CGI.make_env req ~fullpath:(Filename.concat cwd path) ~path in
+      let timeout =
+        let* () = Lwt_unix.sleep timeout in
+        cgi_err
       in
-      respond
-    in
-    Lwt.pick [ timeout; cgi_exec ]
-  with Exited -> cgi_err
+      let cgi_exec =
+        let respond =
+          Lwt_process.with_process_in ~stderr:`Dev_null ~env (path, [||])
+            (fun proc ->
+              if nph then
+                let* chunks = read_body proc |> Lwt_seq.to_list in
+                `Body (String.concat "" chunks) |> Mehari_io.respond_raw
+              else
+                parse_header proc#stdout >>= function
+                | None -> Mehari_io.respond Mehari.cgi_error ""
+                | Some (code, meta) ->
+                    let* chunks = read_body proc |> Lwt_seq.to_list in
+                    Mehari_io.respond_raw
+                      (`Full (code, meta, String.concat "" chunks)))
+        in
+        respond
+      in
+      Lwt.pick [ timeout; cgi_exec ])
+    (function Exited -> cgi_err | exn -> raise exn)
 
 (* TODO: true lazyness (is it even possible?) *)
 let rec unfold f u () =
-  match%lwt f u with
+  f u >>= function
   | None -> Lwt.return Seq.Nil
   | Some (x, u') ->
       let+ xs = unfold f u' () in
@@ -79,19 +80,18 @@ let read_chunks path =
   let+ ic = Lwt_io.open_file path ~mode:Input in
   unfold
     (fun ended ->
-      if ended then
-        let* () = Lwt_io.close ic in
-        Lwt.return_none
+      if ended then Lwt_io.close ic >|= fun () -> None
       else
-        let* chunk = Lwt_io.read ~count:4096 ic in
-        if String.length chunk = 4096 then Lwt.return_some (chunk, false)
-        else Lwt.return_some (chunk, true))
+        let+ chunk = Lwt_io.read ~count:4096 ic in
+        if String.length chunk = 4096 then Some (chunk, false)
+        else Some (chunk, true))
     false
 
 let not_found = Mehari_io.respond Mehari.not_found ""
 
 let respond_document ?mime path =
-  if%lwt Lwt_unix.file_exists path then
+  let* exists = Lwt_unix.file_exists path in
+  if exists then
     let mime = Option.value mime ~default:Mehari.no_mime in
     let* chunks = read_chunks path in
     let* cs = chunks () in
@@ -106,13 +106,13 @@ include
       type path = string
 
       let kind path =
-        let open Lwt.Infix in
-        try%lwt
-          Lwt_unix.lstat path >|= function
-          | { st_kind = S_REG; _ } -> `Regular_file
-          | { st_kind = S_DIR; _ } -> `Directory
-          | _ -> `Other
-        with _ -> Lwt.return `Other
+        Lwt.catch
+          (fun () ->
+            Lwt_unix.lstat path >|= function
+            | { st_kind = S_REG; _ } -> `Regular_file
+            | { st_kind = S_DIR; _ } -> `Directory
+            | _ -> `Other)
+          (function Unix.Unix_error _ -> Lwt.return `Other | exn -> raise exn)
 
       let exists = Lwt_unix.file_exists
       let read path = Lwt_unix.files_of_directory path |> Lwt_stream.to_list

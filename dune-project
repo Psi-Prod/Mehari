@@ -31,8 +31,6 @@
    (>= 0.7.0))
   (magic-mime
    (>= 1.3.0))
-  (mirage-clock
-   (>= 4.2.0))
   (re
    (>= 1.10.4))
   (tls
@@ -52,8 +50,6 @@
    (>= 5.3.1))
   (lwt
    (>= 5.6.1))
-  (lwt_ppx
-   (>= 2.1.0))
   (mirage-channel
    (>= 4.1.0))
   (mirage-time
@@ -75,8 +71,6 @@
    (= :version))
   (lwt
    (>= 5.6.1))
-  (lwt_ppx
-   (>= 2.1.0))
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-flow-unix
@@ -96,13 +90,9 @@
    (= :version))
   (eio
    (>= 0.8))
-  (mirage-clock-unix
-   (>= 4.2.0))
   (logs
    (>= 0.7.0))
   (tls
    (>= 0.15.4))
   (tls-eio
-   (>= 0.15.5))
-  (uri
-   (>= 4.2.0))))
+   (>= 0.15.5))))

@@ -12,7 +12,6 @@ depends: [
   "mehari" {= version}
   "ipaddr" {>= "5.3.1"}
   "lwt" {>= "5.6.1"}
-  "lwt_ppx" {>= "2.1.0"}
   "mirage-channel" {>= "4.1.0"}
   "mirage-time" {>= "3.0.0"}
   "tcpip" {>= "7.1.2"}
