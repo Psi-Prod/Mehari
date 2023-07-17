@@ -47,7 +47,7 @@ module Regex = struct
   let h2 = line (Re.str "##")
   let h3 = line (Re.str "###")
   let item = line (Re.str "* ")
-  let quote = Re.compile Re.(seq [ bol; Re.char '>'; group (rep1 any) ])
+  let quote = Re.compile Re.(seq [ bol; Re.char '>'; group (rep any) ])
 
   let link =
     Re.compile
