@@ -3,30 +3,28 @@ let book =
     val mutable entries = []
 
     method add_entry ~addr msg =
-      entries <- (Unix.time () |> Unix.gmtime, addr, msg) :: entries
+      entries <- (Ptime_clock.now (), addr, msg) :: entries
 
     method print =
       let buf = Buffer.create 4096 in
       List.iter
-        (fun (timestamp, addr, msg) ->
+        (fun (ptime, addr, msg) ->
+          let (y, m, d), ((hh, mm, ss), _) = Ptime.to_date_time ptime in
           Format.kasprintf (Buffer.add_string buf)
-            "%i-%i-%i %i:%i:%i - %a: %s\n"
-            (timestamp.Unix.tm_year + 1900)
-            (timestamp.tm_mon + 1) timestamp.tm_mday timestamp.tm_hour
-            timestamp.tm_min timestamp.tm_sec Ipaddr.pp addr
+            "%i-%i-%i %i:%i:%i - %a: %s\n" y m d hh mm ss Ipaddr.pp addr
             (Uri.pct_decode msg))
         entries;
       Buffer.contents buf
   end
 
-module Mehari_io = Mehari_lwt_unix
+module M = Mehari_lwt_unix
 open Lwt.Infix
 
 let main () =
   X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
-  Mehari_io.router
+  M.router
     [
-      Mehari_io.route "/" (fun _ ->
+      M.route "/" (fun _ ->
           Mehari.Gemtext.
             [
               heading `H1 "Guestbook";
@@ -36,14 +34,14 @@ let main () =
               heading `H2 "Entries:";
               text book#print;
             ]
-          |> Mehari_io.respond_gemtext);
-      Mehari_io.route "/submit" (fun req ->
+          |> M.respond_gemtext);
+      M.route "/submit" (fun req ->
           match Mehari.query req with
-          | None -> Mehari_io.respond Mehari.input "Enter your message"
+          | None -> M.respond Mehari.input "Enter your message"
           | Some msg ->
               book#add_entry ~addr:(Mehari.ip req) msg;
-              Mehari_io.respond Mehari.redirect_temp "/");
+              M.respond Mehari.redirect_temp "/");
     ]
-  |> Mehari_io.run_lwt ~certchains:[ cert ]
+  |> M.run_lwt ~certchains:[ cert ]
 
 let () = Lwt_main.run (main ())

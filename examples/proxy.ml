@@ -1,6 +1,7 @@
-(*
+(** To test this example, run:
+{@bash[
 echo -e "gemini://foo/" | openssl s_client -crlf -connect localhost:1965 -servername foo -ign_eof
-*)
+]} *)
 
 let router =
   Mehari_eio.virtual_hosts ~meth:`ByURL
