@@ -480,6 +480,7 @@ module Private : sig
       | MalformedUTF8
       | MissingHost
       | MissingScheme
+      | NotADomainName
       | RelativePath
       | SNIExtRequired
       | UserInfoNotAllowed
@@ -492,6 +493,7 @@ module Private : sig
       port:int ->
       addr:'a ->
       verify_url_host:bool ->
+      X509.Certificate.t list ->
       Tls.Core.epoch_data ->
       string ->
       ('a request, request_err) result

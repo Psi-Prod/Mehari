@@ -32,11 +32,12 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     port : int;
     timeout : (float * Eio.Time.clock) option;
     tls_config : Tls.Config.server;
+    certs : X509.Certificate.t list;
     verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config ~verify_url_host =
-    { addr; port; timeout; tls_config; verify_url_host }
+  let make_config ~addr ~port ~timeout ~tls_config ~certs ~verify_url_host =
+    { addr; port; timeout; tls_config; certs; verify_url_host }
 
   let src = Logs.Src.create "mehari.eio"
 
@@ -80,7 +81,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          |> Protocol.make_request
               (module Common.Addr)
               ~port:config.port ~addr:config.addr
-              ~verify_url_host:config.verify_url_host ep
+              ~verify_url_host:config.verify_url_host config.certs ep
        with
        | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
@@ -124,7 +125,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
             ()
     in
     let config =
-      make_config ~addr ~port ~timeout ~tls_config ~verify_url_host
+      make_config ~addr ~port ~timeout ~tls_config
+        ~certs:(List.concat_map fst certchains)
+        ~verify_url_host
     in
     Eio.Switch.run (fun sw ->
         let socket =
