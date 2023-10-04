@@ -1,5 +1,5 @@
 module M = Mehari_lwt_unix
-open Lwt.Infix
+open Lwt.Syntax
 
 let n = ref 0
 
@@ -9,7 +9,7 @@ let () =
   Logs.set_reporter (Logs_fmt.reporter ())
 
 let main () =
-  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
+  let* certchains = Common.Lwt.load_certchains () in
   M.router
     [
       M.route "/" (fun _ ->
@@ -17,7 +17,6 @@ let main () =
           M.info (fun log -> log "Request n°: %i" !n);
           M.respond_text "This request is logged");
     ]
-  |> M.logger
-  |> M.run_lwt ~certchains:[ cert ]
+  |> M.logger |> M.run_lwt ~certchains
 
 let () = Lwt_main.run (main ())

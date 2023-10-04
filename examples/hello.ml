@@ -1,9 +1,8 @@
-open Lwt.Infix
+open Lwt.Syntax
 
 let main () =
-  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
-  >>= fun certchain ->
+  let* certchains = Common.Lwt.load_certchains () in
   (fun _ -> Mehari_lwt_unix.respond_text "Hello")
-  |> Mehari_lwt_unix.run_lwt ~certchains:[ certchain ]
+  |> Mehari_lwt_unix.run_lwt ~certchains
 
 let () = Lwt_main.run (main ())

@@ -22,6 +22,7 @@ type body
 
 module Gemtext : sig
   (** Implementation of the Gemini own native response format.
+
       Note that if a string containing line breaks ([CR] or [CRLF]) is given
       to functions {!val:heading}, {!val:list_item} and {!val:quote} only the
       first line will be formatted and the others treated as normal text.
@@ -83,16 +84,16 @@ val ip : 'addr request -> 'addr
 (** Address of client sending the {!type:request}. *)
 
 val port : 'a request -> int
-(** Port of client sending the {!type:request}. *)
+(** Port of requested URL. *)
 
 val sni : 'a request -> string
 (** Server name indication TLS extension. *)
 
 val query : 'a request -> string option
-(** User uri query. *)
+(** User uri query, if presents. *)
 
 val client_cert : 'a request -> X509.Certificate.t list
-(** User client certificates. *)
+(** User client certificates. [[]] if client provides none. *)
 
 val param : 'a request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
@@ -350,7 +351,7 @@ else
   val set_log_lvl : Logs.level -> unit
   (** Set Mehari's logger to the given log level. *)
 
-  val logger : clock -> handler -> handler
+  val logger : clock -> middleware
   (** Logs and times requests. Time spent logging is included. *)
 
   val debug : 'a Logs.log

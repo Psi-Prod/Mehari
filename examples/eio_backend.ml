@@ -16,7 +16,4 @@ let main ~net ~cwd =
   in
   Mehari_eio.run net ~certchains (router cwd)
 
-let () =
-  Eio_main.run @@ fun env ->
-  Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env @@ fun () ->
-  main ~net:env#net ~cwd:env#cwd
+let () = Common.Eio.run_server main

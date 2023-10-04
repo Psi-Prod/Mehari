@@ -18,10 +18,10 @@ let book =
   end
 
 module M = Mehari_lwt_unix
-open Lwt.Infix
+open Lwt.Syntax
 
 let main () =
-  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
+  let* certchains = Common.Lwt.load_certchains () in
   M.router
     [
       M.route "/" (fun _ ->
@@ -42,6 +42,6 @@ let main () =
               book#add_entry ~addr:(Mehari.ip req) msg;
               M.respond Mehari.redirect_temp "/");
     ]
-  |> M.run_lwt ~certchains:[ cert ]
+  |> M.run_lwt ~certchains
 
 let () = Lwt_main.run (main ())
