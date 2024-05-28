@@ -89,10 +89,9 @@ let read_chunks path =
 
 let not_found = Mehari_io.respond Mehari.not_found ""
 
-let respond_document ?mime path =
+let respond_document ?(mime = Mehari.app_octet_stream) path =
   let* exists = Lwt_unix.file_exists path in
   if exists then
-    let mime = Option.value mime ~default:Mehari.no_mime in
     let* chunks = read_chunks path in
     let* cs = chunks () in
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime

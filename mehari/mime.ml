@@ -1,16 +1,16 @@
 type t = { mime : string; charset : string option; lang : string list }
 
-let make_mime ?charset mime =
-  {
-    mime;
-    charset =
-      (match charset with
-      | None when String.starts_with ~prefix:"text/" mime -> Some "utf-8"
-      | _ -> None);
-    lang = [];
-  }
-
-let no_mime = make_mime ""
+let make_mime ?charset = function
+  | "" -> raise (Invalid_argument "Mehari.make_mime")
+  | mime ->
+      {
+        mime;
+        charset =
+          (match charset with
+          | None when String.starts_with ~prefix:"text/" mime -> Some "utf-8"
+          | _ -> None);
+        lang = [];
+      }
 
 let gemini ?charset ?(lang = []) () =
   { (make_mime ?charset "text/gemini") with lang }

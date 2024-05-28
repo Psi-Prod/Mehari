@@ -1,6 +1,6 @@
 let not_found = Mehari.(response not_found "")
 
-let response_document ?mime path =
+let response_document ?(mime = Mehari.app_octet_stream) path =
   try
     let chunk_size = 16384 in
     let body =
@@ -24,7 +24,7 @@ let response_document ?mime path =
               in
               loop ()))
     in
-    Option.value mime ~default:Mehari.no_mime |> Mehari.response_body body
+    Mehari.response_body body mime
   with Eio.Io _ -> not_found
 
 include

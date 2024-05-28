@@ -50,11 +50,10 @@ module Make (Dir : DIR) (Addr : Types.T) :
     let fname = Request.param req 1 in
     let mime =
       match Mime.from_filename fname with
-      | None when Filename.check_suffix fname ".gmi" -> Mime.gemini ()
-      | None -> Mime.no_mime
-      | Some m -> m
+      | None when Filename.check_suffix fname ".gmi" -> Some (Mime.gemini ())
+      | (None | Some _) as m -> m
     in
-    Dir.response_document ~mime path
+    Dir.response_document ?mime path
 
   let parent_path =
     Re.(compile (seq [ Re.group (seq [ rep1 any; char '/' ]); rep1 any ]))
