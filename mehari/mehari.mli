@@ -46,6 +46,8 @@ let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
 
   and preformat = { alt : string option; text : string }
 
+  val line_to_string : line -> string
+
   val of_string : string -> t
   val to_string : t -> string
 
@@ -61,6 +63,8 @@ let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
   val heading : [ `H1 | `H2 | `H3 ] -> string -> line
   val list_item : string -> line
   val quote : string -> line
+
+  val pp_line : Format.formatter -> line -> unit
   val pp : Format.formatter -> t -> unit
 end
 
