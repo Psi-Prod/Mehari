@@ -43,7 +43,8 @@ module Make (Clock : Types.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
     let n = AddrMap.find_opt addr t.history |> Option.fold ~none:1 ~some:succ in
     t.history <- AddrMap.add addr n t.history;
     if n > t.requests then
-      Response.(response Status.slow_down time_left) |> IO.return |> Option.some
+      Response.(response Status.slow_down "Rate limited")
+      |> IO.return |> Option.some
     else None
 
   let make clock ?(period = 1) requests duration =
