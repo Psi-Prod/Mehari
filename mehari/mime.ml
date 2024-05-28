@@ -21,9 +21,10 @@ let plaintext = text "plain"
 let with_charset t c = { t with charset = Some c }
 
 let from_filename ?charset fname =
-  match Magic_mime.lookup ~default:"" fname with
-  | "" -> None
-  | mime -> make_mime mime ~charset |> Option.some
+  match Conan_bindings.Extensions.(Map.find_opt fname map) with
+  | None -> None
+  | Some [] -> assert false
+  | Some (m :: _) -> make_mime m ~charset |> Option.some
 
 let from_content ?charset ~tree content =
   match Conan_string.run ~database:(Conan.Process.database ~tree) content with
