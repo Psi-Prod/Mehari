@@ -32,13 +32,12 @@ include
     (struct
       module IO = Common.Direct
 
-      type path = Eio.Fs.dir Eio.Path.t
+      type path = [ `Dir ] Eio.Path.t
 
       let kind path =
-        Eio.Path.with_open_in path (fun flow ->
-            match flow#stat.kind with
-            | (`Regular_file | `Directory) as f -> f
-            | _ -> `Other)
+        match (Eio.Path.stat ~follow:true path).kind with
+        | (`Regular_file | `Directory) as f -> f
+        | _ -> `Other
 
       let exists _ = true
       let read = Eio.Path.read_dir
