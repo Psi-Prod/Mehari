@@ -21,7 +21,8 @@ type body
 (** {1:gemtext Gemtext} *)
 
 module Gemtext : sig
-  (** Implementation of the Gemini own native response format.
+  (** Implementation of {{:https://geminiprotocol.net/docs/gemtext-specification.gmi}Gemtext},
+      the Gemini own native response format.
 
       Note that if a string containing line breaks ([CR] or [CRLF]) is given
       to functions {!val:heading}, {!val:list_item} and {!val:quote} only the
@@ -132,9 +133,8 @@ val response_raw :
 (** {1:status Status} *)
 
 (** A wrapper around Gemini status codes.
-    @see < https://gemini.circumlunar.space/docs/specification.gmi >
-      Section "Appendix 1. Full two digit status codes" for a description of
-      the meaning of each code. *)
+    @see < https://geminiprotocol.net/docs/protocol-specification.gmi >
+      Section "Status codes" for a description of the meaning of each code. *)
 
 val input : string status
 val sensitive_input : string status
