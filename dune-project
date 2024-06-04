@@ -1,6 +1,6 @@
 (lang dune 3.0)
 
-(version 0.3)
+(version 0.4)
 
 (name mehari)
 
