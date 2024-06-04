@@ -29,7 +29,7 @@ Mehari provides several packages:
     CGI.
 
   - {{:../mehari-eio/index.html} Mehari_eio} uses the
-    {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
+    {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0+ library.
 
 {2 Implementation choice}
 

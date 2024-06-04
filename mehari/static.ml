@@ -42,9 +42,9 @@ module Make (Dir : DIR) (Addr : Types.T) :
   let ( let* ) = Dir.IO.bind
 
   let pp_kind fmt = function
-    | `Regular_file -> Format.fprintf fmt "\u{1F4C4}"
-    | `Directory -> Format.fprintf fmt "\u{1F4C1}"
-    | `Other -> Format.fprintf fmt "\u{2753}"
+    | `Regular_file -> Format.pp_print_string fmt "\u{1F4C4}"
+    | `Directory -> Format.pp_print_string fmt "\u{1F4C1}"
+    | `Other -> Format.pp_print_string fmt "\u{2753}"
 
   let default_handler path req =
     let fname = Request.param req 1 in

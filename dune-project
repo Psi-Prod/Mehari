@@ -1,6 +1,6 @@
 (lang dune 3.0)
 
-(version 0.3)
+(version 0.4)
 
 (name mehari)
 
@@ -87,7 +87,7 @@
   (mehari
    (= :version))
   (eio
-   (>= 0.8))
+   (>= 1.0))
   (logs
    (>= 0.7.0))
   (tls
