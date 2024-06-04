@@ -2,7 +2,7 @@
 
 Mehari is a cross-platform library for building Gemini servers. It fully
 implements the
-{{:https://gemini.circumlunar.space/docs/specification.gmi} Gemini protocol specification}.
+{{:https://geminiprotocol.net/docs/protocol-specification.gmi} Gemini protocol specification}.
 It offers a simple and clean interface to create complete Gemini web apps.
 It takes heavy inspiration from {{:https://github.com/aantron/dream} Dream}, a
 tidy, feature-complete Web framework.
@@ -29,7 +29,7 @@ Mehari provides several packages:
     CGI.
 
   - {{:../mehari-eio/index.html} Mehari_eio} uses the
-    {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0 library.
+    {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0+ library.
 
 {2 Implementation choice}
 
@@ -159,7 +159,7 @@ Some common MIME type are predefined. See {!Mehari.section-"mime"} section.
 
 The [text/gemini] MIME type allows an additional parameter [lang] to specify
 the languages used in the document according to the
-{{:https://gemini.circumlunar.space/docs/specification.gmi} Gemini specification}:
+{{:https://geminiprotocol.net/docs/protocol-specification.gmi} Gemini specification}:
 
 {@ocaml[
 let french_ascii_gemini = Mehari.gemini ~charset:"ascii" ~lang:["fr"] ()
@@ -243,7 +243,7 @@ let router =
 This road is limited to 3 accesses every 5 minutes:
 
 {@ocaml[
-let limit = Mehari_eio.make_rate_limit 5 `Minute
+let limit = Mehari_eio.make_rate_limit ~period:3 5 `Minute
 
 let limited_route = Mehari_eio.route "/stats" ~rate_limit:limit (fun _ -> ...)
 ]}

@@ -38,11 +38,12 @@ module Make
     port : int;
     timeout : float option;
     tls_config : Tls.Config.server;
+    certs : X509.Certificate.t list;
     verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config ~verify_url_host =
-    { addr; port; timeout; tls_config; verify_url_host }
+  let make_config ~addr ~port ~timeout ~tls_config ~certs ~verify_url_host =
+    { addr; port; timeout; tls_config; certs; verify_url_host }
 
   let src = Logs.Src.create "mehari.mirage"
 
@@ -106,7 +107,8 @@ module Make
                 Protocol.make_request
                   (module Ipaddr)
                   ~port:config.port ~addr:config.addr
-                  ~verify_url_host:config.verify_url_host ep client_req
+                  ~verify_url_host:config.verify_url_host config.certs ep
+                  client_req
               with
               | Ok req -> callback req
               | Error err -> Protocol.to_response err |> Lwt.return
@@ -152,7 +154,9 @@ module Make
             ()
     in
     let config =
-      make_config ~addr ~port ~timeout ~tls_config ~verify_url_host
+      make_config ~addr ~port ~timeout ~tls_config
+        ~certs:(List.concat_map fst certchains)
+        ~verify_url_host
     in
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->

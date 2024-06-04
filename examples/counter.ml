@@ -1,5 +1,5 @@
 module Mehari_io = Mehari_lwt_unix
-open Lwt.Infix
+open Lwt.Syntax
 
 let counter = ref 0
 
@@ -8,7 +8,7 @@ let incr_count handler req =
   handler req
 
 let main () =
-  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
+  let* certchains = Common.Lwt.load_certchains () in
   Mehari_io.router
     [
       Mehari_io.route "/" (fun _ ->
@@ -21,6 +21,6 @@ let main () =
       Mehari_io.route "/incr" ~mw:incr_count (fun _ ->
           Mehari_io.respond Mehari.redirect_temp "/");
     ]
-  |> Mehari_io.run_lwt ~certchains:[ cert ]
+  |> Mehari_io.run_lwt ~certchains
 
 let () = Lwt_main.run (main ())

@@ -6,6 +6,7 @@ type request_err =
   | MalformedUTF8
   | MissingHost
   | MissingScheme
+  | NotADomainName
   | RelativePath
   | SNIExtRequired
   | UserInfoNotAllowed
@@ -47,19 +48,22 @@ let check_user_info uri =
 let check_path uri =
   if Uri.path uri |> Filename.is_relative then Error RelativePath else Ok uri
 
-let check_host uri epoch =
+let check_host uri certs =
   match Uri.host uri with
   | None -> Error MissingHost
   | Some h -> (
-      let hostnames =
-        List.map X509.Certificate.hostnames epoch.Tls.Core.own_certificate
-        |> List.fold_left X509.Host.Set.union X509.Host.Set.empty
-        |> X509.Host.Set.to_seq
-        |> Seq.map (fun (_, d) -> Domain_name.to_string d)
-      in
-      match Seq.find (String.equal h) hostnames with
-      | None -> Error WrongHost
-      | Some _ -> Ok ())
+      match Domain_name.of_string h with
+      | Ok dn -> (
+          match Domain_name.host dn with
+          | Ok h ->
+              let rec check = function
+                | [] -> Error WrongHost
+                | c :: _ when X509.Certificate.supports_hostname c h -> Ok ()
+                | _ :: cs -> check cs
+              in
+              check certs
+          | Error _ -> Error NotADomainName)
+      | Error _ -> Error NotADomainName)
 
 let check_port uri port =
   match Uri.port uri with
@@ -71,7 +75,7 @@ let ( let+ ) x f = match x with Ok x -> f x | Error _ as err -> err
 
 (* Perform some static check on client request *)
 let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
-    ~(addr : a) ~verify_url_host epoch input =
+    ~(addr : a) ~verify_url_host certs epoch input =
   let+ sni = check_sni epoch in
   let+ () = check_utf8_encoding input in
   let+ () = check_length input in
@@ -80,7 +84,7 @@ let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
   let+ () = check_scheme uri in
   let+ () = check_user_info uri in
   let+ uri = check_path uri in
-  let+ () = if verify_url_host then check_host uri epoch else Ok () in
+  let+ () = if verify_url_host then check_host uri certs else Ok () in
   let+ () = check_port uri port in
   Request.make
     (module Addr)
@@ -98,6 +102,7 @@ let pp_err fmt =
   | MalformedUTF8 -> fmt "URL contains non-UTF8 byte sequence"
   | MissingScheme -> fmt "URL has no scheme"
   | MissingHost -> fmt "The host URL subcomponent is required"
+  | NotADomainName -> fmt "The host URL component is not a valid domain name"
   | RelativePath -> fmt "URL path is relative"
   | SNIExtRequired -> fmt "SNI extension to TLS is required"
   | UserInfoNotAllowed ->
@@ -111,8 +116,8 @@ let to_response err =
   let status =
     match err with
     | AboveMaxSize | BeginWithBOM | EmptyURL | InvalidURL | MalformedUTF8
-    | MissingHost | MissingScheme | RelativePath | SNIExtRequired
-    | UserInfoNotAllowed ->
+    | MissingHost | MissingScheme | NotADomainName | RelativePath
+    | SNIExtRequired | UserInfoNotAllowed ->
         Response.Status.bad_request
     | WrongHost | WrongPort | WrongScheme ->
         Response.Status.proxy_request_refused

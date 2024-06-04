@@ -18,24 +18,26 @@ let heading h text = Heading (h, text)
 let list_item text = ListItem text
 let quote text = Quote text
 
-let pp_line ppf =
-  let open Format in
-  function
-  | Text t -> pp_print_string ppf t
+let line_to_string = function
+  | Text t -> t
   | Link { url; name } ->
-      fprintf ppf "=> %s%a" url (pp_print_option (Fun.flip fprintf " %s")) name
+      Printf.sprintf "=> %s%s" url
+        (Option.fold ~none:"" ~some:(Printf.sprintf " %s") name)
   | Preformat { alt; text } ->
-      fprintf ppf "```%a@\n%s@\n```" (pp_print_option pp_print_string) alt text
-  | Heading (`H1, t) -> fprintf ppf "# %s" t
-  | Heading (`H2, t) -> fprintf ppf "## %s" t
-  | Heading (`H3, t) -> fprintf ppf "### %s" t
-  | ListItem t -> fprintf ppf "* %s" t
-  | Quote t -> fprintf ppf ">%s" t
+      Printf.sprintf "```%s\n%s\n```" (Option.value ~default:"" alt) text
+  | Heading (`H1, t) -> Printf.sprintf "# %s" t
+  | Heading (`H2, t) -> Printf.sprintf "## %s" t
+  | Heading (`H3, t) -> Printf.sprintf "### %s" t
+  | ListItem t -> Printf.sprintf "* %s" t
+  | Quote t -> Printf.sprintf ">%s" t
 
-let pp ppf t =
-  Format.pp_print_list ~pp_sep:Format.pp_force_newline pp_line ppf t
+let to_string t =
+  let buf = Buffer.create 1024 in
+  List.iter (fun line -> Buffer.add_string buf (line_to_string line)) t;
+  Buffer.contents buf
 
-let to_string t = Format.asprintf "%a" pp t
+let pp_line ppf line = Format.pp_print_string ppf (line_to_string line)
+let pp ppf t = Format.pp_print_string ppf (to_string t)
 
 module Regex = struct
   let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
@@ -47,7 +49,7 @@ module Regex = struct
   let h2 = line (Re.str "##")
   let h3 = line (Re.str "###")
   let item = line (Re.str "* ")
-  let quote = Re.compile Re.(seq [ bol; Re.char '>'; group (rep1 any) ])
+  let quote = Re.compile Re.(seq [ bol; Re.char '>'; group (rep any) ])
 
   let link =
     Re.compile

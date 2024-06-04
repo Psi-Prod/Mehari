@@ -13,7 +13,6 @@ type 'a status = int * 'a typ
 
 and _ typ =
   | Success : body -> Mime.t typ
-  | SlowDown : int typ
   | Meta : string typ
 
 and body = String of string | Gemtext of Gemtext.t | Stream of stream
@@ -70,7 +69,6 @@ let to_response (type a) ((code, status) : a status) (m : a) =
   let meta, body =
     match status with
     | Success body -> (Mime.to_string m, Some body)
-    | SlowDown -> (Int.to_string m, None)
     | Meta -> (m, None)
   in
   { status = Some code; kind = validate code meta body }
@@ -85,7 +83,7 @@ module Status = struct
   let server_unavailable = (41, Meta)
   let cgi_error = (42, Meta)
   let proxy_error = (43, Meta)
-  let slow_down = (44, SlowDown)
+  let slow_down = (44, Meta)
   let perm_failure = (50, Meta)
   let not_found = (51, Meta)
   let gone = (52, Meta)

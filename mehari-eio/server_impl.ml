@@ -7,11 +7,11 @@ module type S = sig
     ?port:int ->
     ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
-    ?timeout:float * Eio.Time.clock ->
+    ?timeout:float * [ `Clock of float ] Eio.Time.clock ->
     ?backlog:int ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
     certchains:Tls.Config.certchain list ->
-    Eio.Net.t ->
+    _ Eio.Net.t ->
     handler ->
     unit
 end
@@ -30,13 +30,14 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   type config = {
     addr : Net.Ipaddr.v4v6;
     port : int;
-    timeout : (float * Eio.Time.clock) option;
+    timeout : (float * [ `Clock of float ] Eio.Time.clock) option;
     tls_config : Tls.Config.server;
+    certs : X509.Certificate.t list;
     verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config ~verify_url_host =
-    { addr; port; timeout; tls_config; verify_url_host }
+  let make_config ~addr ~port ~timeout ~tls_config ~certs ~verify_url_host =
+    { addr; port; timeout; tls_config; certs; verify_url_host }
 
   let src = Logs.Src.create "mehari.eio"
 
@@ -80,7 +81,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          |> Protocol.make_request
               (module Common.Addr)
               ~port:config.port ~addr:config.addr
-              ~verify_url_host:config.verify_url_host ep
+              ~verify_url_host:config.verify_url_host config.certs ep
        with
        | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
@@ -91,7 +92,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | Failure _ -> Protocol.to_response InvalidURL |> write_resp flow
     | Eio.Time.Timeout ->
         Log.warn (fun log -> log "Timeout while reading client request"));
-    flow#shutdown `Send
+    Eio.Flow.shutdown flow `Send
 
   let handler ~config callback flow _ =
     let server = Tls_eio.server_of_flow config.tls_config flow in
@@ -124,7 +125,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
             ()
     in
     let config =
-      make_config ~addr ~port ~timeout ~tls_config ~verify_url_host
+      make_config ~addr ~port ~timeout ~tls_config
+        ~certs:(List.concat_map fst certchains)
+        ~verify_url_host
     in
     Eio.Switch.run (fun sw ->
         let socket =

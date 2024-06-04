@@ -10,14 +10,14 @@ include
   Mehari.NET
     with module IO := Direct
      and type addr = Addr.t
-     and type clock := Eio.Time.clock
+     and type clock := [ `Clock of float ] Eio.Time.clock
 
 (** @closed *)
 include
   Mehari.FS
     with module IO := Direct
      and type addr = Addr.t
-     and type dir_path := Eio.Fs.dir Eio.Path.t
+     and type dir_path := [ `Dir ] Eio.Path.t
 
 (** {1 Entry point} *)
 
@@ -25,11 +25,11 @@ val run :
   ?port:int ->
   ?verify_url_host:bool ->
   ?config:Tls.Config.server ->
-  ?timeout:float * Eio.Time.clock ->
+  ?timeout:float * [ `Clock of float ] Eio.Time.clock ->
   ?backlog:int ->
   ?addr:addr ->
   certchains:Tls.Config.certchain list ->
-  Eio.Net.t ->
+  _ Eio.Net.t ->
   handler ->
   unit
 (** [run ?port ?verify_url_host ?config ?backlog ?addr certchains net handler] runs the server

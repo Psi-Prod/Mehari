@@ -32,7 +32,6 @@ let page = Response.page
 let make_mime = Mime.make_mime
 let from_filename = Mime.from_filename
 let from_content = Mime.from_content
-let no_mime = Mime.no_mime
 let gemini = Mime.gemini
 let app_octet_stream = Mime.app_octet_stream
 let plaintext = Mime.plaintext
