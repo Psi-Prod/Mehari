@@ -24,20 +24,17 @@ let line_to_string = function
       Printf.sprintf "=> %s%s" url
         (Option.fold ~none:"" ~some:(Printf.sprintf " %s") name)
   | Preformat { alt; text } ->
-      Printf.sprintf "```%s\n%s\n```" (Option.value ~default:"" alt) text
+      let alt = Option.value ~default:"" alt in
+      Printf.sprintf "```%s\n%s\n```" alt text
   | Heading (`H1, t) -> Printf.sprintf "# %s" t
   | Heading (`H2, t) -> Printf.sprintf "## %s" t
   | Heading (`H3, t) -> Printf.sprintf "### %s" t
   | ListItem t -> Printf.sprintf "* %s" t
   | Quote t -> Printf.sprintf ">%s" t
 
-let to_string t =
-  let buf = Buffer.create 1024 in
-  List.iter (fun line -> Buffer.add_string buf (line_to_string line)) t;
-  Buffer.contents buf
-
-let pp_line ppf line = Format.pp_print_string ppf (line_to_string line)
-let pp ppf t = Format.pp_print_string ppf (to_string t)
+let to_string lines = lines |> List.map line_to_string |> String.concat "\n"
+let pp_line ppf line = Format.pp_print_string ppf @@ line_to_string line
+let pp ppf lines = Format.pp_print_string ppf @@ to_string lines
 
 module Regex = struct
   let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
