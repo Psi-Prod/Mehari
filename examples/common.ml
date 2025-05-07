@@ -16,6 +16,6 @@ module Eio = struct
 
   let run_server serve =
     Eio_main.run @@ fun env ->
-    Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env
-    @@ fun () -> serve ~net:env#net ~cwd:env#cwd
+    Mirage_crypto_rng_unix.use_default ();
+    serve ~net:env#net ~cwd:env#cwd
 end

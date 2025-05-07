@@ -6,7 +6,6 @@ let router =
           | [] -> Mehari.(response client_cert_req) "Certificate plz"
           | hd :: _ ->
               X509.Certificate.encode_pem hd
-              |> Cstruct.to_string
               |> Printf.sprintf "Client certificate ~nyoron\n%s"
               |> Mehari.response_text);
     ]

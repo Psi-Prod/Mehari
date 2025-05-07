@@ -142,7 +142,7 @@ module Make
       stack callback =
     let certificates = Private.Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
-      Stack.ip stack |> Stack.IP.get_ip
+      Stack.ip stack |> (Stack.IP.get_ip [@warning "-A"])
       |> Fun.flip List.nth 0 (* Should not be empty. *)
     in
     let tls_config =
@@ -152,6 +152,7 @@ module Make
           Tls.Config.server ~certificates
             ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
             ()
+          |> Result.get_ok
     in
     let config =
       make_config ~addr ~port ~timeout ~tls_config

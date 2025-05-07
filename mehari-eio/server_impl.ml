@@ -122,7 +122,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | None ->
           Tls.Config.server ~certificates
             ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-            ()
+            () |> Result.get_ok
     in
     let config =
       make_config ~addr ~port ~timeout ~tls_config
