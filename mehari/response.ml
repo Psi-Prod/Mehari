@@ -10,11 +10,7 @@ and stream = { body : (string -> unit) -> unit; flush : bool }
 type view = kind
 
 type 'a status = int * 'a typ
-
-and _ typ =
-  | Success : body -> Mime.t typ
-  | Meta : string typ
-
+and _ typ = Success : body -> Mime.t typ | Meta : string typ
 and body = String of string | Gemtext of Gemtext.t | Stream of stream
 
 let view_of_resp r = r.kind

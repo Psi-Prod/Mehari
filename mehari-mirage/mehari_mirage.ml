@@ -18,11 +18,7 @@ end
 
 module type S = sig
   module IO = Lwt
-
-  include
-    Mehari.NET
-      with module IO := IO
-       and type clock := unit
+  include Mehari.NET with module IO := IO and type clock := unit
 
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter

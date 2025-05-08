@@ -36,7 +36,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     verify_url_host : bool;
   }
 
-  let make_config ~(addr : Net.Ipaddr.v4v6) ~port ~timeout ~tls_config ~certs ~verify_url_host =
+  let make_config ~(addr : Net.Ipaddr.v4v6) ~port ~timeout ~tls_config ~certs
+      ~verify_url_host =
     let addr = Ipaddr.of_octets_exn (addr :> string) in
     { addr; port; timeout; tls_config; certs; verify_url_host }
 
@@ -79,8 +80,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
        in
        match
          with_timeout (fun () -> client_req reader)
-         |> Protocol.make_request
-              ~port:config.port ~addr:config.addr
+         |> Protocol.make_request ~port:config.port ~addr:config.addr
               ~verify_url_host:config.verify_url_host config.certs ep
        with
        | Ok req -> callback req |> write_resp flow
@@ -111,7 +111,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | exn -> raise exn
 
   let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
-      ?(backlog = 4096) ?(addr = (Net.Ipaddr.V4.loopback ) ) ~certchains net
+      ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
       callback =
     let certificates =
       Mehari.Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"

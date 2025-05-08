@@ -97,30 +97,27 @@ let respond_document ?(mime = Mehari.app_octet_stream) path =
     Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
   else not_found
 
-include
-  Mehari.Private.Static.Make
-    (struct
-      module IO = Lwt
+include Mehari.Private.Static.Make (struct
+  module IO = Lwt
 
-      type path = string
+  type path = string
 
-      let kind path =
-        Lwt.catch
-          (fun () ->
-            Lwt_unix.lstat path >|= function
-            | { st_kind = S_REG; _ } -> `Regular_file
-            | { st_kind = S_DIR; _ } -> `Directory
-            | _ -> `Other)
-          (function Unix.Unix_error _ -> Lwt.return `Other | exn -> raise exn)
+  let kind path =
+    Lwt.catch
+      (fun () ->
+        Lwt_unix.lstat path >|= function
+        | { st_kind = S_REG; _ } -> `Regular_file
+        | { st_kind = S_DIR; _ } -> `Directory
+        | _ -> `Other)
+      (function Unix.Unix_error _ -> Lwt.return `Other | exn -> raise exn)
 
-      let exists = Lwt_unix.file_exists
-      let read path = Lwt_unix.files_of_directory path |> Lwt_stream.to_list
-      let concat = Filename.concat
-      let response_document = respond_document
+  let exists = Lwt_unix.file_exists
+  let read path = Lwt_unix.files_of_directory path |> Lwt_stream.to_list
+  let concat = Filename.concat
+  let response_document = respond_document
 
-      let pp_io_err fmt = function
-        | Unix.Unix_error (err, fun_name, _) ->
-            Format.fprintf fmt "Unix_error %S: %s" fun_name
-              (Unix.error_message err)
-        | exn -> raise exn
-    end)
+  let pp_io_err fmt = function
+    | Unix.Unix_error (err, fun_name, _) ->
+        Format.fprintf fmt "Unix_error %S: %s" fun_name (Unix.error_message err)
+    | exn -> raise exn
+end)

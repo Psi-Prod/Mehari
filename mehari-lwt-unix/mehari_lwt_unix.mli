@@ -7,10 +7,7 @@ include Mehari_mirage.S
 (** @closed *)
 
 (** @closed *)
-include
-  Mehari.FS
-    with module IO := IO
-     and type dir_path := string
+include Mehari.FS with module IO := IO and type dir_path := string
 
 (** {1:cgi CGI} *)
 

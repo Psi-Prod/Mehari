@@ -18,8 +18,7 @@ module Make
       include Types.IO
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-    end) : S with module IO = IO and type clock = Clock.t =
-struct
+    end) : S with module IO = IO and type clock = Clock.t = struct
   module IO = IO
 
   type handler = Handler.Make(IO).t

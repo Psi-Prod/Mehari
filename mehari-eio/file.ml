@@ -27,21 +27,19 @@ let response_document ?(mime = Mehari.app_octet_stream) path =
     Mehari.response_body body mime
   with Eio.Io _ -> not_found
 
-include
-  Mehari.Private.Static.Make
-    (struct
-      module IO = Common.Direct
+include Mehari.Private.Static.Make (struct
+  module IO = Common.Direct
 
-      type path = [ `Dir ] Eio.Path.t
+  type path = [ `Dir ] Eio.Path.t
 
-      let kind path =
-        match (Eio.Path.stat ~follow:true path).kind with
-        | (`Regular_file | `Directory) as f -> f
-        | _ -> `Other
+  let kind path =
+    match (Eio.Path.stat ~follow:true path).kind with
+    | (`Regular_file | `Directory) as f -> f
+    | _ -> `Other
 
-      let exists _ = true
-      let read = Eio.Path.read_dir
-      let concat = Eio.Path.( / )
-      let response_document = response_document
-      let pp_io_err = Eio.Exn.pp
-    end)
+  let exists _ = true
+  let read = Eio.Path.read_dir
+  let concat = Eio.Path.( / )
+  let response_document = response_document
+  let pp_io_err = Eio.Exn.pp
+end)

@@ -1,7 +1,6 @@
 module Direct = Common.Direct
 module IO = Common.Direct
 
-
 module Clock = struct
   type t = [ `Clock of float ] Eio.Time.clock
 
@@ -19,13 +18,9 @@ module Clock = struct
     (Int64.to_int days, Int64.add rem_ps frac_ps)
 end
 
-module type S =
-  Mehari.NET
-    with module IO := Direct
-     and type clock = Clock.t
+module type S = Mehari.NET with module IO := Direct and type clock = Clock.t
 
-module RateLimiter =
-  Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct)
+module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct)
 
 module Logger =
   Mehari.Private.Logger_impl.Make

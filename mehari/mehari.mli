@@ -1,5 +1,5 @@
-(** This module provides the core abstraction, it does not depend on any platform
-code, and does not interact with the environment. *)
+(** This module provides the core abstraction, it does not depend on any
+    platform code, and does not interact with the environment. *)
 
 (** {1 Types} *)
 
@@ -21,18 +21,21 @@ type body
 (** {1:gemtext Gemtext} *)
 
 module Gemtext : sig
-  (** Implementation of {{:https://geminiprotocol.net/docs/gemtext-specification.gmi}Gemtext},
-      the Gemini own native response format.
+  (** Implementation of
+      {{:https://geminiprotocol.net/docs/gemtext-specification.gmi}Gemtext}, the
+      Gemini own native response format.
 
-      Note that if a string containing line breaks ([CR] or [CRLF]) is given
-      to functions {!val:heading}, {!val:list_item} and {!val:quote} only the
-      first line will be formatted and the others treated as normal text.
-      To avoid this behavior, see {!val:Mehari.paragraph}.
+      Note that if a string containing line breaks ([CR] or [CRLF]) is given to
+      functions {!val:heading}, {!val:list_item} and {!val:quote} only the first
+      line will be formatted and the others treated as normal text. To avoid
+      this behavior, see {!val:Mehari.paragraph}.
 
-      {@ocaml[open Mehari.Gemtext
+      {@ocaml[
+        open Mehari.Gemtext
 
-let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
-]} *)
+        let () =
+          assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
+      ]} *)
 
   type t = line list
 
@@ -47,7 +50,6 @@ let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
   and preformat = { alt : string option; text : string }
 
   val line_to_string : line -> string
-
   val of_string : string -> t
   val to_string : t -> string
 
@@ -63,7 +65,6 @@ let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
   val heading : [ `H1 | `H2 | `H3 ] -> string -> line
   val list_item : string -> line
   val quote : string -> line
-
   val pp_line : Format.formatter -> line -> unit
   val pp : Format.formatter -> t -> unit
 end
@@ -72,10 +73,14 @@ val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
 (** [paragraph to_gemtext str] is a convenient function to transform a string
     containing line breaks ([CR] or [CRLF]) into a Gemtext document.
 
-    {@ocaml[open Mehari.Gemtext
+    {@ocaml[
+      open Mehari.Gemtext
 
-let () = assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
-]} *)
+      let () =
+        assert (
+          Mehari.paragraph quote "hello\nworld"
+          = [ quote "hello"; quote "world" ])
+    ]} *)
 
 (** {1:request Request} *)
 
@@ -103,8 +108,9 @@ val client_cert : request -> X509.Certificate.t list
 val param : request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
     @raise Invalid_argument if [n] is not a positive integer
-    @raise Invalid_argument if path does not contain any parameters in which
-      case the program is buggy. *)
+    @raise Invalid_argument
+      if path does not contain any parameters in which case the program is
+      buggy. *)
 
 (** {1:response Response} *)
 
@@ -131,8 +137,9 @@ val response_raw :
   [ `Body of string | `Full of int * string * string ] -> response
 (** Creates a new raw {!type:response}. Does not perform any check on validity
     i.e. length of header or beginning with a byte order mark [U+FEFF].
-      - [`Body body]: creates a {!val:response} with [body].
-      - [`Full (code, meta, body)]: creates a {!val:response} with given arguments. *)
+    - [`Body body]: creates a {!val:response} with [body].
+    - [`Full (code, meta, body)]: creates a {!val:response} with given
+      arguments. *)
 
 (** {1:status Status} *)
 
@@ -166,12 +173,12 @@ val code_of_status : 'a status -> int
 
 (** {2:note-on-data-stream-response A note on data stream response}
 
-    Mehari offers ways to keep client connections open forever and stream
-    data in real time such as {!val:seq} and {!val:stream} functions when the
-    [flush] parameter is specified. It is important to note that most Gemini
-    clients do not support streaming and should be used with caution. That's
-    why this parameter is set to [false] by default in all the functions that
-    Mehari expose. *)
+    Mehari offers ways to keep client connections open forever and stream data
+    in real time such as {!val:seq} and {!val:stream} functions when the [flush]
+    parameter is specified. It is important to note that most Gemini clients do
+    not support streaming and should be used with caution. That's why this
+    parameter is set to [false] by default in all the functions that Mehari
+    expose. *)
 
 val string : string -> body
 (** Creates a {!type:body} from given string. *)
@@ -185,11 +192,10 @@ val lines : string list -> body
 
 val page : title:string -> string -> body
 (** [page ~title content] creates a simple Gemtext {!type:body} of form:
-{@gemtext[
-  # title
-  content
-]}
-*)
+    {@gemtext[
+      # title
+      content
+    ]} *)
 
 val seq : ?flush:bool -> string Seq.t -> body
 (** Creates a {!type:body} from a string sequence. See
@@ -206,9 +212,8 @@ val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
 (** {1:mime Mime} *)
 
 val make_mime : ?charset:string -> string -> mime
-(** [make_mime ?charset mime] creates a {!type:mime} type from given
-    [charset]. Charset defaults to [utf-8] if mime type begins with
-    [text/].
+(** [make_mime ?charset mime] creates a {!type:mime} type from given [charset].
+    Charset defaults to [utf-8] if mime type begins with [text/].
 
     @raise Invalid_argument if [mime] is an empty string
 
@@ -216,11 +221,11 @@ val make_mime : ?charset:string -> string -> mime
       For a description of the "charset" parameter. *)
 
 val from_filename : ?charset:string -> string -> mime option
-(** [from_filename ?charset fname] tries to create a {!type:mime} by
-    performing a mime lookup based on file extension of [fname].
+(** [from_filename ?charset fname] tries to create a {!type:mime} by performing
+    a mime lookup based on file extension of [fname].
 
     Note that mime {!val:gemini} are not infered from files with [.gmi]
-    extension. See {{:https://github.com/Psi-Prod/Mehari/issues/36}}. *)
+    extension. See {:https://github.com/Psi-Prod/Mehari/issues/36}. *)
 
 val from_content : ?charset:string -> tree:Conan.Tree.t -> string -> mime option
 (** [from_content ?charset ~tree c] tries to create a {!type:mime} type by
@@ -266,9 +271,8 @@ module type NET = sig
   (** Rate limiter. See {!section-rate_limit}. *)
 
   type middleware = handler -> handler
-  (** Middlewares take a {!type:handler}, and run some code before or
-      after — producing a “bigger” {!type:handler}. See
-      {!section-middleware}. *)
+  (** Middlewares take a {!type:handler}, and run some code before or after —
+      producing a “bigger” {!type:handler}. See {!section-middleware}. *)
 
   type clock
   (** System clock used by rate limiter. *)
@@ -280,11 +284,8 @@ module type NET = sig
       conditionally during application startup:
 
       {@ocaml[
-if development then
-  my_middleware
-else
-  Mehari.no_middleware
-]} *)
+        if development then my_middleware else Mehari.no_middleware
+      ]} *)
 
   val pipeline : middleware list -> middleware
   (** Combines a list of middlewares into one, such that these two lines are
@@ -306,9 +307,9 @@ else
     route
   (** [route ~rate_limit ~mw ~regex path handler] forwards requests for [path]
       to [handler]. [path] can be a string literal or a regex in Perl style
-      depending of value of [regex].
-      If rate limit is in effect, [handler] is not executed and a respond with
-      {!type:Mehari.status} {!val:Mehari.slow_down} is sended. *)
+      depending of value of [regex]. If rate limit is in effect, [handler] is
+      not executed and a respond with {!type:Mehari.status}
+      {!val:Mehari.slow_down} is sended. *)
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
@@ -329,10 +330,9 @@ else
     [ `Second | `Minute | `Hour | `Day ] ->
     rate_limiter
   (** [make_rate_limit clock ~period n unit] creates a {!type:rate_limiter}
-      which limits client to [n] request per [period * unit].
-      For example,
+      which limits client to [n] request per [period * unit]. For example,
       {[
-  make_rate_limit ~period:2 5 `Hour
+        make_rate_limit ~period:2 5 `Hour
       ]}
       limits client to 5 requests every 2 hours. *)
 
@@ -342,9 +342,8 @@ else
     ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
   (** [virtual_hosts ?meth [(domain, handler); ...]] produces a {!type:handler}
       which enables virtual hosting at the TLS-layer using SNI.
-      - [meth] can be used to choose
-        which source to match the hostnames against.
-        Defaults to [`SNI]. *)
+      - [meth] can be used to choose which source to match the hostnames
+        against. Defaults to [`SNI]. *)
 
   (** {1 Logging} *)
 
@@ -371,10 +370,10 @@ module type FS = sig
 
   val response_document : ?mime:mime -> dir_path -> response IO.t
   (** Same as {!val:Mehari.response} but respond with content of given
-      [filename] and use given {!type:Mehari.mime} as mime type.
-      If [filename] is not present on filesystem, responds with
-      {!val:Mehari.not_found}. If [mime] parameter is not supplied, document is
-      served as {!val:Mehari.app_octet_stream}. *)
+      [filename] and use given {!type:Mehari.mime} as mime type. If [filename]
+      is not present on filesystem, responds with {!val:Mehari.not_found}. If
+      [mime] parameter is not supplied, document is served as
+      {!val:Mehari.app_octet_stream}. *)
 
   val static :
     ?handler:(dir_path -> handler) ->
@@ -384,26 +383,26 @@ module type FS = sig
     ?show_hidden:bool ->
     dir_path ->
     handler
-  (** [static dir] validates the path parameter (retrieved by
-  calling [Mehari.param req 1]) by checking that it is relative and does not
-  contain parent directory references. If these checks fail,
-  responds with {!val:Mehari.not_found}.
+  (** [static dir] validates the path parameter (retrieved by calling
+      [Mehari.param req 1]) by checking that it is relative and does not contain
+      parent directory references. If these checks fail, responds with
+      {!val:Mehari.not_found}.
 
-  If the checks succeed, [static] calls [handler path request],
-  where [path] is the path generated by the concatenation of directory that
-  was passed to [static] and path of request. [handler] defaults to
-  {!val:response_document}.
+      If the checks succeed, [static] calls [handler path request], where [path]
+      is the path generated by the concatenation of directory that was passed to
+      [static] and path of request. [handler] defaults to
+      {!val:response_document}.
 
-  If a directory is requested, [static] will look for a file named
-  [index] in that directory to return. Otherwise, a directory file listing
-  will be generated by calling [dir_listing [ filename; ... ] request].
-  [index] is default on [index.gmi].
+      If a directory is requested, [static] will look for a file named [index]
+      in that directory to return. Otherwise, a directory file listing will be
+      generated by calling [dir_listing [ filename; ... ] request]. [index] is
+      default on [index.gmi].
 
-  Mime type of the served ressource is guessed by checking file name.
-  Note that file names of the form [*.gmi] will be served as [text/gemini].
+      Mime type of the served ressource is guessed by checking file name. Note
+      that file names of the form [*.gmi] will be served as [text/gemini].
 
-  [show_hidden] decides whether hidden files should be listed. It defaults to
-  [false] for security reasons. *)
+      [show_hidden] decides whether hidden files should be listed. It defaults
+      to [false] for security reasons. *)
 end
 
 (**/**)
@@ -433,8 +432,7 @@ module Private : sig
   end
 
   module Cgi : sig
-      val make_env :
-        request -> fullpath:string -> path:string -> string array
+    val make_env : request -> fullpath:string -> path:string -> string array
   end
 
   module Logger_impl : sig
@@ -453,12 +451,12 @@ module Private : sig
     end
 
     module Make
-        (Clock : Types.PCLOCK) (IO : sig
+        (Clock : Types.PCLOCK)
+        (IO : sig
           include IO
 
           val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-        end) :
-      S with module IO = IO and type clock = Clock.t
+        end) : S with module IO = IO and type clock = Clock.t
   end
 
   module Protocol : sig
@@ -542,9 +540,7 @@ module Private : sig
     end
 
     module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
-      S
-        with module IO = RateLimiter.IO
-         and type rate_limiter := RateLimiter.t
+      S with module IO = RateLimiter.IO and type rate_limiter := RateLimiter.t
   end
 
   module Static : sig
@@ -577,9 +573,8 @@ module Private : sig
         handler
     end
 
-    module Make (Dir : DIR) : S
-        with module IO := Dir.IO
-         and type dir_path := Dir.path
+    module Make (Dir : DIR) :
+      S with module IO := Dir.IO and type dir_path := Dir.path
   end
 end
 
