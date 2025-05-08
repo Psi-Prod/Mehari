@@ -115,16 +115,16 @@ val response : 'a status -> 'a -> response
     @raise Invalid_argument if [meta] starts with [U+FEFF] byte order mark. *)
 
 val response_body : body -> mime -> response
-(** Same as {!val:response} but respond with given {!type:body} and
-    use given {!type:mime} as mime type. *)
+(** Creates a successful {!val:response} with given {!type:body} and use given
+    {!type:mime} as mime type. *)
 
 val response_text : string -> response
-(** Same as {!val:response} but respond with given text and use [text/plain] as
+(** Creates a successful {!val:response} with given text and use [text/plain] as
     {!type:mime} type. *)
 
 val response_gemtext :
   ?charset:string -> ?lang:string list -> Gemtext.t -> response
-(** Same as {!val:response} but respond with given {!type:Gemtext.t} and use
+(** Creates a successful {!val:response} with given {!type:Gemtext.t} and use
     [text/gemini] as {!type:mime} type. *)
 
 val response_raw :
