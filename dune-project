@@ -29,6 +29,8 @@
    (>= 0.0.5))
   (conan-database
    (>= 0.0.5))
+  (ipaddr
+   (>= 5.6.0))
   (logs
    (>= 0.7.0))
   (re
@@ -46,8 +48,6 @@
  (depends
   (mehari
    (= :version))
-  (ipaddr
-   (>= 5.3.1))
   (lwt
    (>= 5.6.1))
   (mirage-channel

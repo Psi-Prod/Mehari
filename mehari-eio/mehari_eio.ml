@@ -1,4 +1,3 @@
-module Addr = Common.Addr
 module Direct = Common.Direct
 module IO = Common.Direct
 
@@ -23,11 +22,10 @@ end
 module type S =
   Mehari.NET
     with module IO := Direct
-     and type addr = Eio.Net.Ipaddr.v4v6
      and type clock = Clock.t
 
 module RateLimiter =
-  Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct) (Addr)
+  Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct)
 
 module Logger =
   Mehari.Private.Logger_impl.Make
@@ -37,12 +35,10 @@ module Logger =
 
       let finally t f r = try f (t ()) with exn -> r exn
     end)
-    (Addr)
 
 module Router = Mehari.Private.Router_impl.Make (RateLimiter) (Logger)
 module Server = Server_impl.Make (Logger)
 
-type addr = Addr.t
 type handler = Router.handler
 type middleware = handler -> handler
 type route = Router.route

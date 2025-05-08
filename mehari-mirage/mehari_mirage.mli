@@ -12,7 +12,6 @@ module type S = sig
   include
     Mehari.NET
       with module IO := IO
-       and type addr = Ipaddr.t
        and type clock := unit
 
   (** {1 Rate limit} *)

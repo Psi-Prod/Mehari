@@ -3,8 +3,7 @@ module type S = sig
 
   type route
   type rate_limiter
-  type addr
-  type handler = addr Handler.Make(IO).t
+  type handler = Handler.Make(IO).t
   type middleware = handler -> handler
 
   val no_middleware : middleware
@@ -29,14 +28,11 @@ module type S = sig
 end
 
 module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
-  S
-    with module IO = RateLimiter.IO
-     and type rate_limiter := RateLimiter.t
-     and type addr := RateLimiter.Addr.t = struct
+  S with module IO = RateLimiter.IO and type rate_limiter := RateLimiter.t =
+struct
   module IO = RateLimiter.IO
-  module Addr = RateLimiter.Addr
 
-  type handler = Addr.t Handler.Make(IO).t
+  type handler = Handler.Make(IO).t
   type middleware = handler -> handler
 
   type route = route' list
@@ -93,7 +89,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
             match RateLimiter.check limiter req with
             | None ->
                 Logger.info (fun log ->
-                    log "'%a' is rate limited" Addr.pp (Request.ip req));
+                    log "'%a' is rate limited" Ipaddr.pp (Request.ip req));
                 handler req
             | Some resp -> resp))
 

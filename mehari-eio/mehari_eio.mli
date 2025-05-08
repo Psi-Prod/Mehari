@@ -1,6 +1,5 @@
 (** An IO module Mehari implementation based on [Eio] library. *)
 
-module Addr = Common.Addr
 module Direct = Common.Direct
 
 (** {1 Net} *)
@@ -9,14 +8,12 @@ module Direct = Common.Direct
 include
   Mehari.NET
     with module IO := Direct
-     and type addr = Addr.t
      and type clock := [ `Clock of float ] Eio.Time.clock
 
 (** @closed *)
 include
   Mehari.FS
     with module IO := Direct
-     and type addr = Addr.t
      and type dir_path := [ `Dir ] Eio.Path.t
 
 (** {1 Entry point} *)
@@ -27,7 +24,7 @@ val run :
   ?config:Tls.Config.server ->
   ?timeout:float * [ `Clock of float ] Eio.Time.clock ->
   ?backlog:int ->
-  ?addr:addr ->
+  ?addr:Eio.Net.Ipaddr.v4v6 ->
   certchains:Tls.Config.certchain list ->
   _ Eio.Net.t ->
   handler ->

@@ -45,4 +45,3 @@ include
       let response_document = response_document
       let pp_io_err = Eio.Exn.pp
     end)
-    (Common.Addr)

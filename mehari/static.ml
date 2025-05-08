@@ -14,8 +14,7 @@ end
 module type S = sig
   module IO : Types.IO
 
-  type addr
-  type handler = addr Handler.Make(IO).t
+  type handler = Handler.Make(IO).t
   type dir_path
 
   val static :
@@ -28,12 +27,9 @@ module type S = sig
     handler
 end
 
-module Make (Dir : DIR) (Addr : Types.T) :
-  S
-    with module IO := Dir.IO
-     and type addr := Addr.t
-     and type dir_path := Dir.path = struct
-  type handler = Addr.t Handler.Make(Dir.IO).t
+module Make (Dir : DIR) :
+  S with module IO := Dir.IO and type dir_path := Dir.path = struct
+  type handler = Handler.Make(Dir.IO).t
 
   let src = Logs.Src.create "mehari.static"
 
@@ -105,9 +101,7 @@ module Make (Dir : DIR) (Addr : Types.T) :
   let reference_parent path =
     String.fold_left
       (fun (acc, dot) -> function
-        | '.' when dot -> (true, dot)
-        | '.' -> (acc, true)
-        | _ -> (acc, dot))
+        | '.' when dot -> (true, dot) | '.' -> (acc, true) | _ -> (acc, dot))
       (false, false) path
     |> fst
 

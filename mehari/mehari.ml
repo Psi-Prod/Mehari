@@ -1,10 +1,15 @@
-type 'addr request = 'addr Request.t
+type request = Request.t
 type response = Response.t
 type 'a status = 'a Response.status
 type mime = Mime.t
 type body = Response.body
 
 module Gemtext = Gemtext
+
+let _ =
+  let open Path in
+  let route = ~/"echo" /: string in
+  Path.sscanf route "uri" (fun text -> text)
 
 let paragraph = Gemtext.paragraph
 let uri = Request.uri
@@ -43,8 +48,7 @@ module type NET = sig
 
   type route
   type rate_limiter
-  type addr
-  type handler = addr Request.t -> Response.t IO.t
+  type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
   type clock
 
@@ -86,8 +90,7 @@ end
 module type FS = sig
   module IO : Types.IO
 
-  type addr
-  type handler = addr Handler.Make(IO).t
+  type handler = Handler.Make(IO).t
   type dir_path
 
   val response_document : ?mime:mime -> dir_path -> response IO.t
@@ -117,7 +120,7 @@ module Private = struct
       | _ -> invalid_arg exn_msg
   end
 
-  module CGI = Cgi
+  module Cgi = Cgi
   module Handler = Handler
   module Logger_impl = Logger_impl
   module Protocol = Protocol

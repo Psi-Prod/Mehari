@@ -1,8 +1,7 @@
 module type S = sig
   module IO : Types.IO
 
-  type addr
-  type handler = addr Handler.Make(IO).t
+  type handler = Handler.Make(IO).t
   type clock
 
   val set_level : Logs.level -> unit
@@ -14,17 +13,16 @@ module type S = sig
 end
 
 module Make
-    (Clock : Types.PCLOCK) (IO : sig
+    (Clock : Types.PCLOCK)
+    (IO : sig
       include Types.IO
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-    end)
-    (Addr : Types.ADDR) :
-  S with module IO = IO and type addr = Addr.t and type clock = Clock.t = struct
+    end) : S with module IO = IO and type clock = Clock.t =
+struct
   module IO = IO
 
-  type addr = Addr.t
-  type handler = addr Handler.Make(IO).t
+  type handler = Handler.Make(IO).t
   type clock = Clock.t
 
   let src = Logs.Src.create "mehari.log"
@@ -51,7 +49,7 @@ module Make
         Log.info (fun log ->
             log "Serve '%s' %a"
               (Request.uri req |> Uri.path_and_query)
-              Addr.pp (Request.ip req));
+              Ipaddr.pp (Request.ip req));
         (match resp.Response.status with
         | None -> ()
         | Some code ->

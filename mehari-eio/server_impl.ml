@@ -1,7 +1,7 @@
 module type S = sig
   module IO : Mehari.Private.IO
 
-  type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
+  type handler = Mehari.Private.Handler.Make(IO).t
 
   val run :
     ?port:int ->
@@ -20,7 +20,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   S with module IO = Common.Direct = struct
   module IO = Common.Direct
 
-  type handler = Eio.Net.Ipaddr.v4v6 Mehari.Private.Handler.Make(IO).t
+  type handler = Mehari.Private.Handler.Make(IO).t
 
   module Buf_read = Eio.Buf_read
   module Buf_write = Eio.Buf_write
@@ -28,7 +28,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
   module Protocol = Mehari.Private.Protocol
 
   type config = {
-    addr : Net.Ipaddr.v4v6;
+    addr : Ipaddr.t;
     port : int;
     timeout : (float * [ `Clock of float ] Eio.Time.clock) option;
     tls_config : Tls.Config.server;
@@ -36,7 +36,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config ~certs ~verify_url_host =
+  let make_config ~(addr : Net.Ipaddr.v4v6) ~port ~timeout ~tls_config ~certs ~verify_url_host =
+    let addr = Ipaddr.of_octets_exn (addr :> string) in
     { addr; port; timeout; tls_config; certs; verify_url_host }
 
   let src = Logs.Src.create "mehari.eio"
@@ -79,7 +80,6 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
        match
          with_timeout (fun () -> client_req reader)
          |> Protocol.make_request
-              (module Common.Addr)
               ~port:config.port ~addr:config.addr
               ~verify_url_host:config.verify_url_host config.certs ep
        with
@@ -111,7 +111,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     | exn -> raise exn
 
   let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
-      ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
+      ?(backlog = 4096) ?(addr = (Net.Ipaddr.V4.loopback ) ) ~certchains net
       callback =
     let certificates =
       Mehari.Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
@@ -122,7 +122,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       | None ->
           Tls.Config.server ~certificates
             ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-            () |> Result.get_ok
+            ()
+          |> Result.get_ok
     in
     let config =
       make_config ~addr ~port ~timeout ~tls_config

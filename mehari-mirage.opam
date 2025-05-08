@@ -10,7 +10,6 @@ bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.0"}
   "mehari" {= version}
-  "ipaddr" {>= "5.3.1"}
   "lwt" {>= "5.6.1"}
   "mirage-channel" {>= "4.1.0"}
   "mirage-time" {>= "3.0.0"}

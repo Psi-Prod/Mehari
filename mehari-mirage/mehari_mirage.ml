@@ -22,7 +22,6 @@ module type S = sig
   include
     Mehari.NET
       with module IO := IO
-       and type addr = Ipaddr.t
        and type clock := unit
 
   val make_rate_limit :
@@ -47,7 +46,7 @@ module Make
     let now_d_ps () = PClock.now_d_ps ()
   end
 
-  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
+  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO)
 
   module Logger =
     Logger_impl.Make
@@ -57,12 +56,10 @@ module Make
 
         let finally = try_bind
       end)
-      (Addr)
 
   module Router = Router_impl.Make (RateLimiter) (Logger)
   module Server = Server_impl.Make (Stack) (Time) (Logger)
 
-  type addr = Addr.t
   type handler = Router.handler
   type middleware = handler -> handler
   type route = Router.route

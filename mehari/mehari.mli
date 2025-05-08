@@ -3,7 +3,7 @@ code, and does not interact with the environment. *)
 
 (** {1 Types} *)
 
-type 'addr request
+type request
 (** Gemini request. See {!section-request}. *)
 
 type response
@@ -79,28 +79,28 @@ let () = assert (Mehari.paragraph quote "hello\nworld" = [ quote "hello"; quote 
 
 (** {1:request Request} *)
 
-val uri : 'a request -> Uri.t
+val uri : request -> Uri.t
 (** Request uri. *)
 
-val target : 'a request -> string
+val target : request -> string
 (** Path of requested URL. For example, "/foo/bar". *)
 
-val ip : 'addr request -> 'addr
+val ip : request -> Ipaddr.t
 (** Address of client sending the {!type:request}. *)
 
-val port : 'a request -> int
+val port : request -> int
 (** Port of requested URL. *)
 
-val sni : 'a request -> string
+val sni : request -> string
 (** Server name indication TLS extension. *)
 
-val query : 'a request -> string option
+val query : request -> string option
 (** User uri query, if presents. *)
 
-val client_cert : 'a request -> X509.Certificate.t list
+val client_cert : request -> X509.Certificate.t list
 (** User client certificates. [[]] if client provides none. *)
 
-val param : 'a request -> int -> string
+val param : request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
     @raise Invalid_argument if [n] is not a positive integer
     @raise Invalid_argument if path does not contain any parameters in which
@@ -254,10 +254,7 @@ val with_charset : mime -> string -> mime
 module type NET = sig
   module IO : Types.IO
 
-  type addr
-  (** Type for IP address. *)
-
-  type handler = addr request -> response IO.t
+  type handler = request -> response IO.t
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
       {!type:Mehari.response}. *)
 
@@ -367,8 +364,7 @@ end
 module type FS = sig
   module IO : Types.IO
 
-  type addr
-  type handler = addr request -> response IO.t
+  type handler = request -> response IO.t
   type dir_path
 
   (** {1 Static files} *)
@@ -427,7 +423,7 @@ module Private : sig
 
   module Handler : sig
     module Make (IO : IO) : sig
-      type 'addr t = 'addr request -> response IO.t
+      type t = request -> response IO.t
     end
   end
 
@@ -436,28 +432,16 @@ module Private : sig
       exn_msg:string -> Tls.Config.certchain list -> Tls.Config.own_cert
   end
 
-  module CGI : sig
-    module type S = sig
-      type addr
-
+  module Cgi : sig
       val make_env :
-        addr request -> fullpath:string -> path:string -> string array
-    end
-
-    module Make (Addr : sig
-      type t
-
-      val compare : t -> t -> int
-      val pp : Stdlib.Format.formatter -> t -> unit
-    end) : S with type addr := Addr.t
+        request -> fullpath:string -> path:string -> string array
   end
 
   module Logger_impl : sig
     module type S = sig
       module IO : IO
 
-      type addr
-      type handler = addr Handler.Make(IO).t
+      type handler = Handler.Make(IO).t
       type clock
 
       val set_level : Logs.level -> unit
@@ -473,9 +457,8 @@ module Private : sig
           include IO
 
           val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-        end)
-        (Addr : ADDR) :
-      S with module IO = IO and type addr = Addr.t and type clock = Clock.t
+        end) :
+      S with module IO = IO and type clock = Clock.t
   end
 
   module Protocol : sig
@@ -496,14 +479,13 @@ module Private : sig
       | WrongScheme
 
     val make_request :
-      (module ADDR with type t = 'a) ->
       port:int ->
-      addr:'a ->
+      addr:Ipaddr.t ->
       verify_url_host:bool ->
       X509.Certificate.t list ->
       Tls.Core.epoch_data ->
       string ->
-      ('a request, request_err) result
+      (request, request_err) result
 
     val to_response : request_err -> response
   end
@@ -515,16 +497,14 @@ module Private : sig
       type t
       type clock
 
-      module Addr : ADDR
-
-      val check : t -> Addr.t request -> response IO.t option
+      val check : t -> request -> response IO.t option
 
       val make :
         clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
     end
 
-    module Make (Clock : PCLOCK) (IO : IO) (Addr : ADDR) :
-      S with module IO = IO and module Addr = Addr and type clock = Clock.t
+    module Make (Clock : PCLOCK) (IO : IO) :
+      S with module IO = IO and type clock = Clock.t
   end
 
   module Router_impl : sig
@@ -533,8 +513,7 @@ module Private : sig
 
       type route
       type rate_limiter
-      type addr
-      type handler = addr Handler.Make(IO).t
+      type handler = Handler.Make(IO).t
       type middleware = handler -> handler
 
       val no_middleware : middleware
@@ -566,7 +545,6 @@ module Private : sig
       S
         with module IO = RateLimiter.IO
          and type rate_limiter := RateLimiter.t
-         and type addr := RateLimiter.Addr.t
   end
 
   module Static : sig
@@ -586,8 +564,7 @@ module Private : sig
     module type S = sig
       module IO : Types.IO
 
-      type addr
-      type handler = addr Handler.Make(IO).t
+      type handler = Handler.Make(IO).t
       type dir_path
 
       val static :
@@ -600,13 +577,8 @@ module Private : sig
         handler
     end
 
-    module Make
-        (Dir : DIR) (Addr : sig
-          type t
-        end) :
-      S
+    module Make (Dir : DIR) : S
         with module IO := Dir.IO
-         and type addr := Addr.t
          and type dir_path := Dir.path
   end
 end

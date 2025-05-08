@@ -5,7 +5,7 @@ module type S = sig
 
   module IO : Private.IO
 
-  type handler = Ipaddr.t Private.Handler.Make(IO).t
+  type handler = Private.Handler.Make(IO).t
 
   val run :
     ?port:int ->
@@ -25,7 +25,7 @@ module Make
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
 
-  type handler = Ipaddr.t Private.Handler.Make(IO).t
+  type handler = Private.Handler.Make(IO).t
 
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
@@ -105,7 +105,6 @@ module Make
             let* resp =
               match
                 Protocol.make_request
-                  (module Ipaddr)
                   ~port:config.port ~addr:config.addr
                   ~verify_url_host:config.verify_url_host config.certs ep
                   client_req

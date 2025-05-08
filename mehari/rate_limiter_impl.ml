@@ -4,19 +4,16 @@ module type S = sig
   type t
   type clock
 
-  module Addr : Types.ADDR
-
-  val check : t -> Addr.t Request.t -> Response.t IO.t option
+  val check : t -> Request.t -> Response.t IO.t option
 
   val make :
     clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
 end
 
-module Make (Clock : Types.PCLOCK) (IO : Types.IO) (Addr : Types.ADDR) :
-  S with module IO = IO and module Addr = Addr and type clock = Clock.t = struct
+module Make (Clock : Types.PCLOCK) (IO : Types.IO) :
+  S with module IO = IO and type clock = Clock.t = struct
   module IO = IO
-  module Addr = Addr
-  module AddrMap = Stdlib.Map.Make (Addr)
+  module AddrMap = Stdlib.Map.Make (Ipaddr)
 
   type clock = Clock.t
 

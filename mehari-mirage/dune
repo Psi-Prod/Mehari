@@ -2,8 +2,8 @@
  (name mehari_mirage)
  (public_name mehari-mirage)
  (libraries
-  ipaddr
   lwt
+  mirage-clock
   mirage-channel
   mirage-time
   mehari

@@ -74,8 +74,7 @@ let check_port uri port =
 let ( let+ ) x f = match x with Ok x -> f x | Error _ as err -> err
 
 (* Perform some static check on client request *)
-let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
-    ~(addr : a) ~verify_url_host certs epoch input =
+let make_request ~port ~addr ~verify_url_host certs epoch input =
   let+ sni = check_sni epoch in
   let+ () = check_utf8_encoding input in
   let+ () = check_length input in
@@ -86,9 +85,7 @@ let make_request (type a) (module Addr : Types.ADDR with type t = a) ~port
   let+ uri = check_path uri in
   let+ () = if verify_url_host then check_host uri certs else Ok () in
   let+ () = check_port uri port in
-  Request.make
-    (module Addr)
-    ~uri ~addr ~port ~sni
+  Request.make ~uri ~addr ~port ~sni
     ~client_cert:(Option.to_list epoch.Tls.Core.peer_certificate)
   |> Result.ok
 

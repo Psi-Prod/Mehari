@@ -35,7 +35,7 @@ let parse_header in_chan =
       let$ code = Re.Group.get grp 1 |> int_of_string_opt in
       Some (code, Re.Group.get grp 2)
 
-module CGI = Mehari.Private.CGI.Make (Ipaddr)
+module CGI = Mehari.Private.Cgi
 
 let cgi_err = Mehari_io.respond Mehari.cgi_error ""
 
@@ -124,4 +124,3 @@ include
               (Unix.error_message err)
         | exn -> raise exn
     end)
-    (Ipaddr)

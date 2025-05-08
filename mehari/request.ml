@@ -1,6 +1,5 @@
-type 'a t = {
-  addr : 'a;
-  addrm : (module Types.ADDR with type t = 'a);
+type t = {
+  addr : Ipaddr.t;
   port : int;
   uri : Uri.t;
   sni : string;
@@ -16,9 +15,8 @@ let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 
-let make (type a) (module Addr : Types.ADDR with type t = a) ~uri ~(addr : a)
-    ~port ~sni ~client_cert =
-  { uri; addr; addrm = (module Addr); port; sni; params = None; client_cert }
+let make ~uri ~addr ~port ~sni ~client_cert =
+  { uri; addr; port; sni; params = None; client_cert }
 
 let attach_params t params = { t with params }
 

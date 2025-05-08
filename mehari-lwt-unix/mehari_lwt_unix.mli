@@ -3,14 +3,13 @@
 
 (** {1 Net} *)
 
-include Mehari_mirage.S with type addr = Ipaddr.t
+include Mehari_mirage.S
 (** @closed *)
 
 (** @closed *)
 include
   Mehari.FS
     with module IO := IO
-     and type addr := addr
      and type dir_path := string
 
 (** {1:cgi CGI} *)
@@ -72,7 +71,7 @@ val run_cgi :
   ?timeout:float ->
   ?nph:bool ->
   string ->
-  addr Mehari.request ->
+  Mehari.request ->
   Mehari.response Lwt.t
 (** [run_cgi ?timeout ?nph script_path req] executes the given file as a CGI
     script and return a {!type:Mehari.response} based on bytes printed on stdout
