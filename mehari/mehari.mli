@@ -100,10 +100,13 @@ val sni : request -> string
 (** Server name indication TLS extension. *)
 
 val query : request -> string option
-(** User uri query, if presents. *)
+(** User URI query, if presents. *)
 
 val client_cert : request -> X509.Certificate.t option
 (** User client certificates, if provided. *)
+
+val tls_version : request -> [ `TLS_1_2 | `TLS_1_3 ]
+(** TLS version used for this request. *)
 
 val param : request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].

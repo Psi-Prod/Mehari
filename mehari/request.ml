@@ -6,6 +6,7 @@ type t = {
   sni : string;
   params : Re.Group.t option;
   client_cert : X509.Certificate.t option;
+  tls_version : [ `TLS_1_2 | `TLS_1_3 ];
 }
 
 let uri { uri; _ } = uri
@@ -15,9 +16,10 @@ let port { port; _ } = port
 let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
+let tls_version { tls_version; _ } = tls_version
 
-let make ?client_cert ~uri ~addr ~server_addr ~port ~sni () =
-  { uri; addr; server_addr; port; sni; params = None; client_cert }
+let make ?client_cert ~uri ~addr ~server_addr ~port ~sni ~tls_version () =
+  { uri; addr; server_addr; port; sni; params = None; client_cert; tls_version }
 
 let attach_params t params = { t with params }
 

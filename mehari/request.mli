@@ -9,6 +9,7 @@ val port : t -> int
 val sni : t -> string
 val query : t -> string option
 val client_cert : t -> X509.Certificate.t option
+val tls_version : t -> [ `TLS_1_2 | `TLS_1_3 ]
 
 val make :
   ?client_cert:X509.Certificate.t ->
@@ -17,6 +18,7 @@ val make :
   server_addr:Ipaddr.t ->
   port:int ->
   sni:string ->
+  tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
   unit ->
   t
 
