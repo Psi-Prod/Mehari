@@ -81,7 +81,8 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
        match
          with_timeout (fun () -> client_req reader)
          |> Protocol.make_request ~port:config.port ~addr:config.addr
-              ~verify_url_host:config.verify_url_host config.certs ep
+              ~server_addr:config.addr ~verify_url_host:config.verify_url_host
+              config.certs ep
        with
        | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow

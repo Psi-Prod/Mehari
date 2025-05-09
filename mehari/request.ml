@@ -1,5 +1,6 @@
 type t = {
   addr : Ipaddr.t;
+  server_addr : Ipaddr.t;
   port : int;
   uri : Uri.t;
   sni : string;
@@ -15,8 +16,8 @@ let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 
-let make ~uri ~addr ~port ~sni ~client_cert =
-  { uri; addr; port; sni; params = None; client_cert }
+let make ~uri ~addr ~server_addr ~port ~sni ~client_cert =
+  { uri; addr; server_addr; port; sni; params = None; client_cert }
 
 let attach_params t params = { t with params }
 

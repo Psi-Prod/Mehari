@@ -107,7 +107,6 @@ end
 
 module Private = struct
   module type IO = Types.IO
-  module type ADDR = Types.ADDR
   module type PCLOCK = Types.PCLOCK
 
   type response_view = Response.view

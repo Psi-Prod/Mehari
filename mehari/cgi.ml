@@ -1,5 +1,30 @@
-let make_env req ~fullpath ~path =
-  let or_empty = Option.value ~default:"" in
+type t = {
+  auth_type : string;
+  content_length : string;
+  content_type : string;
+  gateway_interface : string;
+  path_info : string;
+  path_translated : string;
+  query_string : string;
+  remote_addr : string;
+  remote_host : string;
+  remote_ident : string;
+  remote_method : string;
+  remote_user : string;
+  request_method : string;
+  script_name : string;
+  server_name : string;
+  server_port : string;
+  server_protocol : string;
+  server_software : string;
+  tls_client_hash : string;
+  tls_client_subject : string;
+  tls_client_issuer : string;
+}
+
+let or_empty = Option.value ~default:""
+
+let make req ~script_path ~server_addr =
   let client_cert =
     (* TODO: ensure that client_cert is unique *)
     match Request.client_cert req with
@@ -20,8 +45,12 @@ let make_env req ~fullpath ~path =
   in
   let path_info = Request.target req |> Uri.pct_decode in
   let query_string = Request.query req |> or_empty in
-  let client_addr = Format.asprintf "%a" Ipaddr.pp @@ Request.ip req in
-  let server_name = Request.uri req |> Uri.host |> or_empty in
+  let client_addr = Request.ip req |> Ipaddr.to_string in
+  let server_name =
+    match Request.uri req |> Uri.host with
+    | Some hostname -> hostname
+    | None -> Ipaddr.to_string server_addr
+  in
   let server_port = Request.port req |> Int.to_string in
   let tls_client_hash, tls_client_subject, tls_client_issuer =
     match client_cert with
@@ -38,26 +67,50 @@ let make_env req ~fullpath ~path =
         in
         (hash, subject, issuer)
   in
+  {
+    auth_type;
+    content_length = "";
+    content_type = "";
+    gateway_interface = "CGI/1.1";
+    path_info;
+    path_translated = path_info;
+    query_string;
+    remote_addr = client_addr;
+    remote_host = client_addr;
+    remote_ident = "";
+    remote_method = "";
+    remote_user;
+    request_method = "";
+    script_name = script_path;
+    server_name;
+    server_port;
+    server_protocol = "GEMINI";
+    server_software = "Mehari/%%VERSION%%";
+    tls_client_hash;
+    tls_client_subject;
+    tls_client_issuer;
+  }
+
+let to_env t =
   [|
-    ("AUTH_TYPE", auth_type);
-    ("CONTENT_LENGTH", "");
-    ("CONTENT_TYPE", "");
-    ("GATEWAY_INTERFACE", "CGI/1.1");
-    ("PATH_INFO", path_info);
-    ("PATH_TRANSLATED", path);
-    ("QUERY_STRING", query_string);
-    ("REMOTE_ADDR", client_addr);
-    ("REMOTE_HOST", client_addr);
-    ("REMOTE_IDENT", "");
-    ("REQUEST_METHOD", "");
-    ("REMOTE_USER", remote_user);
-    ("SCRIPT_NAME", fullpath);
-    ("SERVER_NAME", server_name);
-    ("SERVER_PORT", server_port);
-    ("SERVER_PROTOCOL", "GEMINI");
-    ("SERVER_SOFTWARE", "Mehari/%%VERSION%%");
-    ("TLS_CLIENT_HASH", tls_client_hash);
-    ("TLS_CLIENT_SUBJECT", tls_client_subject);
-    ("TLS_CLIENT_ISSUER", tls_client_issuer);
+    ("AUTH_TYPE", t.auth_type);
+    ("CONTENT_LENGTH", t.content_length);
+    ("CONTENT_TYPE", t.content_type);
+    ("GATEWAY_INTERFACE", t.gateway_interface);
+    ("PATH_INFO", t.path_info);
+    ("PATH_TRANSLATED", t.path_translated);
+    ("QUERY_STRING", t.query_string);
+    ("REMOTE_ADDR", t.remote_addr);
+    ("REMOTE_HOST", t.remote_host);
+    ("REMOTE_IDENT", t.remote_ident);
+    ("REMOTE_USER", t.remote_user);
+    ("REQUEST_METHOD", t.request_method);
+    ("SCRIPT_NAME", t.script_name);
+    ("SERVER_NAME", t.server_name);
+    ("SERVER_PORT", t.server_port);
+    ("SERVER_PROTOCOL", t.server_protocol);
+    ("SERVER_SOFTWARE", t.server_software);
+    ("TLS_CLIENT_HASH", t.tls_client_hash);
+    ("TLS_CLIENT_SUBJECT", t.tls_client_subject);
+    ("TLS_CLIENT_ISSUER", t.tls_client_issuer);
   |]
-  |> Array.map (fun (name, value) -> Printf.sprintf "%s=%s" name value)

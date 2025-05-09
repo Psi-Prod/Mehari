@@ -3,7 +3,7 @@
 
 (** {1 Types} *)
 
-type request
+type request = Request.t
 (** Gemini request. See {!section-request}. *)
 
 type response
@@ -413,7 +413,6 @@ end
     supported by the existing IO backends. *)
 module Private : sig
   module type IO = Types.IO
-  module type ADDR = Types.ADDR
   module type PCLOCK = Types.PCLOCK
 
   type response_view = Response.view
@@ -431,9 +430,7 @@ module Private : sig
       exn_msg:string -> Tls.Config.certchain list -> Tls.Config.own_cert
   end
 
-  module Cgi : sig
-    val make_env : request -> fullpath:string -> path:string -> string array
-  end
+  module Cgi = Cgi
 
   module Logger_impl : sig
     module type S = sig
@@ -479,6 +476,7 @@ module Private : sig
     val make_request :
       port:int ->
       addr:Ipaddr.t ->
+      server_addr:Ipaddr.t ->
       verify_url_host:bool ->
       X509.Certificate.t list ->
       Tls.Core.epoch_data ->

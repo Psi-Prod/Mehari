@@ -105,6 +105,7 @@ module Make
             let* resp =
               match
                 Protocol.make_request ~port:config.port ~addr:config.addr
+                  ~server_addr:config.addr
                   ~verify_url_host:config.verify_url_host config.certs ep
                   client_req
               with

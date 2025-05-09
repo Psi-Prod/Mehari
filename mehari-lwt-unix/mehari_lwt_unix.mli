@@ -19,49 +19,44 @@ include Mehari.FS with module IO := IO and type dir_path := string
     verbatim to the Gemini client, without any additional modification by the
     server.
 
-    {2 Environment variables}
-
-    Mehari sets the following environment variables in CGI scripts: [AUTH_TYPE],
-    [CONTENT_LENGTH], [CONTENT_TYPE], [GATEWAY_INTERFACE], [PATH_INFO],
-    [PATH_TRANSLATED], [QUERY_STRING], [REMOTE_ADDR], [REMOTE_HOST],
-    [REMOTE_IDENT], [REMOTE_METHOD], [REMOTE_USER], [SCRIPT_NAME],
-    [SERVER_NAME], [SERVER_PORT], [SERVER_PROTOCOL], [SERVER_SOFTWARE],
-    [TLS_CLIENT_HASH], [TLS_CLIENT_SUBJECT] and [TLS_CLIENT_ISSUER].
-
-    Some variables volontary have an empty string value to be compatibile as
-    much as possible with non-gemini CGI script.
+    Some variables ([CONTENT_LENGTH], [CONTENT_TYPE], [REMOTE_IDENT],
+    [REMOTE_METHOD], [REQUEST_METHOD]) volontary have an empty string value to
+    be compatibile as much as possible with non-gemini CGI script.
 
     @see < https://www.rfc-editor.org/rfc/rfc3875 > For the CGI specification.
 
-    {3 Examples}
+    {2 Examples}
 
-    Let's say that the url requested is
-    [gemini://localhost/cgi/foo.cgi?an_input]:
+    Let's assume that client requested the following URL:
+    [gemini://localhost/cgi/script.cgi?an_input] and the response generation is
+    handled by a CGI script located at [/var/cgi-bin/script.cgi] on server. CGI
+    variables values are :
 
-    - [AUTH_TYPE]: ["Certificate"] if a client certificate is provided, empty
+    - [AUTH_TYPE] is ["Certificate"] if a client certificate is provided, empty
       otherwise.
-    - [CONTENT_LENGTH]: empty
-    - [CONTENT_TYPE]: empty
-    - [GATEWAY_INTERFACE]: [CGI/1.1]
-    - [PATH_INFO] (example value: [/cgi/foo.cgi])
-    - [PATH_TRANSLATED] (example value: [/cgi/foo.cgi])
-    - [QUERY_STRING] (example value: [an_input])
-    - [REMOTE_ADDR] (example value: [127.0.0.1])
-    - [REMOTE_HOST]: same as [REMOTE_ADDR]
-    - [REMOTE_IDENT]: empty
-    - [REMOTE_METHOD]: empty
-    - [REMOTE_USER]: client certificate common if it is provided, empty
+    - [CONTENT_LENGTH] is empty
+    - [CONTENT_TYPE] is empty
+    - [GATEWAY_INTERFACE] is [CGI/1.1]
+    - [PATH_INFO] is [/cgi/script.cgi]
+    - [PATH_TRANSLATED] is [/cgi/script.cgi]
+    - [QUERY_STRING] is [an_input]
+    - [REMOTE_ADDR] is [127.0.0.1]
+    - [REMOTE_HOST] is same as [REMOTE_ADDR]
+    - [REMOTE_IDENT] is empty
+    - [REMOTE_METHOD] is empty
+    - [REMOTE_USER] is client certificate common if it is provided, empty
       otherwise
-    - [SCRIPT_NAME] (example value: [/var/cgi/foo.cgi])
-    - [SERVER_NAME] (example value: [/var/cgi/foo.cgi])
-    - [SERVER_PORT] (example value: [1965])
-    - [SERVER_PROTOCOL]: [GEMINI].
-    - [SERVER_SOFTWARE] (example value: [Mehari/1.0])
-    - [TLS_CLIENT_HASH]: SHA-256 sum of the client certificate if it is
+    - [REQUEST_METHOD] is empty
+    - [SCRIPT_NAME] is [/var/cgi-bin/script.cgi]
+    - [SERVER_NAME] is [localhost]
+    - [SERVER_PORT] is [1965]
+    - [SERVER_PROTOCOL] is [GEMINI]
+    - [SERVER_SOFTWARE] is [Mehari/1.0]
+    - [TLS_CLIENT_HASH] is the SHA-256 sum of the client certificate if it is
       provided, empty otherwise
-    - [TLS_CLIENT_SUBJECT]: client certificate Subject common name if it is
-      provided, empty otherwise
-    - [TLS_CLIENT_ISSUER]: client certificate Issuer common name if it is
+    - [TLS_CLIENT_SUBJECT] is the client certificate Subject common name if it
+      is provided, empty otherwise
+    - [TLS_CLIENT_ISSUER] is the client certificate Issuer common name if it is
       provided, empty otherwise *)
 
 val run_cgi :
@@ -70,12 +65,12 @@ val run_cgi :
   string ->
   Mehari.request ->
   Mehari.response Lwt.t
-(** [run_cgi ?timeout ?nph script_path req] executes the given file as a CGI
-    script and return a {!type:Mehari.response} based on bytes printed on stdout
-    by script. Responds with {!val:Mehari.cgi_error} in case of error or
-    [timeout] exceeding.
+(** [run_cgi ?timeout ?nph script_path req] executes the CGI script located at
+    [script_path] and return a {!type:Mehari.response} containing script's
+    stdout. Responds with {!val:Mehari.cgi_error} in case of error or [timeout]
+    exceeding.
 
-    - [timeout] defaults to [5.0].
+    - [timeout] is expressed in seconds and defaults to [5.0].
     - [nph] decides if NPH (Non-Parsed Header) is enable. Defaults to [false].
 *)
 
