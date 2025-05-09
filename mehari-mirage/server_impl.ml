@@ -99,15 +99,18 @@ module Make
   let handle_client config callback flow epoch =
     let chan = Channel.create flow in
     with_timeout config.timeout (fun () -> read_client_req chan) >>= function
-    | Ok client_req -> (
+    | Ok client_request -> (
         match epoch with
-        | Ok ep ->
+        | Ok epoch ->
             let* resp =
               match
-                Protocol.make_request ~port:config.port ~addr:config.addr
-                  ~server_addr:config.addr
-                  ~verify_url_host:config.verify_url_host config.certs ep
-                  client_req
+                Protocol.make_request ~port:config.port
+                  ~client_addr:config.addr (* TODO: pass REAL client address *)
+                  ~server_addr:config.addr ~hostname:epoch.Tls.Core.own_name
+                  ~verify_url_host:config.verify_url_host
+                  ~tls_version:epoch.protocol_version
+                  ~client_cert:epoch.Tls.Core.peer_certificate ~client_request
+                  config.certs
               with
               | Ok req -> callback req
               | Error err -> Protocol.to_response err |> Lwt.return

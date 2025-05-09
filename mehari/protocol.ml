@@ -14,9 +14,9 @@ type request_err =
   | WrongPort
   | WrongScheme
 
-let check_sni epoch =
-  Option.fold epoch.Tls.Core.own_name ~none:(Error SNIExtRequired)
-    ~some:(fun d -> Domain_name.to_string d |> Result.ok)
+let check_sni = function
+  | None -> Error SNIExtRequired
+  | Some d -> Ok (Domain_name.to_string d)
 
 let check_utf8_encoding url =
   if String.is_valid_utf_8 url then Ok () else Error MalformedUTF8
@@ -74,8 +74,9 @@ let check_port uri port =
 let ( let+ ) x f = match x with Ok x -> f x | Error _ as err -> err
 
 (* Perform some static check on client request *)
-let make_request ~port ~addr ~server_addr ~verify_url_host certs epoch input =
-  let+ sni = check_sni epoch in
+let make_request ~port ~client_addr ~server_addr ~hostname ~verify_url_host
+    ~tls_version ~client_cert ~client_request:input certs =
+  let+ sni = check_sni hostname in
   let+ () = check_utf8_encoding input in
   let+ () = check_length input in
   let+ () = check_bom input in
@@ -86,12 +87,15 @@ let make_request ~port ~addr ~server_addr ~verify_url_host certs epoch input =
   let+ () = if verify_url_host then check_host uri certs else Ok () in
   let+ () = check_port uri port in
   let tls_version =
-    match epoch.protocol_version with
+    match tls_version with
+    (* match epoch.protocol_version with *)
     | `TLS_1_0 | `TLS_1_1 ->
         assert false (* We don't support TLS version < 1.2. *)
     | (`TLS_1_2 | `TLS_1_3) as version -> version
   in
-  Request.make ?client_cert:epoch.Tls.Core.peer_certificate ~uri ~addr
+  Request.make ?client_cert ~uri
+    ~client_addr
+      (* Request.make ?client_cert:epoch.Tls.Core.peer_certificate ~uri ~addr *)
     ~server_addr ~port ~sni ~tls_version ()
   |> Result.ok
 

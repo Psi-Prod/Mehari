@@ -18,12 +18,14 @@ type request_err =
 
 val make_request :
   port:int ->
-  addr:Ipaddr.t ->
+  client_addr:Ipaddr.t ->
   server_addr:Ipaddr.t ->
+  hostname:[ `host ] Domain_name.t option ->
   verify_url_host:bool ->
+  tls_version:Tls.Core.tls_version ->
+  client_cert:X509.Certificate.t option ->
+  client_request:string ->
   X509.Certificate.t list ->
-  Tls.Core.epoch_data ->
-  string ->
   (Request.t, request_err) result
 
 val to_response : request_err -> Response.t
