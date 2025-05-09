@@ -85,8 +85,8 @@ let make_request ~port ~addr ~server_addr ~verify_url_host certs epoch input =
   let+ uri = check_path uri in
   let+ () = if verify_url_host then check_host uri certs else Ok () in
   let+ () = check_port uri port in
-  Request.make ~uri ~addr ~server_addr ~port ~sni
-    ~client_cert:(Option.to_list epoch.Tls.Core.peer_certificate)
+  Request.make ?client_cert:epoch.Tls.Core.peer_certificate ~uri ~addr
+    ~server_addr ~port ~sni ()
   |> Result.ok
 
 let pp_err fmt =

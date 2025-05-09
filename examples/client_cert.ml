@@ -3,10 +3,16 @@ let router =
     [
       Mehari_eio.route "/" (fun req ->
           match Mehari.client_cert req with
-          | [] -> Mehari.(response client_cert_req) "Certificate plz"
-          | hd :: _ ->
-              X509.Certificate.encode_pem hd
-              |> Printf.sprintf "Client certificate ~nyoron\n%s"
+          | None -> Mehari.(response client_cert_req) "Certificate plz"
+          | Some cert ->
+              let pem = X509.Certificate.encode_pem cert in
+              let common_name =
+                X509.Certificate.subject cert
+                |> X509.Distinguished_name.common_name
+                |> Option.value ~default:"None"
+              in
+              Printf.sprintf "Ur client certificate ~nyoron\n%sCommon name: %s"
+                pem common_name
               |> Mehari.response_text);
     ]
 

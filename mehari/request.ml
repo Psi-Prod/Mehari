@@ -5,7 +5,7 @@ type t = {
   uri : Uri.t;
   sni : string;
   params : Re.Group.t option;
-  client_cert : X509.Certificate.t list;
+  client_cert : X509.Certificate.t option;
 }
 
 let uri { uri; _ } = uri
@@ -16,7 +16,7 @@ let sni { sni; _ } = sni
 let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 
-let make ~uri ~addr ~server_addr ~port ~sni ~client_cert =
+let make ?client_cert ~uri ~addr ~server_addr ~port ~sni () =
   { uri; addr; server_addr; port; sni; params = None; client_cert }
 
 let attach_params t params = { t with params }

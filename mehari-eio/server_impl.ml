@@ -71,7 +71,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
     in
     (try
        let ep =
-         match epoch with Ok data -> data | Error () -> raise End_of_file
+         match epoch with Ok data ->  data | Error () -> raise End_of_file
        in
        let with_timeout =
          match config.timeout with

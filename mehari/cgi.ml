@@ -25,12 +25,7 @@ type t = {
 let or_empty = Option.value ~default:""
 
 let make req ~script_path ~server_addr =
-  let client_cert =
-    (* TODO: ensure that client_cert is unique *)
-    match Request.client_cert req with
-    | [] -> None
-    | c :: _ -> Some c (* We pick the first one. *)
-  in
+  let client_cert = Request.client_cert req in
   let auth_type, remote_user =
     match client_cert with
     | None -> ("", "")

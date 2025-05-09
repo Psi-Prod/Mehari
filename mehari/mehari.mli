@@ -102,8 +102,8 @@ val sni : request -> string
 val query : request -> string option
 (** User uri query, if presents. *)
 
-val client_cert : request -> X509.Certificate.t list
-(** User client certificates. [[]] if client provides none. *)
+val client_cert : request -> X509.Certificate.t option
+(** User client certificates, if provided. *)
 
 val param : request -> int -> string
 (** [param req n] retrieves the [n]-th path parameter of [req].
