@@ -1,5 +1,5 @@
 module type S = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type route
   type rate_limiter

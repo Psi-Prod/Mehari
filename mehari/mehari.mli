@@ -213,7 +213,7 @@ val with_charset : mime -> string -> mime
 
 (** Module type containing all environment-dependent functions. *)
 module type NET = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type handler = request -> response IO.t
   (** Handlers are asynchronous functions from {!type:Mehari.request} to
@@ -317,7 +317,7 @@ end
 
 (** Module type containing all file system dependent functions. *)
 module type FS = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type handler = request -> response IO.t
   type dir_path
@@ -368,18 +368,14 @@ end
 (** You can ignore it, unless you are porting [Mehari] to a new platform not
     supported by the existing IO backends. *)
 module Private : sig
-  module type IO = Types.IO
-  module type PCLOCK = Types.PCLOCK
+  module type IO = Signatures.IO
+  module type PCLOCK = Signatures.PCLOCK
 
   type response_view = Response.view
 
   val view_of_resp : response -> response_view
 
-  module Handler : sig
-    module Make (IO : IO) : sig
-      type t = request -> response IO.t
-    end
-  end
+  module Handler = Handler
 
   module Cert : sig
     val get_certs :
@@ -404,7 +400,7 @@ module Private : sig
     end
 
     module Make
-        (Clock : Types.PCLOCK)
+        (Clock : Signatures.PCLOCK)
         (IO : sig
           include IO
 
@@ -413,23 +409,7 @@ module Private : sig
   end
 
   module Protocol = Protocol
-
-  module Rate_limiter_impl : sig
-    module type S = sig
-      module IO : IO
-
-      type t
-      type clock
-
-      val check : t -> request -> response IO.t option
-
-      val make :
-        clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
-    end
-
-    module Make (Clock : PCLOCK) (IO : IO) :
-      S with module IO = IO and type clock = Clock.t
-  end
+  module Rate_limiter_impl = Rate_limiter_impl
 
   module Router_impl : sig
     module type S = sig
@@ -471,7 +451,7 @@ module Private : sig
 
   module Static : sig
     module type DIR = sig
-      module IO : Types.IO
+      module IO : Signatures.IO
 
       type path
 
@@ -484,7 +464,7 @@ module Private : sig
     end
 
     module type S = sig
-      module IO : Types.IO
+      module IO : Signatures.IO
 
       type handler = Handler.Make(IO).t
       type dir_path

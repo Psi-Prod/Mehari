@@ -64,7 +64,7 @@ let text = Mime.text
 let with_charset = Mime.with_charset
 
 module type NET = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type route
   type rate_limiter
@@ -108,7 +108,7 @@ module type NET = sig
 end
 
 module type FS = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type handler = Handler.Make(IO).t
   type dir_path
@@ -126,8 +126,8 @@ module type FS = sig
 end
 
 module Private = struct
-  module type IO = Types.IO
-  module type PCLOCK = Types.PCLOCK
+  module type IO = Signatures.IO
+  module type PCLOCK = Signatures.PCLOCK
 
   type response_view = Response.view
 

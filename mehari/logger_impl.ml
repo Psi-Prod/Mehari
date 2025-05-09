@@ -1,8 +1,8 @@
 module type S = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
-  type handler = Handler.Make(IO).t
   type clock
+  type handler = Handler.Make(IO).t
 
   val set_level : Logs.level -> unit
   val logger : clock -> handler -> handler
@@ -13,25 +13,22 @@ module type S = sig
 end
 
 module Make
-    (Clock : Types.PCLOCK)
+    (Clock : Signatures.PCLOCK)
     (IO : sig
-      include Types.IO
+      include Signatures.IO
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
     end) : S with module IO = IO and type clock = Clock.t = struct
   module IO = IO
 
-  type handler = Handler.Make(IO).t
   type clock = Clock.t
+  type handler = Handler.Make(IO).t
 
   let src = Logs.Src.create "mehari.log"
 
   module Log = (val Logs.src_log src)
 
-  let debug = Log.debug
-  let info = Log.info
-  let warning = Log.warn
-  let error = Log.err
+  let debug, info, warning, error = Log.(debug, info, warn, err)
   let set_level lvl = Logs.Src.set_level src (Some lvl)
 
   let iter_backtrace f backtrace =

@@ -1,5 +1,5 @@
 module type DIR = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type path
 
@@ -12,7 +12,7 @@ module type DIR = sig
 end
 
 module type S = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type handler = Handler.Make(IO).t
   type dir_path

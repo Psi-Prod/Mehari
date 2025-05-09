@@ -1,5 +1,5 @@
 module type S = sig
-  module IO : Types.IO
+  module IO : Signatures.IO
 
   type t
   type clock
@@ -10,7 +10,7 @@ module type S = sig
     clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
 end
 
-module Make (Clock : Types.PCLOCK) (IO : Types.IO) :
+module Make (Clock : Signatures.PCLOCK) (IO : Signatures.IO) :
   S with module IO = IO and type clock = Clock.t = struct
   module IO = IO
   module AddrMap = Stdlib.Map.Make (Ipaddr)
