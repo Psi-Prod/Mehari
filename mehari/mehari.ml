@@ -6,12 +6,31 @@ type body = Response.body
 
 module Gemtext = Gemtext
 
-let _ =
-  let open Path in
-  let route = ~/"echo" /: string in
-  Path.sscanf route "uri" (fun text -> text)
+let paragraph gemtext s =
+  let doc = ref [] in
+  let cr = ref false in
+  let buf = Buffer.create (String.length s) in
+  for i = 0 to String.length s - 1 do
+    match String.unsafe_get s i with
+    | '\r' -> cr := true
+    | '\n' when !cr ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | '\n' ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | c ->
+        if !cr then Buffer.add_char buf '\r';
+        Buffer.add_char buf c;
+        cr := false
+  done;
+  List.rev
+  @@ match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc
 
-let paragraph = Gemtext.paragraph
 let uri = Request.uri
 let target = Request.target
 let ip = Request.ip
