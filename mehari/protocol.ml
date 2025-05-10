@@ -102,7 +102,7 @@ let check_path uri =
 
 let check_host uri certs =
   match Uri.host uri with
-  | None -> Error MissingHost
+  | None | Some "" -> Error MissingHost
   | Some h -> (
       match Domain_name.of_string h with
       | Ok dn -> (
@@ -126,7 +126,7 @@ let check_port uri port =
 
 let ( let* ) = Result.bind
 
-let make_request ~port ~client_addr ~server_addr ?hostname ~verify_url_host
+let make_request ~client_addr ~server_addr ?hostname ~port ~verify_url_host
     ~tls_version ?client_cert ~client_request:input certs =
   let* sni = check_sni hostname in
   let* () = check_utf8_encoding input in

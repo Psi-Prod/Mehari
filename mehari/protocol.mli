@@ -6,8 +6,8 @@ type err =
   | EmptyURL  (** URL is empty. *)
   | InvalidURL  (** Invalid URL. *)
   | MalformedUTF8  (** URL contains non-UTF8 byte sequence. *)
-  | MissingHost  (** URL has no scheme. *)
-  | MissingScheme  (** The host URL subcomponent is required.*)
+  | MissingHost  (** The host URL subcomponent is required.*)
+  | MissingScheme  (** URL has no scheme. *)
   | NotADomainName  (** The host URL component is not a valid domain name. *)
   | RelativePath  (** URL path is relative. *)
   | SNIExtRequired  (** SNI extension to TLS is required. *)
@@ -18,10 +18,10 @@ type err =
   | WrongScheme  (** URL scheme is not gemini://. *)
 
 val make_request :
-  port:int ->
   client_addr:Ipaddr.t ->
   server_addr:Ipaddr.t ->
   ?hostname:[ `host ] Domain_name.t ->
+  port:int ->
   verify_url_host:bool ->
   tls_version:Tls.Core.tls_version ->
   ?client_cert:X509.Certificate.t ->
