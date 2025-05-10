@@ -1,4 +1,4 @@
-type request_err =
+type err =
   | AboveMaxSize
   | BeginWithBOM
   | EmptyURL
@@ -14,9 +14,61 @@ type request_err =
   | WrongPort
   | WrongScheme
 
+let equal_err e e' =
+  match (e, e') with
+  | AboveMaxSize, AboveMaxSize
+  | BeginWithBOM, BeginWithBOM
+  | EmptyURL, EmptyURL
+  | InvalidURL, InvalidURL
+  | MalformedUTF8, MalformedUTF8
+  | MissingHost, MissingHost
+  | MissingScheme, MissingScheme
+  | NotADomainName, NotADomainName
+  | RelativePath, RelativePath
+  | SNIExtRequired, SNIExtRequired
+  | UserInfoNotAllowed, UserInfoNotAllowed
+  | WrongHost, WrongHost
+  | WrongPort, WrongPort
+  | WrongScheme, WrongScheme ->
+      true
+  | AboveMaxSize, _
+  | BeginWithBOM, _
+  | EmptyURL, _
+  | InvalidURL, _
+  | MalformedUTF8, _
+  | MissingHost, _
+  | MissingScheme, _
+  | NotADomainName, _
+  | RelativePath, _
+  | SNIExtRequired, _
+  | UserInfoNotAllowed, _
+  | WrongHost, _
+  | WrongPort, _
+  | WrongScheme, _ ->
+      false
+
+let pp_err fmt err =
+  Format.pp_print_string fmt
+  @@
+  match err with
+  | AboveMaxSize -> "AboveMaxSize"
+  | BeginWithBOM -> "BeginWithBOM"
+  | EmptyURL -> "EmptyURL"
+  | InvalidURL -> "InvalidURL"
+  | MalformedUTF8 -> "MalformedUTF8"
+  | MissingScheme -> "MissingScheme"
+  | MissingHost -> "MissingHost"
+  | NotADomainName -> "NotADomainName"
+  | RelativePath -> "RelativePath"
+  | SNIExtRequired -> "SNIExtRequired"
+  | UserInfoNotAllowed -> "UserInfoNotAllowed"
+  | WrongHost -> "WrongHost"
+  | WrongPort -> "WrongPort"
+  | WrongScheme -> "WrongScheme"
+
 let check_sni = function
   | None -> Error SNIExtRequired
-  | Some d -> Ok (Domain_name.to_string d)
+  | Some hostname -> Ok hostname
 
 let check_utf8_encoding url =
   if String.is_valid_utf_8 url then Ok () else Error MalformedUTF8
@@ -58,8 +110,9 @@ let check_host uri certs =
           | Ok h ->
               let rec check = function
                 | [] -> Error WrongHost
-                | c :: _ when X509.Certificate.supports_hostname c h -> Ok ()
-                | _ :: cs -> check cs
+                | cert :: certs ->
+                    if X509.Certificate.supports_hostname cert h then Ok ()
+                    else check certs
               in
               check certs
           | Error _ -> Error NotADomainName)
@@ -71,35 +124,32 @@ let check_port uri port =
   | Some p when Int.equal port p -> Ok ()
   | Some _ -> Error WrongPort
 
-let ( let+ ) x f = match x with Ok x -> f x | Error _ as err -> err
+let ( let* ) = Result.bind
 
-(* Perform some static check on client request *)
-let make_request ~port ~client_addr ~server_addr ~hostname ~verify_url_host
-    ~tls_version ~client_cert ~client_request:input certs =
-  let+ sni = check_sni hostname in
-  let+ () = check_utf8_encoding input in
-  let+ () = check_length input in
-  let+ () = check_bom input in
+let make_request ~port ~client_addr ~server_addr ?hostname ~verify_url_host
+    ~tls_version ?client_cert ~client_request:input certs =
+  let* sni = check_sni hostname in
+  let* () = check_utf8_encoding input in
+  let* () = check_length input in
+  let* () = check_bom input in
   let uri = Uri.of_string input |> Uri.canonicalize in
-  let+ () = check_scheme uri in
-  let+ () = check_user_info uri in
-  let+ uri = check_path uri in
-  let+ () = if verify_url_host then check_host uri certs else Ok () in
-  let+ () = check_port uri port in
+  let* () = check_scheme uri in
+  let* () = check_user_info uri in
+  let* uri = check_path uri in
+  let* () = if verify_url_host then check_host uri certs else Ok () in
+  let* () = check_port uri port in
   let tls_version =
     match tls_version with
-    (* match epoch.protocol_version with *)
+    (* TODO: remove this ugly match *)
     | `TLS_1_0 | `TLS_1_1 ->
         assert false (* We don't support TLS version < 1.2. *)
     | (`TLS_1_2 | `TLS_1_3) as version -> version
   in
-  Request.make ?client_cert ~uri
-    ~client_addr
-      (* Request.make ?client_cert:epoch.Tls.Core.peer_certificate ~uri ~addr *)
-    ~server_addr ~port ~sni ~tls_version ()
+  Request.make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni
+    ~tls_version ()
   |> Result.ok
 
-let pp_err fmt =
+let pp_msg fmt =
   let fmt = Format.fprintf fmt in
   function
   | AboveMaxSize -> fmt "Request has a size higher than 1024 bytes"
@@ -119,7 +169,7 @@ let pp_err fmt =
   | WrongScheme -> fmt {|URL scheme is not "gemini://"|}
 
 let to_response err =
-  let body = Format.asprintf "%a" pp_err err in
+  let body = Format.asprintf "%a" pp_msg err in
   let status =
     match err with
     | AboveMaxSize | BeginWithBOM | EmptyURL | InvalidURL | MalformedUTF8

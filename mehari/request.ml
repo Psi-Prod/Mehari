@@ -3,7 +3,7 @@ type t = {
   server_addr : Ipaddr.t;
   port : int;
   uri : Uri.t;
-  sni : string;
+  sni : [ `host ] Domain_name.t;
   params : Re.Group.t option;
   client_cert : X509.Certificate.t option;
   tls_version : [ `TLS_1_2 | `TLS_1_3 ];
@@ -18,8 +18,18 @@ let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 let tls_version { tls_version; _ } = tls_version
 
-let make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni ~tls_version () =
-  { uri; client_addr; server_addr; port; sni; params = None; client_cert; tls_version }
+let make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni ~tls_version ()
+    =
+  {
+    uri;
+    client_addr;
+    server_addr;
+    port;
+    sni;
+    params = None;
+    client_cert;
+    tls_version;
+  }
 
 let attach_params t params = { t with params }
 

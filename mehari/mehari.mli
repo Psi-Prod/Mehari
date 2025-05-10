@@ -49,9 +49,6 @@ val ip : request -> Ipaddr.t
 val port : request -> int
 (** Port of requested URL. *)
 
-val sni : request -> string
-(** Server name indication TLS extension. *)
-
 val query : request -> string option
 (** User URI query, if presents. *)
 

@@ -109,7 +109,7 @@ struct
   let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
       match meth with
-      | `SNI -> Request.sni req
+      | `SNI -> Request.sni req |> Domain_name.to_string
       | `ByURL ->
           Request.uri req |> Uri.host
           |> Option.get (* Guaranteed by [Protocol.make_request]. *)

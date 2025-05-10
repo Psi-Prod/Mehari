@@ -35,7 +35,6 @@ let uri = Request.uri
 let target = Request.target
 let ip = Request.ip
 let port = Request.port
-let sni = Request.sni
 let query = Request.query
 let client_cert = Request.client_cert
 let tls_version = Request.tls_version

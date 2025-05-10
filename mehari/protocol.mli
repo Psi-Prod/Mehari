@@ -1,31 +1,35 @@
 (** Request validation. *)
 
-type request_err =
-  | AboveMaxSize
-  | BeginWithBOM
-  | EmptyURL
-  | InvalidURL
-  | MalformedUTF8
-  | MissingHost
-  | MissingScheme
-  | NotADomainName
-  | RelativePath
-  | SNIExtRequired
+type err =
+  | AboveMaxSize  (** Request has a size higher than 1024 bytes. *)
+  | BeginWithBOM  (** The request begin with a U+FEFF byte order mark. *)
+  | EmptyURL  (** URL is empty. *)
+  | InvalidURL  (** Invalid URL. *)
+  | MalformedUTF8  (** URL contains non-UTF8 byte sequence. *)
+  | MissingHost  (** URL has no scheme. *)
+  | MissingScheme  (** The host URL subcomponent is required.*)
+  | NotADomainName  (** The host URL component is not a valid domain name. *)
+  | RelativePath  (** URL path is relative. *)
+  | SNIExtRequired  (** SNI extension to TLS is required. *)
   | UserInfoNotAllowed
-  | WrongHost
-  | WrongPort
-  | WrongScheme
+      (** URL contains userinfo subcomponent which is not allowed. *)
+  | WrongHost  (** URL contains a foreign hostname. *)
+  | WrongPort  (** URL has an incorrect port number. *)
+  | WrongScheme  (** URL scheme is not gemini://. *)
 
 val make_request :
   port:int ->
   client_addr:Ipaddr.t ->
   server_addr:Ipaddr.t ->
-  hostname:[ `host ] Domain_name.t option ->
+  ?hostname:[ `host ] Domain_name.t ->
   verify_url_host:bool ->
   tls_version:Tls.Core.tls_version ->
-  client_cert:X509.Certificate.t option ->
+  ?client_cert:X509.Certificate.t ->
   client_request:string ->
   X509.Certificate.t list ->
-  (Request.t, request_err) result
+  (Request.t, err) result
+(** Perform some static check on client request *)
 
-val to_response : request_err -> Response.t
+val to_response : err -> Response.t
+val equal_err : err -> err -> bool
+val pp_err : Format.formatter -> err -> unit
