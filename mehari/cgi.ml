@@ -26,17 +26,8 @@ let or_empty = Option.value ~default:""
 
 let make req ~script_path ~server_addr =
   let client_cert = Request.client_cert req in
-  let auth_type, remote_user =
-    match client_cert with
-    | None -> ("", "")
-    | Some c ->
-        let cert_common_name =
-          X509.Certificate.hostnames c
-          |> X509.Host.Set.choose |> snd
-          (* TODO: handle wildcard or strict *)
-          |> Domain_name.to_string
-        in
-        (cert_common_name, "Certificate")
+  let auth_type =
+    client_cert |> Option.map (fun _ -> "Certificate") |> or_empty
   in
   let path_info = Request.target req |> Uri.pct_decode in
   let query_string = Request.query req |> or_empty in
@@ -74,7 +65,7 @@ let make req ~script_path ~server_addr =
     remote_host = client_addr;
     remote_ident = "";
     remote_method = "";
-    remote_user;
+    remote_user = "";
     request_method = "";
     script_name = script_path;
     server_name;

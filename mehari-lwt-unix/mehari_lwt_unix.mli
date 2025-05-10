@@ -20,7 +20,7 @@ include Mehari.FS with module IO := IO and type dir_path := string
     server.
 
     Some variables ([CONTENT_LENGTH], [CONTENT_TYPE], [REMOTE_IDENT],
-    [REMOTE_METHOD], [REQUEST_METHOD]) volontary have an empty string value to
+    [REMOTE_METHOD], [REMOTE_USER], [REQUEST_METHOD]) volontary have an empty string value to
     be compatibile as much as possible with non-gemini CGI script.
 
     @see < https://www.rfc-editor.org/rfc/rfc3875 > For the CGI specification.
@@ -44,8 +44,7 @@ include Mehari.FS with module IO := IO and type dir_path := string
     - [REMOTE_HOST] is same as [REMOTE_ADDR]
     - [REMOTE_IDENT] is empty
     - [REMOTE_METHOD] is empty
-    - [REMOTE_USER] is client certificate common if it is provided, empty
-      otherwise
+    - [REMOTE_USER] is empty
     - [REQUEST_METHOD] is empty
     - [SCRIPT_NAME] is [/var/cgi-bin/script.cgi]
     - [SERVER_NAME] is [localhost]
