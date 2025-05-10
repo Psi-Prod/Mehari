@@ -101,16 +101,15 @@ module Make
     with_timeout config.timeout (fun () -> read_client_req chan) >>= function
     | Ok client_request -> (
         match epoch with
-        | Ok epoch ->
+        | Ok { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let* resp =
               match
                 Protocol.make_request ~port:config.port
                   ~client_addr:config.addr (* TODO: pass REAL client address *)
-                  ~server_addr:config.addr ~hostname:epoch.Tls.Core.own_name
+                  ~server_addr:config.addr ?hostname:own_name
                   ~verify_url_host:config.verify_url_host
-                  ~tls_version:epoch.protocol_version
-                  ~client_cert:epoch.Tls.Core.peer_certificate ~client_request
-                  config.certs
+                  ~tls_version:protocol_version ?client_cert:peer_certificate
+                  ~client_request config.certs
               with
               | Ok req -> callback req
               | Error err -> Protocol.to_response err |> Lwt.return

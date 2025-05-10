@@ -70,7 +70,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
         ~max_size:1025 (* Apparently not inclusive *)
     in
     (try
-       let epoch =
+       let { Tls.Core.own_name; peer_certificate; protocol_version; _ } =
          match epoch with Ok data -> data | Error () -> raise End_of_file
        in
        let with_timeout =
@@ -82,10 +82,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
          let client_request = with_timeout (fun () -> client_req reader) in
          Protocol.make_request ~port:config.port
            ~client_addr:config.addr (* TODO: pass REAL client address *)
-           ~server_addr:config.addr ~hostname:epoch.Tls.Core.own_name
-           ~verify_url_host:config.verify_url_host
-           ~tls_version:epoch.protocol_version
-           ~client_cert:epoch.peer_certificate ~client_request config.certs
+           ~server_addr:config.addr ?hostname:own_name
+           ~verify_url_host:config.verify_url_host ~tls_version:protocol_version
+           ?client_cert:peer_certificate ~client_request config.certs
        with
        | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
