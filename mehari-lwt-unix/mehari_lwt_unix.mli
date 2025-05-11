@@ -20,8 +20,9 @@ include Mehari.FS with module IO := IO and type dir_path := string
     server.
 
     Some variables ([CONTENT_LENGTH], [CONTENT_TYPE], [REMOTE_IDENT],
-    [REMOTE_METHOD], [REMOTE_USER], [REQUEST_METHOD]) volontary have an empty string value to
-    be compatibile as much as possible with non-gemini CGI script.
+    [REMOTE_METHOD], [REMOTE_USER], [REQUEST_METHOD]) volontary have an empty
+    string value to be compatibile as much as possible with non-gemini CGI
+    script.
 
     @see < https://www.rfc-editor.org/rfc/rfc3875 > For the CGI specification.
 
@@ -66,8 +67,8 @@ val run_cgi :
   Mehari.response Lwt.t
 (** [run_cgi ?timeout ?nph script_path req] executes the CGI script located at
     [script_path] and return a {!type:Mehari.response} containing script's
-    stdout. Responds with {!val:Mehari.cgi_error} in case of error or [timeout]
-    exceeding.
+    stdout. Responds with {!val:Mehari.Status.cgi_error} in case of error or
+    [timeout] exceeding.
 
     - [timeout] is expressed in seconds and defaults to [5.0].
     - [nph] decides if NPH (Non-Parsed Header) is enable. Defaults to [false].
