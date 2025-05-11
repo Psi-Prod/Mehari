@@ -39,9 +39,7 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
     let cgi_script_exec =
       Lwt_process.with_process_in ~stderr:`Dev_null ~env (path, [||])
         (fun proc ->
-          if nph then
-            let* _body = Lwt_io.read proc#stdout in
-            assert false (* TODO: repair this *)
+          if nph then Lwt_io.read proc#stdout >>= Mehari_io.respond_unsafe_raw
           else
             parse_header proc#stdout >>= function
             | None -> cgi_err
