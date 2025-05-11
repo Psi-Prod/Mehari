@@ -52,12 +52,12 @@ from {!type:Mehari.request} to {!type:Mehari.response}.
 This is the simplest possible handler that responds
 to all requests in the same way:
 
-{@ocaml[(fun _ -> Mehari.response_text "Hello from Mehari")]}
+{@ocaml[(fun req -> Mehari.Response.text "Hello from Mehari")]}
 
 As handlers take a {!Mehari.type-request} in parameter we can operate on them.
 Here we retrieve the URL of the client's request and return it:
 
-{@ocaml[(fun req -> Mehari.uri req |> Uri.to_string |> Mehari.response_text)]}
+{@ocaml[(fun req -> Mehari.Request.uri req |> Uri.to_string |> Mehari.Response.text)]}
 
 See {!Mehari.section-request} section to consult all client request related
 functions.
@@ -68,7 +68,7 @@ Mehari provides its own representation of status codes as described in the
 {{:Gemini protocol specification} gemini specification}. Take a look at the
 signature of {!val:Mehari.Response.respond}:
 
-{@ocaml[val response : 'a status -> 'a -> response]}
+{@ocaml[val respond : 'a status -> 'a -> response]}
 
 Furthermore, the status [input] and [success] are defined as follows:
 
@@ -81,7 +81,7 @@ input response, a [string] is needed:
 
 {@ocaml[
 let input_resp =
-  Mehari.(response input) "Enter a message"
+  Mehari.(Response.respond Status.input) "Enter a message"
 ]}
 
 In the same way, a {!type:Mehari.body} and a {!type:Mehari.mime} are required
@@ -89,8 +89,8 @@ to make a successful response:
 
 {@ocaml[
 let successful_resp =
-  let body = Mehari.string "A successful response" in
-  Mehari.(response (success body) (gemini ()))
+  let body = Mehari.Body.string "A successful response" in
+  Mehari.(Response.respond (Status.success body) (Mime.gemini ()))
 ]}
 
 See {!Mehari.section-status} for the complete list of status. Other functions
@@ -103,23 +103,25 @@ Successful responses are accompanied by a {!type:Mehari.body}.
 They are many methods to create a body, for example from a string:
 
 {@ocaml[
-let body = Mehari.string "A response body"
+let body = Mehari.Body.string "A response body"
 ]}
 
 Or from a Gemtext object:
 {@ocaml[
 let body =
-  Mehari.(gemtext Gemtext.[
-    heading `H1 "Thought on Gemtext markup";
-    list_item "Date: February 2021";
-    list_item "Tags: gemini, reviews";
-    newline;
-    heading `H2 "Introduction";
-    newline;
-    quote "The format permits richer typographic possibilities than the plain text of Gopher, but remains extremely easy to parse.";
-    text "Here is an example of a Python parser that demonstrates the truth of that statement:";
-    preformat "..." ~alt:"python"
-  ])
+  let open Mehari in
+  Response.gemtext 
+    Gemtext.[
+      heading `H1 "Thought on Gemtext markup";
+      list_item "Date: February 2021";
+      list_item "Tags: gemini, reviews";
+      newline;
+      heading `H2 "Introduction";
+      newline;
+      quote "The format permits richer typographic possibilities than the plain text of Gopher, but remains extremely easy to parse.";
+      text "Here is an example of a Python parser that demonstrates the truth of that statement:";
+      preformat "..." ~alt:"python"
+    ]
 ]}
 
 Which is rendered as the following Gemtext document:
@@ -232,9 +234,9 @@ let incr_count handler req =
 let router =
   Mehari_eio.router [
       Mehari_eio.route "/" (fun _ ->
-        Printf.sprintf "Value %i" !counter |> Mehari.response_text);
+        Printf.sprintf "Value %i" !counter |> Mehari.Response.text);
       Mehari_eio.route "/incr" ~mw:incr_count (fun _ ->
-          Mehari.response Mehari.redirect_temp "/");
+          Mehari.respond Status.redirect_temp "/");
     ]
 ]}
 
