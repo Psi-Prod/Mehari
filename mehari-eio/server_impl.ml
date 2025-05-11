@@ -3,7 +3,7 @@ open Mehari
 module type S = sig
   module IO : Private.IO
 
-  type handler = request -> response IO.t 
+  type handler = request -> response IO.t
 
   val run :
     ?port:int ->
@@ -82,10 +82,16 @@ module Make (Logger : Private.Logger_impl.S) :
        in
        match
          let client_request = with_timeout (fun () -> client_req reader) in
+         let tls_version =
+           (* We explicitely don't support TLS version < 1.2. *)
+           match protocol_version with
+           | `TLS_1_0 | `TLS_1_1 -> assert false
+           | (`TLS_1_2 | `TLS_1_3) as version -> version
+         in
          Protocol.make_request ~port:config.port
            ~client_addr:config.addr (* TODO: pass REAL client address *)
            ~server_addr:config.addr ?hostname:own_name
-           ~verify_url_host:config.verify_url_host ~tls_version:protocol_version
+           ~verify_url_host:config.verify_url_host ~tls_version
            ?client_cert:peer_certificate ~client_request config.certs
        with
        | Ok req -> callback req |> write_resp flow
@@ -125,7 +131,7 @@ module Make (Logger : Private.Logger_impl.S) :
       match config with
       | Some c -> c
       | None ->
-          Tls.Config.server ~certificates
+          Tls.Config.server ~version:(`TLS_1_2, `TLS_1_3) ~certificates
             ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
             ()
           |> Result.get_ok

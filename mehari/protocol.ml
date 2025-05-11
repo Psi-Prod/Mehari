@@ -138,13 +138,6 @@ let make_request ~client_addr ~server_addr ?hostname ~port ~verify_url_host
   let* uri = check_path uri in
   let* () = if verify_url_host then check_host uri certs else Ok () in
   let* () = check_port uri port in
-  let tls_version =
-    match tls_version with
-    (* TODO: remove this ugly match *)
-    | `TLS_1_0 | `TLS_1_1 ->
-        assert false (* We don't support TLS version < 1.2. *)
-    | (`TLS_1_2 | `TLS_1_3) as version -> version
-  in
   Request.Private.make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni
     ~tls_version ()
   |> Result.ok
