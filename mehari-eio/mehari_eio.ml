@@ -53,6 +53,6 @@ let scope = Router.scope
 let no_route = Router.no_route
 let virtual_hosts = Router.virtual_hosts
 let make_rate_limit = RateLimiter.make
-let response_document = File.response_document
+let respond_document = File.respond_document
 let static = File.static
 let run = Server.run

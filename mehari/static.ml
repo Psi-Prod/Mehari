@@ -7,14 +7,14 @@ module type DIR = sig
   val kind : path -> [ `Regular_file | `Directory | `Other ] IO.t
   val read : path -> string list IO.t
   val concat : path -> string -> path
-  val response_document : ?mime:Mime.t -> path -> Response.t IO.t
+  val respond_document : ?mime:Mime.t -> path -> Response.t IO.t
   val pp_io_err : Format.formatter -> exn -> unit
 end
 
 module type S = sig
   module IO : Signatures.IO
 
-  type handler = Handler.Make(IO).t
+  type handler = Request.t -> Response.t IO.t
   type dir_path
 
   val static :
@@ -29,7 +29,7 @@ end
 
 module Make (Dir : DIR) :
   S with module IO := Dir.IO and type dir_path := Dir.path = struct
-  type handler = Handler.Make(Dir.IO).t
+  type handler = Request.t -> Response.t Dir.IO.t
 
   let src = Logs.Src.create "mehari.static"
 
@@ -49,7 +49,7 @@ module Make (Dir : DIR) :
       | None when Filename.check_suffix fname ".gmi" -> Some (Mime.gemini ())
       | (None | Some _) as m -> m
     in
-    Dir.response_document ?mime path
+    Dir.respond_document ?mime path
 
   let parent_path =
     Re.(compile (seq [ Re.group (seq [ rep1 any; char '/' ]); rep1 any ]))
@@ -77,7 +77,7 @@ module Make (Dir : DIR) :
             let link = Re.Group.get grp 1 |> Gemtext.link ~name in
             title :: link :: Gemtext.newline :: dirs
     in
-    menu |> Response.response_gemtext |> Dir.IO.return
+    menu |> Response.gemtext |> Dir.IO.return
 
   let read_dir ~show_hidden ~index path =
     let* files = Dir.read path in
@@ -105,7 +105,7 @@ module Make (Dir : DIR) :
       (false, false) path
     |> fst
 
-  let not_found = Response.(response Status.not_found "") |> Dir.IO.return
+  let not_found = Response.(respond Status.not_found "") |> Dir.IO.return
 
   let static ?(handler = default_handler) ?(dir_listing = default_listing)
       ?(index = "index.gmi") ?(show_hidden = false) base_path req =

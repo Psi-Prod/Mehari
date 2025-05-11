@@ -145,7 +145,7 @@ let make_request ~client_addr ~server_addr ?hostname ~port ~verify_url_host
         assert false (* We don't support TLS version < 1.2. *)
     | (`TLS_1_2 | `TLS_1_3) as version -> version
   in
-  Request.make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni
+  Request.Private.make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni
     ~tls_version ()
   |> Result.ok
 
@@ -179,4 +179,4 @@ let to_response err =
     | WrongHost | WrongPort | WrongScheme ->
         Response.Status.proxy_request_refused
   in
-  Response.response status body
+  Response.respond status body

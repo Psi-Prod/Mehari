@@ -3,7 +3,7 @@ module type S = sig
 
   type route
   type rate_limiter
-  type handler = Handler.Make(IO).t
+  type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
 
   val no_middleware : middleware
@@ -32,7 +32,7 @@ module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
 struct
   module IO = RateLimiter.IO
 
-  type handler = Handler.Make(IO).t
+  type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
 
   type route = route' list
@@ -80,9 +80,9 @@ struct
       loop routes
     in
     match route with
-    | None -> Response.(response Status.not_found "") |> IO.return
+    | None -> Response.(respond Status.not_found "") |> IO.return
     | Some (handler, limit_opt, params) -> (
-        let req = Request.attach_params req params in
+        let req = Request.Private.attach_params req params in
         match limit_opt with
         | None -> handler req
         | Some limiter -> (
@@ -109,7 +109,7 @@ struct
   let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
       match meth with
-      | `SNI -> Request.sni req |> Domain_name.to_string
+      | `SNI -> Request.Private.sni req |> Domain_name.to_string
       | `ByURL ->
           Request.uri req |> Uri.host
           |> Option.get (* Guaranteed by [Protocol.make_request]. *)

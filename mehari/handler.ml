@@ -1,3 +1,0 @@
-module Make (IO : Signatures.IO) = struct
-  type t = Request.t -> Response.t IO.t
-end

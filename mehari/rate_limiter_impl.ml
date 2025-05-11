@@ -40,7 +40,7 @@ module Make (Clock : Signatures.PCLOCK) (IO : Signatures.IO) :
     let n = AddrMap.find_opt addr t.history |> Option.fold ~none:1 ~some:succ in
     t.history <- AddrMap.add addr n t.history;
     if n > t.requests then
-      Response.(response Status.slow_down "Rate limited")
+      Response.(respond Status.slow_down) "Rate limited"
       |> IO.return |> Option.some
     else None
 

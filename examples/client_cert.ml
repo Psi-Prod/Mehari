@@ -1,9 +1,11 @@
+open Mehari
+
 let router =
   Mehari_eio.router
     [
       Mehari_eio.route "/" (fun req ->
-          match Mehari.client_cert req with
-          | None -> Mehari.(response client_cert_req) "Certificate plz"
+          match Request.client_cert req with
+          | None -> Response.respond Status.client_cert_req "Certificate plz"
           | Some cert ->
               let pem = X509.Certificate.encode_pem cert in
               let common_name =
@@ -13,7 +15,7 @@ let router =
               in
               Printf.sprintf "Ur client certificate ~nyoron\n%sCommon name: %s"
                 pem common_name
-              |> Mehari.response_text);
+              |> Response.text);
     ]
 
 let main ~net ~cwd =

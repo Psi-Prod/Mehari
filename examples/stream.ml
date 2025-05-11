@@ -1,3 +1,5 @@
+open Mehari
+
 let count clock n =
   Seq.unfold
     (function
@@ -9,14 +11,14 @@ let count clock n =
     (Some 0)
 
 let router clock req =
-  match Mehari.query req with
-  | None -> Mehari.(response input) "Enter a number"
+  match Request.query req with
+  | None -> Response.respond Status.input "Enter a number"
   | Some number -> (
       match int_of_string_opt number with
-      | None -> Mehari.(response bad_request) "Enter a valid number!"
+      | None -> Response.respond Status.bad_request "Enter a valid number!"
       | Some n ->
-          let body = count clock n |> Mehari.seq ~flush:true in
-          Mehari.(response_body body plaintext))
+          let body = count clock n |> Response.Body.seq ~flush:true in
+          Response.body body Mime.plaintext)
 
 let main ~clock ~cwd ~net =
   let certchains = Common.Eio.load_certchains cwd in

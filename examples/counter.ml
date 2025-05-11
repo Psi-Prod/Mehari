@@ -1,4 +1,5 @@
 module Mehari_io = Mehari_lwt_unix
+open Mehari
 open Lwt.Syntax
 
 let counter = ref 0
@@ -12,14 +13,13 @@ let main () =
   Mehari_io.router
     [
       Mehari_io.route "/" (fun _ ->
-          let open Mehari.Gemtext in
           Mehari_io.respond_gemtext
             [
-              link "/incr" ~name:"Increment counter";
-              text (Printf.sprintf "Counter = %i" !counter);
+              Gemtext.link "/incr" ~name:"Increment counter";
+              Gemtext.text (Printf.sprintf "Counter = %i" !counter);
             ]);
       Mehari_io.route "/incr" ~mw:incr_count (fun _ ->
-          Mehari_io.respond Mehari.redirect_temp "/");
+          Mehari_io.respond Status.redirect_temp "/");
     ]
   |> Mehari_io.run_lwt ~certchains
 

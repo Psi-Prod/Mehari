@@ -1,8 +1,10 @@
+open Mehari
+open Lwt.Infix
+open Lwt.Syntax
+
 let src = Logs.Src.create "mehari.lwt_unix.static"
 
 module Log = (val Logs.src_log src)
-open Lwt.Infix
-open Lwt.Syntax
 
 let meta =
   Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
@@ -18,7 +20,7 @@ let parse_header in_chan =
       let$ code = Re.Group.get grp 1 |> int_of_string_opt in
       Some (code, Re.Group.get grp 2)
 
-let cgi_err = Mehari_io.respond Mehari.cgi_error ""
+let cgi_err = Mehari_io.respond Response.Status.cgi_error ""
 
 let make_cgi_env req ~script_path =
   let open Mehari.Private.Cgi in
@@ -38,14 +40,14 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
       Lwt_process.with_process_in ~stderr:`Dev_null ~env (path, [||])
         (fun proc ->
           if nph then
-            let* body = Lwt_io.read proc#stdout in
-            Mehari_io.respond_raw (`Body body)
+            let* _body = Lwt_io.read proc#stdout in
+            assert false (* TODO: repair this *)
           else
             parse_header proc#stdout >>= function
-            | None -> Mehari_io.respond Mehari.cgi_error ""
+            | None -> cgi_err
             | Some (code, meta) ->
                 let* body = Lwt_io.read proc#stdout in
-                Mehari_io.respond_raw (`Full (code, meta, body)))
+                Mehari_io.respond_raw code meta body)
     in
     Lwt.pick [ timeout; cgi_script_exec ]
   in
@@ -74,14 +76,14 @@ let read_chunks path =
         else Some (chunk, true))
     false
 
-let not_found = Mehari_io.respond Mehari.not_found ""
+let not_found = Mehari_io.respond Response.Status.not_found ""
 
-let respond_document ?(mime = Mehari.app_octet_stream) path =
+let respond_document ?(mime = Mehari.Mime.app_octet_stream) path =
   let* exists = Lwt_unix.file_exists path in
   if exists then
     let* chunks = read_chunks path in
     let* cs = chunks () in
-    Mehari_io.respond_body (Mehari.seq (fun () -> cs)) mime
+    Mehari_io.respond_body (Response.Body.seq (fun () -> cs)) mime
   else not_found
 
 include Mehari.Private.Static.Make (struct
@@ -101,7 +103,7 @@ include Mehari.Private.Static.Make (struct
   let exists = Lwt_unix.file_exists
   let read path = Lwt_unix.files_of_directory path |> Lwt_stream.to_list
   let concat = Filename.concat
-  let response_document = respond_document
+  let respond_document = respond_document
 
   let pp_io_err fmt = function
     | Unix.Unix_error (err, fun_name, _) ->

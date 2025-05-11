@@ -1,11 +1,12 @@
 module Private = Mehari.Private
+open Mehari
 
 module type S = sig
   type stack
 
   module IO : Private.IO
 
-  type handler = Private.Handler.Make(IO).t
+  type handler = request -> response IO.t
 
   val run :
     ?port:int ->
@@ -25,11 +26,11 @@ module Make
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
 
-  type handler = Private.Handler.Make(IO).t
+  type handler = request -> response IO.t
 
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
-  module Protocol = Mehari.Private.Protocol
+  module Protocol = Private.Protocol
   open Lwt.Infix
   open Lwt.Syntax
 
@@ -54,9 +55,9 @@ module Make
 
   let write_resp chan resp =
     let write buf = Channel.write_string chan buf 0 (String.length buf) in
-    match Mehari.Private.view_of_resp resp with
+    match Response.Private.view_of_resp resp with
     | Immediate bufs ->
-        List.iter write bufs;
+        write bufs;
         flush_channel chan
     | Delayed { body; _ } ->
         body write;

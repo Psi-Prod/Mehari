@@ -1,24 +1,19 @@
-open Mehari.Private
+open Mehari
 
 module type IO_RESPONSE = sig
-  val respond : 'a Mehari.status -> 'a -> Mehari.response Lwt.t
-  val respond_body : Mehari.body -> Mehari.mime -> Mehari.response Lwt.t
-  val respond_text : string -> Mehari.response Lwt.t
+  val respond : 'a status -> 'a -> response Lwt.t
+  val respond_body : body -> mime -> response Lwt.t
+  val respond_text : string -> response Lwt.t
 
   val respond_gemtext :
-    ?charset:string ->
-    ?lang:string list ->
-    Mehari.Gemtext.t ->
-    Mehari.response Lwt.t
+    ?charset:string -> ?lang:string list -> Gemtext.t -> response Lwt.t
 
-  val respond_raw :
-    [ `Body of string | `Full of int * string * string ] ->
-    Mehari.response Lwt.t
+  val respond_raw : int -> string -> string -> response Lwt.t
 end
 
 module type S = sig
   module IO = Lwt
-  include Mehari.NET with module IO := IO and type clock := unit
+  include NET with module IO := IO and type clock := unit
 
   val make_rate_limit :
     ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
@@ -34,7 +29,6 @@ module Make
     (Stack : Tcpip.Stack.V4V6)
     (Time : Mirage_time.S) : S with type stack = Stack.t = struct
   module IO = Lwt
-  module Addr = Ipaddr
 
   module Clock = struct
     type t = unit
@@ -42,10 +36,10 @@ module Make
     let now_d_ps () = PClock.now_d_ps ()
   end
 
-  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO)
+  module RateLimiter = Private.Rate_limiter_impl.Make (Clock) (IO)
 
   module Logger =
-    Logger_impl.Make
+    Private.Logger_impl.Make
       (Clock)
       (struct
         include Lwt
@@ -53,7 +47,7 @@ module Make
         let finally = try_bind
       end)
 
-  module Router = Router_impl.Make (RateLimiter) (Logger)
+  module Router = Private.Router_impl.Make (RateLimiter) (Logger)
   module Server = Server_impl.Make (Stack) (Time) (Logger)
 
   type handler = Router.handler
@@ -62,14 +56,11 @@ module Make
   type rate_limiter = RateLimiter.t
   type stack = Stack.t
 
-  let respond s i = Mehari.response s i |> IO.return
-  let respond_body b m = Mehari.response_body b m |> IO.return
-  let respond_text t = Mehari.response_text t |> IO.return
-
-  let respond_gemtext ?charset ?lang g =
-    Mehari.response_gemtext ?charset ?lang g |> IO.return
-
-  let respond_raw g = Mehari.response_raw g |> IO.return
+  let respond s i = Response.respond s i |> IO.return
+  let respond_body b m = Response.body b m |> IO.return
+  let respond_text t = Response.text t |> IO.return
+  let respond_gemtext ?charset ?lang g = Response.gemtext ?charset ?lang g |> IO.return
+  let respond_raw c s b = Response.raw c s b |> IO.return
   let set_log_lvl = Logger.set_level
   let logger = Logger.logger ()
   let debug = Logger.debug

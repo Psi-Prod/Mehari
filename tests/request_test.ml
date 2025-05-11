@@ -1,3 +1,4 @@
+open Mehari
 open Mehari.Private
 
 let uri = Alcotest.testable Uri.pp Uri.equal
@@ -56,21 +57,21 @@ let pem_example =
 let test_request_uri_1 =
   let open Alcotest in
   test_case "request URI test - 1" `Quick (fun () ->
-      let expected = Result.map Mehari.uri request_1 in
+      let expected = Result.map Request.uri request_1 in
       let computed = Uri.of_string "gemini://localhost/foo/bar" in
       check (result uri request_err) "should be equal" expected (Ok computed))
 
 let test_request_target_1 =
   let open Alcotest in
   test_case "request target test - 1" `Quick (fun () ->
-      let expected = Result.map Mehari.target request_1 in
+      let expected = Result.map Request.target request_1 in
       let computed = Ok "/foo/bar" in
       check (result string request_err) "should be equal" expected computed)
 
 let test_request_query_1 =
   let open Alcotest in
   test_case "request query test - 1" `Quick (fun () ->
-      let expected = Result.map Mehari.query request_1 in
+      let expected = Result.map Request.query request_1 in
       let computed = Ok None in
       check
         (result (option string) request_err)

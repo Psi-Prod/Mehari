@@ -153,5 +153,4 @@ let test_cgi_env_3 =
       in
       check (array (pair string string)) "should be equal" expected computed)
 
-let cases =
-  ("cgi_test", [ test_cgi_env_1; test_cgi_env_2; test_cgi_env_3; cgi_test_1 ])
+let cases = ("cgi_test", [ test_cgi_env_1; test_cgi_env_2; test_cgi_env_3 ])

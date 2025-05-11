@@ -1,8 +1,10 @@
+open Mehari
+
 let router =
   Mehari_eio.virtual_hosts
     [
-      ("localhost.foo", fun _ -> Mehari.response_text "Requesting subdomain foo");
-      ("localhost.bar", fun _ -> Mehari.response_text "Requesting subdomain bar");
+      ("localhost.foo", fun _ -> Response.text "Requesting subdomain foo");
+      ("localhost.bar", fun _ -> Response.text "Requesting subdomain bar");
     ]
 
 let main ~net ~cwd =

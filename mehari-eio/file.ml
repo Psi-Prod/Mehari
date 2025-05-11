@@ -1,10 +1,12 @@
-let not_found = Mehari.(response not_found "")
+open Mehari
 
-let response_document ?(mime = Mehari.app_octet_stream) path =
+let not_found = Response.(respond Status.not_found "")
+
+let respond_document ?(mime = Mime.app_octet_stream) path =
   try
     let chunk_size = 16384 in
     let body =
-      Mehari.stream (fun consume ->
+      Response.Body.stream (fun consume ->
           Eio.Path.with_open_in path (fun flow ->
               let buf = Eio.Buf_read.of_flow flow ~max_size:max_int in
               let n = ref 0 in
@@ -24,10 +26,10 @@ let response_document ?(mime = Mehari.app_octet_stream) path =
               in
               loop ()))
     in
-    Mehari.response_body body mime
+    Response.body body mime
   with Eio.Io _ -> not_found
 
-include Mehari.Private.Static.Make (struct
+include Private.Static.Make (struct
   module IO = Common.Direct
 
   type path = [ `Dir ] Eio.Path.t
@@ -40,6 +42,6 @@ include Mehari.Private.Static.Make (struct
   let exists _ = true
   let read = Eio.Path.read_dir
   let concat = Eio.Path.( / )
-  let response_document = response_document
+  let respond_document = respond_document
   let pp_io_err = Eio.Exn.pp
 end)

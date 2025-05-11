@@ -1,8 +1,8 @@
 type request = Request.t
 type response = Response.t
-type 'a status = 'a Response.status
+type 'a status = 'a Response.Status.t
 type mime = Mime.t
-type body = Response.body
+type body = Response.Body.t
 
 module Gemtext = Gemtext
 
@@ -31,43 +31,18 @@ let paragraph gemtext s =
   List.rev
   @@ match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc
 
-let uri = Request.uri
-let target = Request.target
-let ip = Request.ip
-let port = Request.port
-let query = Request.query
-let client_cert = Request.client_cert
-let tls_version = Request.tls_version
-let param = Request.param
-let response = Response.response
-let response_body = Response.response_body
-let response_text = Response.response_text
-let response_gemtext = Response.response_gemtext
-let response_raw = Response.response_raw
-
-include Response.Status
-
-let string = Response.string
-let gemtext = Response.gemtext
-let lines = Response.lines
-let seq = Response.seq
-let stream = Response.stream
-let page = Response.page
-let make_mime = Mime.make
-let from_filename = Mime.from_filename
-let from_content = Mime.from_content
-let gemini = Mime.gemini
-let app_octet_stream = Mime.app_octet_stream
-let plaintext = Mime.plaintext
-let text = Mime.text
-let with_charset = Mime.with_charset
+module Request = Request
+module Response = Response
+module Body = Response.Body
+module Status = Response.Status
+module Mime = Mime
 
 module type NET = sig
   module IO : Signatures.IO
 
   type route
   type rate_limiter
-  type handler = Request.t -> Response.t IO.t
+  type handler = request -> response IO.t
   type middleware = handler -> handler
   type clock
 
@@ -109,10 +84,10 @@ end
 module type FS = sig
   module IO : Signatures.IO
 
-  type handler = Handler.Make(IO).t
+  type handler = request -> response IO.t
   type dir_path
 
-  val response_document : ?mime:mime -> dir_path -> response IO.t
+  val respond_document : ?mime:mime -> dir_path -> response IO.t
 
   val static :
     ?handler:(dir_path -> handler) ->
@@ -128,10 +103,6 @@ module Private = struct
   module type IO = Signatures.IO
   module type PCLOCK = Signatures.PCLOCK
 
-  type response_view = Response.view
-
-  let view_of_resp = Response.view_of_resp
-
   module Cert = struct
     let get_certs ~exn_msg = function
       | default :: mult -> `Multiple_default (default, mult)
@@ -139,7 +110,6 @@ module Private = struct
   end
 
   module Cgi = Cgi
-  module Handler = Handler
   module Logger_impl = Logger_impl
   module Protocol = Protocol
   module Rate_limiter_impl = Rate_limiter_impl

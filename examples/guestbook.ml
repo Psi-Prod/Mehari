@@ -17,15 +17,16 @@ let book =
       Buffer.contents buf
   end
 
-module M = Mehari_lwt_unix
+open Mehari
 open Lwt.Syntax
+module M = Mehari_lwt_unix
 
 let main () =
   let* certchains = Common.Lwt.load_certchains () in
   M.router
     [
       M.route "/" (fun _ ->
-          Mehari.Gemtext.
+          Gemtext.
             [
               heading `H1 "Guestbook";
               newline;
@@ -36,11 +37,11 @@ let main () =
             ]
           |> M.respond_gemtext);
       M.route "/submit" (fun req ->
-          match Mehari.query req with
-          | None -> M.respond Mehari.input "Enter your message"
+          match Request.query req with
+          | None -> M.respond Status.input "Enter your message"
           | Some msg ->
-              book#add_entry ~addr:(Mehari.ip req) msg;
-              M.respond Mehari.redirect_temp "/");
+              book#add_entry ~addr:(Request.ip req) msg;
+              M.respond Status.redirect_temp "/");
     ]
   |> M.run_lwt ~certchains
 

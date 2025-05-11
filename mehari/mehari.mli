@@ -4,19 +4,20 @@
 (** {1 Types} *)
 
 type request = Request.t
-(** Gemini request. See {!section-request}. *)
+(** [request] is an alias for {!type:Request.t}. See {!section-request}. *)
 
 type response = Response.t
-(** Gemini response. See {!section-response}. *)
+(** [response] is an alias for {!type:Response.t}. See {!section-response}. *)
 
-type 'a status
-(** Status of a Gemini response. See {!section-status}. *)
+type 'a status = 'a Response.Status.t
+(** [status] is an alias for {!type:Response.Status.t}. See {!section-status}.
+*)
 
-type mime
-(** Mime type of a document. See {!section-mime}. *)
+type mime = Mime.t
+(** [mime] is an alias for {!type:Mime.t}. See {!section-mime}. *)
 
-type body
-(** Body of Gemini response. See {!section-body}. *)
+type body = Response.Body.t
+(** [body] is an alias for {!type:Response.Body.t}. See {!section-body}. *)
 
 (** {1:gemtext Gemtext} *)
 
@@ -37,174 +38,23 @@ val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
 
 (** {1:request Request} *)
 
-val uri : request -> Uri.t
-(** Request uri. *)
-
-val target : request -> string
-(** Path of requested URL. For example, "/foo/bar". *)
-
-val ip : request -> Ipaddr.t
-(** Address of client sending the {!type:request}. *)
-
-val port : request -> int
-(** Port of requested URL. *)
-
-val query : request -> string option
-(** User URI query, if presents. *)
-
-val client_cert : request -> X509.Certificate.t option
-(** User client certificates, if provided. *)
-
-val tls_version : request -> [ `TLS_1_2 | `TLS_1_3 ]
-(** TLS version used for this request. *)
-
-val param : request -> int -> string
-(** [param req n] retrieves the [n]-th path parameter of [req].
-    @raise Invalid_argument if [n] is not a positive integer
-    @raise Invalid_argument
-      if path does not contain any parameters in which case the program is
-      buggy. *)
+module Request = Request
 
 (** {1:response Response} *)
 
-val response : 'a status -> 'a -> response
-(** Creates a new {!type:response} with given {!type:Mehari.status}.
+module Response = Response
 
-    @raise Invalid_argument if [meta] is more than 1024 bytes.
-    @raise Invalid_argument if [meta] starts with [U+FEFF] byte order mark. *)
+(** {1:body Response body} *)
 
-val response_body : body -> mime -> response
-(** Creates a successful {!val:response} with given {!type:body} and use given
-    {!type:mime} as mime type. *)
+module Body = Response.Body
 
-val response_text : string -> response
-(** Creates a successful {!val:response} with given text and use [text/plain] as
-    {!type:mime} type. *)
+(** {1:status Response status} *)
 
-val response_gemtext :
-  ?charset:string -> ?lang:string list -> Gemtext.t -> response
-(** Creates a successful {!val:response} with given {!type:Gemtext.t} and use
-    [text/gemini] as {!type:mime} type. *)
-
-val response_raw :
-  [ `Body of string | `Full of int * string * string ] -> response
-(** Creates a new raw {!type:response}. Does not perform any check on validity
-    i.e. length of header or beginning with a byte order mark [U+FEFF].
-    - [`Body body]: creates a {!val:response} with [body].
-    - [`Full (code, meta, body)]: creates a {!val:response} with given
-      arguments. *)
-
-(** {1:status Status} *)
-
-(** A wrapper around Gemini status codes.
-    @see < https://geminiprotocol.net/docs/protocol-specification.gmi >
-      Section "Status codes" for a description of the meaning of each code. *)
-
-val input : string status
-val sensitive_input : string status
-val success : body -> mime status
-val redirect_temp : string status
-val redirect_perm : string status
-val temporary_failure : string status
-val server_unavailable : string status
-val cgi_error : string status
-val proxy_error : string status
-val slow_down : string status
-val perm_failure : string status
-val not_found : string status
-val gone : string status
-val proxy_request_refused : string status
-val bad_request : string status
-val client_cert_req : string status
-val cert_not_authorised : string status
-val cert_not_valid : string status
-
-val code_of_status : 'a status -> int
-(** [code_of_status s] is status code associated with status [s]. *)
-
-(** {1:body Body} *)
-
-(** {2:note-on-data-stream-response A note on data stream response}
-
-    Mehari offers ways to keep client connections open forever and stream data
-    in real time such as {!val:seq} and {!val:stream} functions when the [flush]
-    parameter is specified. It is important to note that most Gemini clients do
-    not support streaming and should be used with caution. That's why this
-    parameter is set to [false] by default in all the functions that Mehari
-    expose. *)
-
-val string : string -> body
-(** Creates a {!type:body} from given string. *)
-
-val gemtext : Gemtext.t -> body
-(** Creates a {!type:body} from a {!type:Gemtext.t} document. *)
-
-val lines : string list -> body
-(** Creates a {!type:body} from given lines. Each line is written followed by a
-    newline ([LF]) character. *)
-
-val page : title:string -> string -> body
-(** [page ~title content] creates a simple Gemtext {!type:body} of form:
-    {@gemtext[
-      # title
-      content
-    ]} *)
-
-val seq : ?flush:bool -> string Seq.t -> body
-(** Creates a {!type:body} from a string sequence. See
-    {!section:"note-on-data-stream-response"} for a description of [flush]
-    parameter. *)
-
-val stream : ?flush:bool -> ((string -> unit) -> unit) -> body
-(** [stream (fun consume -> ...)] creates a {!type:body} from a data stream.
-    Each call to [consume] write the given input on socket. Useful for stream
-    data or file chunk in real time. See
-    {!section:"note-on-data-stream-response"} for a description of [flush]
-    parameter. *)
+module Status = Response.Status
 
 (** {1:mime Mime} *)
 
-val make_mime : ?charset:string -> string -> mime
-(** [make_mime ?charset mime] creates a {!type:mime} type from given [charset].
-    Charset defaults to [utf-8] if mime type begins with [text/].
-
-    @raise Invalid_argument if [mime] is an empty string
-
-    @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
-      For a description of the "charset" parameter. *)
-
-val from_filename : ?charset:string -> string -> mime option
-(** [from_filename ?charset fname] tries to create a {!type:mime} by performing
-    a mime lookup based on file extension of [fname].
-
-    Note that mime {!val:gemini} are not infered from files with [.gmi]
-    extension. See {:https://github.com/Psi-Prod/Mehari/issues/36}. *)
-
-val from_content : ?charset:string -> tree:Conan.Tree.t -> string -> mime option
-(** [from_content ?charset ~tree c] tries to create a {!type:mime} type by
-    performing a mime lookup based on content [c]. [tree] is the tree used to
-    build the MIME database. *)
-
-val gemini : ?charset:string -> ?lang:string list -> unit -> mime
-(** [gemini ?charset ?lang ()] is [text/gemini; charset=...; lang=...].
-
-    @see < https://www.rfc-editor.org/rfc/rfc2046#section-4.1.2 >
-      For a description of the "charset" parameter.
-
-    @see < https://www.ietf.org/rfc/bcp/bcp47.txt >
-      For a description of the "lang" parameter. *)
-
-val app_octet_stream : mime
-(** [app_octet_stream] is a shortcut for [application/octet-stream]. *)
-
-val plaintext : mime
-(** [plaintext] is a shortcut for [text/plain; charset=utf-8]. *)
-
-val text : string -> mime
-(** [text type] is a shortcut for [text/type; charset=utf-8]. *)
-
-val with_charset : mime -> string -> mime
-(** Set charset of given {!type:mime}. *)
+module Mime = Mime
 
 (** {1 IO} *)
 
@@ -249,7 +99,7 @@ module type NET = sig
 
   val router : route list -> handler
   (** Creates a router. If none of the routes match the {!type:Mehari.request},
-      the router returns {!val:Mehari.not_found}. *)
+      the router returns {!val:Mehari.Response.Status.not_found}. *)
 
   val route :
     ?rate_limit:rate_limiter ->
@@ -262,7 +112,7 @@ module type NET = sig
       to [handler]. [path] can be a string literal or a regex in Perl style
       depending of value of [regex]. If rate limit is in effect, [handler] is
       not executed and a respond with {!type:Mehari.status}
-      {!val:Mehari.slow_down} is sended. *)
+      {!val:Mehari.Response.Status.slow_down} is sended. *)
 
   val scope :
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
@@ -321,12 +171,12 @@ module type FS = sig
 
   (** {1 Static files} *)
 
-  val response_document : ?mime:mime -> dir_path -> response IO.t
-  (** Same as {!val:Mehari.response} but respond with content of given
-      [filename] and use given {!type:Mehari.mime} as mime type. If [filename]
-      is not present on filesystem, responds with {!val:Mehari.not_found}. If
-      [mime] parameter is not supplied, document is served as
-      {!val:Mehari.app_octet_stream}. *)
+  val respond_document : ?mime:mime -> dir_path -> response IO.t
+  (** Same as {!val:Mehari.Response.respond} but respond with content of given
+      [filename] and use given {!type:mime} as mime type. If [filename] is not
+      present on filesystem, responds with
+      {!val:Mehari.Response.Status.not_found}. If [mime] parameter is not
+      supplied, document is served as {!val:Mehari.Mime.app_octet_stream}. *)
 
   val static :
     ?handler:(dir_path -> handler) ->
@@ -337,14 +187,14 @@ module type FS = sig
     dir_path ->
     handler
   (** [static dir] validates the path parameter (retrieved by calling
-      [Mehari.param req 1]) by checking that it is relative and does not contain
-      parent directory references. If these checks fail, responds with
-      {!val:Mehari.not_found}.
+      [Mehari.Request.param req 1]) by checking that it is relative and does not
+      contain parent directory references. If these checks fail, responds with
+      {!val:Mehari.Response.Status.not_found}.
 
       If the checks succeed, [static] calls [handler path request], where [path]
       is the path generated by the concatenation of directory that was passed to
       [static] and path of request. [handler] defaults to
-      {!val:response_document}.
+      {!val:respond_document}.
 
       If a directory is requested, [static] will look for a file named [index]
       in that directory to return. Otherwise, a directory file listing will be
@@ -368,12 +218,6 @@ module Private : sig
   module type IO = Signatures.IO
   module type PCLOCK = Signatures.PCLOCK
 
-  type response_view = Response.view
-
-  val view_of_resp : response -> response_view
-
-  module Handler = Handler
-
   module Cert : sig
     val get_certs :
       exn_msg:string -> Tls.Config.certchain list -> Tls.Config.own_cert
@@ -385,7 +229,7 @@ module Private : sig
     module type S = sig
       module IO : IO
 
-      type handler = Handler.Make(IO).t
+      type handler = request -> response IO.t
       type clock
 
       val set_level : Logs.level -> unit
@@ -414,7 +258,7 @@ module Private : sig
 
       type route
       type rate_limiter
-      type handler = Handler.Make(IO).t
+      type handler = request -> response IO.t
       type middleware = handler -> handler
 
       val no_middleware : middleware
@@ -456,14 +300,14 @@ module Private : sig
       val kind : path -> [ `Regular_file | `Directory | `Other ] IO.t
       val read : path -> string list IO.t
       val concat : path -> string -> path
-      val response_document : ?mime:mime -> path -> response IO.t
+      val respond_document : ?mime:mime -> path -> response IO.t
       val pp_io_err : Format.formatter -> exn -> unit
     end
 
     module type S = sig
       module IO : Signatures.IO
 
-      type handler = Handler.Make(IO).t
+      type handler = request -> response IO.t
       type dir_path
 
       val static :

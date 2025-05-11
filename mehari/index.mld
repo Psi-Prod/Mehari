@@ -66,7 +66,7 @@ functions.
 
 Mehari provides its own representation of status codes as described in the
 {{:Gemini protocol specification} gemini specification}. Take a look at the
-signature of {!val:Mehari.response}:
+signature of {!val:Mehari.Response.respond}:
 
 {@ocaml[val response : 'a status -> 'a -> response]}
 
@@ -95,7 +95,7 @@ let successful_resp =
 
 See {!Mehari.section-status} for the complete list of status. Other functions
 described in {!Mehari.section-response} section are mostly convenient functions
-built on top of {!val:Mehari.response}.
+built on top of {!val:Mehari.Response.respond}.
 
 {3 Body}
 
@@ -142,17 +142,17 @@ Here is an example of a Python parser that demonstrates the truth of that statem
 
 Mehari offers ways to keep client connections open forever and stream data in
 real time. Be sure to read this quick warning about this approach:
-{!Mehari.section-"note-on-data-stream-response"}.
+{!Mehari.Response.Body.section-"note-on-data-stream-response"}.
 
 {3 Mime}
 
 {!type:Mehari.mime} describes how the response body
 must be interpreted by the client.
-You can build your own mime with {!val:Mehari.make_mime} and specify the
+You can build your own mime with {!val:Mehari.Mime.make} and specify the
 data encoding with the parameter [charset]:
 
 {@ocaml[
-let mp3 = Mehari.make_mime "audio/mp3"
+let mp3 = Mehari.Mime.make "audio/mp3"
 ]}
 
 Some common MIME type are predefined. See {!Mehari.section-"mime"} section.
@@ -162,16 +162,16 @@ the languages used in the document according to the
 {{:https://geminiprotocol.net/docs/protocol-specification.gmi} Gemini specification}:
 
 {@ocaml[
-let french_ascii_gemini = Mehari.gemini ~charset:"ascii" ~lang:["fr"] ()
+let french_ascii_gemini = Mehari.Mime.gemini ~charset:"ascii" ~lang:["fr"] ()
 ]}
 
 {4 Inference}
 
-{!val:Mehari.from_filename} enables MIME type infering from a filename.
+{!val:Mehari.Mime.from_filename} enables MIME type infering from a filename.
 
 Mehari also provides an experimental
 {{:https://github.com/mirage/conan} Conan} integration via
-{!val:Mehari.from_content} to infer MIME type from a string.
+{!val:Mehari.Mime.from_content} to infer MIME type from a string.
 
 {2:route Routing}
 
@@ -182,15 +182,15 @@ routes are "raw" by default:
 
 {@ocaml[Mehari_eio.route "/var/gemini" (fun _ -> ...)]}
 
-In the following snippet, {!val:Mehari.param} retrieves the first group of the
+In the following snippet, {!val:Mehari.Request.param} retrieves the first group of the
 regex starting from index [1]. It is possible to have as many groups as desired
 in the route path.
 
 {@ocaml[
 Mehari_eio.route ~regex:true "/articles/([a-z][A-Z])+" (fun req ->
-  Mehari.param req 1
+  Mehari.Request.param req 1
   |> Printf.sprintf "Get article %S"
-  |> Mehari.response_text)
+  |> Mehari.Response.text)
 ]}
 
 It is the purpose of {!val:Mehari.NET.router} to group routes together to

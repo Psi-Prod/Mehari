@@ -1,7 +1,9 @@
-module type S = sig
-  module IO : Mehari.Private.IO
+open Mehari
 
-  type handler = Mehari.Private.Handler.Make(IO).t
+module type S = sig
+  module IO : Private.IO
+
+  type handler = request -> response IO.t 
 
   val run :
     ?port:int ->
@@ -16,16 +18,16 @@ module type S = sig
     unit
 end
 
-module Make (Logger : Mehari.Private.Logger_impl.S) :
+module Make (Logger : Private.Logger_impl.S) :
   S with module IO = Common.Direct = struct
   module IO = Common.Direct
 
-  type handler = Mehari.Private.Handler.Make(IO).t
+  type handler = request -> response IO.t
 
   module Buf_read = Eio.Buf_read
   module Buf_write = Eio.Buf_write
   module Net = Eio.Net
-  module Protocol = Mehari.Private.Protocol
+  module Protocol = Private.Protocol
 
   type config = {
     addr : Ipaddr.t;
@@ -47,9 +49,9 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
 
   let write_resp flow resp =
     Buf_write.with_flow flow @@ fun w ->
-    match Mehari.Private.view_of_resp resp with
-    | Immediate bufs ->
-        List.iter (fun buf -> Buf_write.string w buf) bufs;
+    match Response.Private.view_of_resp resp with
+    | Immediate buf ->
+        Buf_write.string w buf;
         Buf_write.flush w
     | Delayed { body; flush } ->
         let consume buf =
@@ -117,7 +119,7 @@ module Make (Logger : Mehari.Private.Logger_impl.S) :
       ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
       callback =
     let certificates =
-      Mehari.Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
+      Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
     in
     let tls_config =
       match config with

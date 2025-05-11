@@ -40,3 +40,9 @@ let param t p =
   | Some _ when p <= 0 -> fail ()
   | Some grp -> (
       match Re.Group.get_opt grp p with None -> fail () | Some param -> param)
+
+module Private = struct
+  let make = make
+  let sni = sni
+  let attach_params = attach_params
+end

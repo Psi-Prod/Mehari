@@ -1,5 +1,7 @@
 (** Mirage OS compatiblity. *)
 
+open Mehari
+
 module type S = sig
   module IO = Lwt
 
@@ -9,7 +11,7 @@ module type S = sig
   (** {1 Net} *)
 
   (** @closed *)
-  include Mehari.NET with module IO := IO and type clock := unit
+  include NET with module IO := IO and type clock := unit
 
   (** {1 Rate limit} *)
 
@@ -26,29 +28,26 @@ module type S = sig
 
   (** {1 Response} *)
 
-  val respond : 'a Mehari.status -> 'a -> Mehari.response IO.t
-  (** Same as {!val:Mehari.response}, but the new {!type:Mehari.response} is
-      wrapped in a promise. *)
+  val respond : 'a status -> 'a -> response IO.t
+  (** Same as {!val:Mehari.Response.respond}, but the new response is wrapped in
+      a promise. *)
 
-  val respond_body : Mehari.body -> Mehari.mime -> Mehari.response IO.t
-  (** Same as {!val:respond} but respond with given {!type:Mehari.body} and use
-      given {!type:Mehari.mime} as mime type. *)
+  val respond_body : body -> mime -> response IO.t
+  (** Same as {!val:Mehari.Response.body} but respond with given
+      {!type:Mehari.body} and use given {!type:Mehari.mime} as mime type. *)
 
-  val respond_text : string -> Mehari.response IO.t
-  (** Same as {!val:respond} but respond with given text and use [text/plain] as
-      {!type:Mehari.mime} type. *)
+  val respond_text : string -> response IO.t
+  (** Same as {!val:Mehari.Response.text} but respond with given text and use
+      [text/plain] as MIME type. *)
 
   val respond_gemtext :
-    ?charset:string ->
-    ?lang:string list ->
-    Mehari.Gemtext.t ->
-    Mehari.response IO.t
-  (** Same as {!val:respond} but respond with given {!type:Mehari.Gemtext.t} and
-      use [text/gemini] as {!type:Mehari.mime} type. *)
+    ?charset:string -> ?lang:string list -> Gemtext.t -> response IO.t
+  (** Same as {!val:Mehari.Response.gemtext} but respond with given
+      {!type:Mehari.Gemtext.t} and use [text/gemini] as {!type:Mehari.mime}
+      type. *)
 
-  val respond_raw :
-    [ `Body of string | `Full of int * string * string ] -> Mehari.response IO.t
-  (** Same as {!val:Mehari.response_raw}, but the new {!type:Mehari.response} is
+  val respond_raw : int -> string -> string -> Mehari.response IO.t
+  (** Same as {!val:Mehari.Response.raw}, but the new {!type:Mehari.response} is
       wrapped in a promise. *)
 
   (** {1 Entry point} *)
