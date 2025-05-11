@@ -53,7 +53,7 @@ module Make (Logger : Private.Logger_impl.S) :
     | Immediate buf ->
         Buf_write.string w buf;
         Buf_write.flush w
-    | Delayed { body; flush } ->
+    | Chunks { body; flush } ->
         let consume buf =
           if flush then (
             Buf_write.string w buf;

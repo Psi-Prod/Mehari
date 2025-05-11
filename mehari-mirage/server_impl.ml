@@ -59,7 +59,7 @@ module Make
     | Immediate bufs ->
         write bufs;
         flush_channel chan
-    | Delayed { body; _ } ->
+    | Chunks { body; _ } ->
         body write;
         flush_channel chan
 

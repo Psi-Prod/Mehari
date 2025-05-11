@@ -1,5 +1,6 @@
-type t = { status : int; kind : kind }
-and kind = Immediate of string | Delayed of stream
+type t = Regular of response | Raw of string
+and response = { status : int; kind : kind }
+and kind = Immediate of string | Chunks of stream
 and stream = { body : (string -> unit) -> unit; flush : bool }
 
 module Body = struct
@@ -69,7 +70,7 @@ let validate code meta body =
     | Some (Body.String t) -> Immediate (meta ^ t)
     | Some (Gemtext g) -> Immediate (meta ^ Gemtext.to_string g)
     | Some (Stream { body; flush }) ->
-        Delayed
+        Chunks
           {
             body =
               (fun consume ->
@@ -84,7 +85,7 @@ let to_response (type a) ((code, status) : a Status.t) (m : a) =
     | Success body -> (Mime.to_string m, Some body)
     | Meta -> (m, None)
   in
-  { status = code; kind = validate code meta body }
+  Regular { status = code; kind = validate code meta body }
 
 let respond status info = to_response status info
 let body body = respond (Status.success body)
@@ -94,17 +95,23 @@ let gemtext ?charset ?lang g =
   Mime.gemini ?charset ?lang () |> respond (Status.success (Body.gemtext g))
 
 let raw code meta body =
-  { status = code; kind = Immediate (fmt_meta code meta ^ body) }
+  Regular { status = code; kind = Immediate (fmt_meta code meta ^ body) }
 
-let status { status; _ } = status
+let unsafe_raw resp = Raw resp
+
+let status = function
+  | Regular { status; _ } -> status
+  | Raw _ -> invalid_arg "Mehari.Response.status"
 
 module Private = struct
-  type view = kind = Immediate of string | Delayed of stream
+  type view = kind = Immediate of string | Chunks of stream
 
   type nonrec stream = stream = {
     body : (string -> unit) -> unit;
     flush : bool;
   }
 
-  let view_of_resp r = r.kind
+  let view_of_resp = function
+    | Raw resp -> Immediate resp
+    | Regular { kind; _ } -> kind
 end

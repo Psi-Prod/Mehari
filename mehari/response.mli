@@ -146,8 +146,11 @@ val raw : int -> string -> string -> t
 
     This function is mainly intended for CGI implementation. *)
 
-(* val from_string : string -> t option
-(* TODO document that  *) *)
+val unsafe_raw : string -> t
+(** [unsafe_raw resp] creates a new raw response. Does not perform any check on
+    validity i.e. length of header or beginning with a byte order mark [U+FEFF].
+
+    This function is mainly intended for CGI implementation. *)
 
 (** {1 Access} *)
 
@@ -156,7 +159,7 @@ val status : t -> int
 (**/**)
 
 module Private : sig
-  type view = Immediate of string | Delayed of stream
+  type view = Immediate of string | Chunks of stream
   and stream = { body : (string -> unit) -> unit; flush : bool }
 
   val view_of_resp : t -> view
