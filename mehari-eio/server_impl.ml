@@ -90,9 +90,9 @@ module Make (Logger : Private.Logger_impl.S) :
          in
          Protocol.make_request ~port:config.port
            ~client_addr:config.addr (* TODO: pass REAL client address *)
-           ~server_addr:config.addr ?hostname:own_name
-           ~verify_url_host:config.verify_url_host ~tls_version
-           ?client_cert:peer_certificate ~client_request config.certs
+           ?hostname:own_name ~verify_url_host:config.verify_url_host
+           ~tls_version ?client_cert:peer_certificate ~client_request
+           config.certs
        with
        | Ok req -> callback req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow

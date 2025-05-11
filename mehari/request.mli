@@ -39,7 +39,6 @@ module Private : sig
     ?client_cert:X509.Certificate.t ->
     uri:Uri.t ->
     client_addr:Ipaddr.t ->
-    server_addr:Ipaddr.t ->
     port:int ->
     sni:[ `host ] Domain_name.t ->
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->

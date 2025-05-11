@@ -4,8 +4,8 @@ type t
 (** Mime type of a document. *)
 
 val make : ?charset:string -> string -> t
-(** [make ?charset mime] creates a {!type:t} type from given [charset].
-    Charset defaults to [utf-8] if mime type begins with [text/].
+(** [make ?charset mime] creates a {!type:t} type from given [charset]. Charset
+    defaults to [utf-8] if mime type begins with [text/].
 
     @raise Invalid_argument if [mime] is an empty string
 
@@ -13,8 +13,8 @@ val make : ?charset:string -> string -> t
       For a description of the "charset" parameter. *)
 
 val from_filename : ?charset:string -> string -> t option
-(** [from_filename ?charset fname] tries to create a {!type:t} by performing
-    a mime lookup based on file extension of [fname].
+(** [from_filename ?charset fname] tries to create a {!type:t} by performing a
+    mime lookup based on file extension of [fname].
 
     Note that mime {!val:gemini} are not infered from files with [.gmi]
     extension. See {:https://github.com/Psi-Prod/Mehari/issues/36}. *)

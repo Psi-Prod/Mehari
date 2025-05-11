@@ -19,7 +19,7 @@ module Make (Clock : Signatures.PCLOCK) (IO : Signatures.IO) :
 
   type t = {
     clock : clock;
-    mutable requests : int;
+    requests : int;
     period : int;
     mutable next_timestamp : int;
     mutable history : int AddrMap.t;

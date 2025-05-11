@@ -9,7 +9,6 @@ type t = {
   remote_addr : string;
   remote_host : string;
   remote_ident : string;
-  remote_method : string;
   remote_user : string;
   request_method : string;
   script_name : string;
@@ -64,7 +63,6 @@ let make req ~script_path ~server_addr =
     remote_addr = client_addr;
     remote_host = client_addr;
     remote_ident = "";
-    remote_method = "";
     remote_user = "";
     request_method = "";
     script_name = script_path;

@@ -54,24 +54,63 @@ module Status : sig
   type 'a t
   (** Status of a Gemini response *)
 
+  (** {2 Status} *)
+
   val input : string t
+  (** Status 10: input expected. *)
+
   val sensitive_input : string t
+  (** Status 11: sensitive input expected. *)
+
   val success : Body.t -> Mime.t t
+  (** Status 20: success. *)
+
   val redirect_temp : string t
+  (** Status 30: temporary redirection. *)
+
   val redirect_perm : string t
+  (** Status 31: permanent redirection. *)
+
   val temporary_failure : string t
+  (** Status 40: temporary failure. *)
+
   val server_unavailable : string t
+  (** Status 41: server unavailable. *)
+
   val cgi_error : string t
+  (** Status 42: CGI error. *)
+
   val proxy_error : string t
+  (** Status 43: proxy error. *)
+
   val slow_down : string t
+  (** Status 44: slow down. *)
+
   val perm_failure : string t
+  (** Status 50: permanent failure. *)
+
   val not_found : string t
+  (** Status 51: not found. *)
+
   val gone : string t
+  (** Status 52: gone. *)
+
   val proxy_request_refused : string t
+  (** Status 53: proxy request refused. *)
+
   val bad_request : string t
+  (** Status 59: bad request. *)
+
   val client_cert_req : string t
+  (** Status 60: client certificate required. *)
+
   val cert_not_authorised : string t
+  (** Status 61: client certificate not authorized. *)
+
   val cert_not_valid : string t
+  (** Status 62: client certificate not valid. *)
+
+  (** {2 Utils} *)
 
   val code_of_status : _ t -> int
   (** [code_of_status s] is status code associated with status [s]. *)

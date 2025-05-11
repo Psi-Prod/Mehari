@@ -286,7 +286,7 @@ module Private : sig
         ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
     end
 
-    module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
+    module Make (RateLimiter : Rate_limiter_impl.S) (_ : Logger_impl.S) :
       S with module IO = RateLimiter.IO and type rate_limiter := RateLimiter.t
   end
 

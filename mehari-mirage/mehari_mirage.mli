@@ -92,6 +92,6 @@ end
 
 (** A functor building an IO module from Mirage components. *)
 module Make
-    (Clock : Mirage_clock.PCLOCK)
+    (_ : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    (Time : Mirage_time.S) : S with type stack = Stack.t
+    (_ : Mirage_time.S) : S with type stack = Stack.t

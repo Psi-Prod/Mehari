@@ -3,11 +3,9 @@ open Mehari.Private
 let test_cgi_env_1 =
   let open Alcotest in
   test_case "CGI env test - 1" `Quick (fun () ->
-      let server_addr = Ipaddr.(V4 (V4.of_string_exn "10.10.200.130")) in
       let req =
         Protocol.make_request
           ~client_addr:(Ipaddr.of_string_exn "80.0.10.30")
-          ~server_addr
           ~hostname:Domain_name.(of_string_exn "heyplzlookat.me" |> host_exn)
           ~port:1968 ~verify_url_host:false ~tls_version:`TLS_1_2
           ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi" []
@@ -38,7 +36,8 @@ let test_cgi_env_1 =
         |]
       in
       let computed =
-        Cgi.make req ~script_path:"./cgi-bin/cgi_script.py" ~server_addr
+        Cgi.make req ~script_path:"./cgi-bin/cgi_script.py"
+          ~server_addr:Ipaddr.(V4 (V4.of_string_exn "10.10.200.130"))
         |> Cgi.to_env
       in
       check (array (pair string string)) "should be equal" expected computed)
@@ -46,11 +45,9 @@ let test_cgi_env_1 =
 let test_cgi_env_2 =
   let open Alcotest in
   test_case "CGI env test - 2" `Quick (fun () ->
-      let server_addr = Ipaddr.(V4 V4.localhost) in
       let req =
         Protocol.make_request
           ~client_addr:(Ipaddr.of_string_exn "120.8.50.12")
-          ~server_addr
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~port:1965 ~verify_url_host:false ~tls_version:`TLS_1_3
           ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input" []
@@ -81,7 +78,8 @@ let test_cgi_env_2 =
         |]
       in
       let computed =
-        Cgi.make req ~script_path:"/usr/lib/cgi-bin/cgi_script.pl" ~server_addr
+        Cgi.make req ~script_path:"/usr/lib/cgi-bin/cgi_script.pl"
+          ~server_addr:Ipaddr.(V4 V4.localhost)
         |> Cgi.to_env
       in
       check (array (pair string string)) "should be equal" expected computed)
@@ -109,11 +107,9 @@ let test_cgi_env_3 =
          -----END CERTIFICATE-----" |> X509.Certificate.decode_pem
         |> Result.get_ok
       in
-      let server_addr = Ipaddr.(V4 (V4.of_string_exn "152.19.95.83")) in
       let req =
         Protocol.make_request
           ~client_addr:(Ipaddr.of_string_exn "80.0.10.160")
-          ~server_addr
           ~hostname:Domain_name.(of_string_exn "geminiprotocol.net" |> host_exn)
           ~port:1965 ~verify_url_host:false ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:
@@ -148,7 +144,8 @@ let test_cgi_env_3 =
         |]
       in
       let computed =
-        Cgi.make req ~script_path:"/foo/bar/foobar.ml" ~server_addr
+        Cgi.make req ~script_path:"/foo/bar/foobar.ml"
+          ~server_addr:Ipaddr.(V4 (V4.of_string_exn "152.19.95.83"))
         |> Cgi.to_env
       in
       check (array (pair string string)) "should be equal" expected computed)

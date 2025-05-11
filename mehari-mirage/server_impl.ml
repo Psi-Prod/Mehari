@@ -113,9 +113,9 @@ module Make
               match
                 Protocol.make_request ~port:config.port
                   ~client_addr:config.addr (* TODO: pass REAL client address *)
-                  ~server_addr:config.addr ?hostname:own_name
-                  ~verify_url_host:config.verify_url_host ~tls_version
-                  ?client_cert:peer_certificate ~client_request config.certs
+                  ?hostname:own_name ~verify_url_host:config.verify_url_host
+                  ~tls_version ?client_cert:peer_certificate ~client_request
+                  config.certs
               with
               | Ok req -> callback req
               | Error err -> Protocol.to_response err |> Lwt.return

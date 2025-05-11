@@ -7,14 +7,12 @@ let request_err = Alcotest.testable Protocol.pp_err Protocol.equal_err
 let mock_request ?(certs = []) client_request =
   Protocol.make_request
     ~client_addr:(Ipaddr.of_string_exn "80.120.170.10")
-    ~server_addr:Ipaddr.(V4 V4.localhost)
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
     ~port:1917 ~verify_url_host:true ~tls_version:`TLS_1_3 ~client_request certs
 
 let request_1 =
   Protocol.make_request
     ~client_addr:(Ipaddr.of_string_exn "80.120.170.10")
-    ~server_addr:Ipaddr.(V4 V4.localhost)
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
     ~port:1917 ~verify_url_host:false ~tls_version:`TLS_1_3
     ~client_request:"gemini://localhost/foo/bar" []
@@ -144,7 +142,6 @@ let test_request_sni_required =
       let computed =
         Protocol.make_request ~port:1917
           ~client_addr:(Ipaddr.of_string_exn "80.120.170.10")
-          ~server_addr:Ipaddr.(V4 V4.localhost)
           ~verify_url_host:true ~tls_version:`TLS_1_3 ~client_request:"" []
           ?hostname:None
       in
@@ -178,7 +175,6 @@ let test_request_wrong_port =
       let computed =
         Protocol.make_request
           ~client_addr:(Ipaddr.of_string_exn "80.120.170.10")
-          ~server_addr:Ipaddr.(V4 V4.localhost)
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~verify_url_host:false ~tls_version:`TLS_1_3 [] ~port:1917
           ~client_request:"gemini://heyplzlookat.me:1848/"

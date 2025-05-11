@@ -17,6 +17,8 @@
 
 (generate_opam_files true)
 
+(executables_implicit_empty_intf)
+
 (package
  (name mehari)
  (synopsis "A cross-platform library for building Gemini servers")

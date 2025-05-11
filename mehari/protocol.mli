@@ -19,11 +19,10 @@ type err =
 
 val make_request :
   client_addr:Ipaddr.t ->
-  server_addr:Ipaddr.t ->
   ?hostname:[ `host ] Domain_name.t ->
   port:int ->
   verify_url_host:bool ->
-  tls_version:[`TLS_1_2 | `TLS_1_3] ->
+  tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
   ?client_cert:X509.Certificate.t ->
   client_request:string ->
   X509.Certificate.t list ->

@@ -1,6 +1,5 @@
 type t = {
   client_addr : Ipaddr.t;
-  server_addr : Ipaddr.t;
   port : int;
   uri : Uri.t;
   sni : [ `host ] Domain_name.t;
@@ -18,18 +17,8 @@ let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 let tls_version { tls_version; _ } = tls_version
 
-let make ?client_cert ~uri ~client_addr ~server_addr ~port ~sni ~tls_version ()
-    =
-  {
-    uri;
-    client_addr;
-    server_addr;
-    port;
-    sni;
-    params = None;
-    client_cert;
-    tls_version;
-  }
+let make ?client_cert ~uri ~client_addr ~port ~sni ~tls_version () =
+  { uri; client_addr; port; sni; params = None; client_cert; tls_version }
 
 let attach_params t params = { t with params }
 

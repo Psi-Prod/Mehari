@@ -59,7 +59,10 @@ module Make
   let respond s i = Response.respond s i |> IO.return
   let respond_body b m = Response.body b m |> IO.return
   let respond_text t = Response.text t |> IO.return
-  let respond_gemtext ?charset ?lang g = Response.gemtext ?charset ?lang g |> IO.return
+
+  let respond_gemtext ?charset ?lang g =
+    Response.gemtext ?charset ?lang g |> IO.return
+
   let respond_raw c s b = Response.raw c s b |> IO.return
   let set_log_lvl = Logger.set_level
   let logger = Logger.logger ()
