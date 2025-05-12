@@ -27,7 +27,7 @@ let make_cgi_env req ~script_path =
   |> to_env
   |> Array.map (fun (name, value) -> Printf.sprintf "%s=%s" name value)
 
-let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
+let run_cgi ?(timeout = 5.0) ?(non_parsed = false) path req =
   let run () =
     let* cwd = Lwt_unix.getcwd () in
     let env = make_cgi_env req ~script_path:(Filename.concat cwd path) in
@@ -38,7 +38,8 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
     let cgi_script_exec =
       Lwt_process.with_process_in ~stderr:`Dev_null ~env (path, [||])
         (fun proc ->
-          if nph then Lwt_io.read proc#stdout >|= Response.Private.unsafe_raw
+          if non_parsed then
+            Lwt_io.read proc#stdout >|= Response.Private.unsafe_raw
           else
             parse_header proc#stdout >>= function
             | None -> Lwt.return cgi_err
@@ -74,14 +75,14 @@ let read_chunks path =
     false
 
 let respond_document ?(mime = Mehari.Mime.app_octet_stream) path =
-  let* exists = Lwt_unix.file_exists path in
-  if exists then
-    let* chunks = read_chunks path in
-    let+ cs = chunks () in
-    Response.body (Response.Body.seq (fun () -> cs)) mime
-  else Response.respond Status.not_found "" |> Lwt.return
+  Lwt_unix.file_exists path >>= function
+  | true ->
+      let* chunks = read_chunks path in
+      let+ cs = chunks () in
+      Response.body (Body.seq (fun () -> cs)) mime
+  | false -> Response.respond Status.not_found "" |> Lwt.return
 
-include Mehari.Private.Static.Make (struct
+include Private.Static.Make (struct
   module IO = Lwt
 
   type path = string

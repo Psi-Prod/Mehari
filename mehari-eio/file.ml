@@ -1,7 +1,5 @@
 open Mehari
 
-let not_found = Response.(respond Status.not_found "")
-
 let respond_document ?(mime = Mime.app_octet_stream) path =
   try
     let chunk_size = 16384 in
@@ -27,7 +25,7 @@ let respond_document ?(mime = Mime.app_octet_stream) path =
               loop ()))
     in
     Response.body body mime
-  with Eio.Io _ -> not_found
+  with Eio.Io _ -> Response.respond Status.not_found ""
 
 include Private.Static.Make (struct
   module IO = Direct

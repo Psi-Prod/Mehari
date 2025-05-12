@@ -18,8 +18,6 @@ module Clock = struct
     (Int64.to_int days, Int64.add rem_ps frac_ps)
 end
 
-module type S = Mehari.NET with module IO := Direct and type clock = Clock.t
-
 module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct)
 
 module Logger =

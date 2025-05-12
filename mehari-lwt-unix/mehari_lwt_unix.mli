@@ -31,7 +31,7 @@ include Mehari.FS with module IO := IO and type dir_path := string
     Let's assume that client requested the following URL:
     [gemini://localhost/cgi/script.cgi?an_input] and the response generation is
     handled by a CGI script located at [/var/cgi-bin/script.cgi] on server. CGI
-    variables values are :
+    variables values are:
 
     - [AUTH_TYPE] is ["Certificate"] if a client certificate is provided, empty
       otherwise.
@@ -59,20 +59,17 @@ include Mehari.FS with module IO := IO and type dir_path := string
     - [TLS_CLIENT_ISSUER] is the client certificate Issuer common name if it is
       provided, empty otherwise *)
 
-val run_cgi :
-  ?timeout:float ->
-  ?nph:bool ->
-  string ->
-  Mehari.request ->
-  Mehari.response Lwt.t
-(** [run_cgi ?timeout ?nph script_path req] executes the CGI script located at
-    [script_path] and return a {!type:Mehari.response} containing script's
-    stdout. Responds with {!val:Mehari.Status.cgi_error} in case of error or
-    [timeout] exceeding.
+val run_cgi : ?timeout:float -> ?non_parsed:bool -> string -> handler
+(** [run_cgi ?timeout ?non_parsed script_path req] executes the CGI script
+    located at [script_path] and return a {!type:Mehari.response} containing
+    script's stdout. Responds with {!val:Mehari.Status.cgi_error} in case of
+    error or [timeout] exceeding.
 
     - [timeout] is expressed in seconds and defaults to [5.0].
-    - [nph] decides if NPH (Non-Parsed Header) is enable. Defaults to [false].
-*)
+    - [non_parsed] decides if NPH (Non-Parsed Header CGI feature) is enable. It
+      allow to passes all responsibility for response processing to script which
+      means that server no longer checks correctness of script output. Use it
+      with caution. Defaults to [false]. *)
 
 (** {1 Entry point} *)
 
