@@ -37,67 +37,8 @@ module Body = Response.Body
 module Status = Response.Status
 module Mime = Mime
 
-module type NET = sig
-  module IO : Signatures.IO
-
-  type route
-  type rate_limiter
-  type handler = request -> response IO.t
-  type middleware = handler -> handler
-  type clock
-
-  val no_middleware : middleware
-  val pipeline : middleware list -> middleware
-  val router : route list -> handler
-
-  val route :
-    ?rate_limit:rate_limiter ->
-    ?mw:middleware ->
-    ?regex:bool ->
-    string ->
-    handler ->
-    route
-
-  val scope :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
-
-  val no_route : route
-
-  val make_rate_limit :
-    clock ->
-    ?period:int ->
-    int ->
-    [ `Second | `Minute | `Hour | `Day ] ->
-    rate_limiter
-
-  val virtual_hosts :
-    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
-
-  val set_log_lvl : Logs.level -> unit
-  val logger : clock -> handler -> handler
-  val debug : 'a Logs.log
-  val info : 'a Logs.log
-  val warning : 'a Logs.log
-  val error : 'a Logs.log
-end
-
-module type FS = sig
-  module IO : Signatures.IO
-
-  type handler = request -> response IO.t
-  type dir_path
-
-  val respond_document : ?mime:mime -> dir_path -> response IO.t
-
-  val static :
-    ?handler:(dir_path -> handler) ->
-    ?dir_listing:
-      (([ `Regular_file | `Directory | `Other ] * string) list -> handler) ->
-    ?index:string ->
-    ?show_hidden:bool ->
-    dir_path ->
-    handler
-end
+module type NET = Signatures.NET
+module type FS = Signatures.FS
 
 module Private = struct
   module type IO = Signatures.IO
