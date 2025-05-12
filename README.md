@@ -43,11 +43,3 @@ Since Mehari is in its early stages, any feedback and contributions regarding th
 ## License
 
 Distributed under the **LGPL-3.0 License**. See [license](LICENSE) for more information.
-
-
-- intégrer nightmare.path
-- mli partout
-- reader monad pour se passer des capabilitées d'eio
-- implémenter backend miou
-- tester tout (imposer une sig TestableServer pour chaque implémentation)
-- mettre à jour spec gemini https://geminiprotocol.net/docs/app-guide.gmi
