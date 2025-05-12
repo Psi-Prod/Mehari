@@ -1,12 +1,12 @@
 type t = { mime : string; charset : string option; lang : string list }
 
 let make ?charset = function
-  | "" -> invalid_arg "Mehari.make_mime"
+  | "" -> invalid_arg "Mehari.Mime.make"
   | mime ->
       let charset =
         match charset with
         | None when String.starts_with ~prefix:"text/" mime -> Some "utf-8"
-        | _ -> None
+        | c -> c
       in
       { mime; charset; lang = [] }
 
@@ -16,13 +16,17 @@ let gemini ?charset ?(lang = []) () =
 let text text = make ("text/" ^ text)
 let app_octet_stream = make "application/octet-stream"
 let plaintext = text "plain"
-let with_charset t c = { t with charset = Some c }
+let with_charset c t = { t with charset = Some c }
 
 let from_filename ?charset fname =
-  match Conan_bindings.Extensions.(Map.find_opt fname map) with
-  | None -> None
-  | Some [] -> assert false
-  | Some (m :: _) -> make m ~charset |> Option.some
+  match Filename.extension fname with
+  | "" -> None
+  | dot_ext -> (
+      let ext = String.sub dot_ext 1 (String.length dot_ext - 1) in
+      match Conan_bindings.Extensions.(Map.find_opt ext map) with
+      | None -> None
+      | Some [] -> assert false
+      | Some (m :: _) -> make ?charset m |> Option.some)
 
 let from_content ?charset ~tree content =
   match Conan_string.run ~database:(Conan.Process.database ~tree) content with
@@ -36,6 +40,16 @@ let to_string { mime; charset; lang } =
     | Some cs -> Printf.sprintf "; charset=%s" cs
   in
   let lang =
-    if mime = "text/gemini" then "; lang=" ^ String.concat "," lang else ""
+    match (mime, lang) with
+    | "text/gemini", [] -> ""
+    | "text/gemini", [ _ ] -> "; lang=" ^ String.concat "," lang
+    | "text/gemini", _ :: _ :: _ -> "; lang=\"" ^ String.concat "," lang ^ "\""
+    | _ -> ""
   in
   mime ^ charset ^ lang
+
+let equal { mime; charset; lang }
+    { mime = mime'; charset = charset'; lang = lang' } =
+  String.equal mime mime'
+  && Option.equal String.equal charset charset'
+  && List.equal String.equal lang lang'

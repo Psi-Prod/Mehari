@@ -5,7 +5,7 @@ type t
 
 val make : ?charset:string -> string -> t
 (** [make ?charset mime] creates a {!type:t} type from given [charset]. Charset
-    defaults to [utf-8] if mime type begins with [text/].
+    defaults to [utf-8] if [mime] begins with [text/].
 
     @raise Invalid_argument if [mime] is an empty string
 
@@ -13,18 +13,18 @@ val make : ?charset:string -> string -> t
       For a description of the "charset" parameter. *)
 
 val from_filename : ?charset:string -> string -> t option
-(** [from_filename ?charset fname] tries to create a {!type:t} by performing a
-    mime lookup based on file extension of [fname].
+(** [from_filename ?charset fname] tries to create a MIME by performing a MIME
+    lookup based on file extension of [fname].
 
-    Note that mime {!val:gemini} are not infered from files with [.gmi]
+    Note that MIME {!val:gemini} are not infered from files with [.gmi]
     extension. See {:https://github.com/Psi-Prod/Mehari/issues/36}. *)
 
 val from_content : ?charset:string -> tree:Conan.Tree.t -> string -> t option
-(** [from_content ?charset ~tree c] tries to create a {!type:t} type by
-    performing a mime lookup based on content [c]. [tree] is the tree used to
-    build the MIME database. *)
+(** [from_content ?charset ~tree c] tries to create a MIME type by performing a
+    MIME lookup based on content [c]. [tree] is the tree used to build the MIME
+    database. *)
 
-val with_charset : t -> string -> t
+val with_charset : string -> t -> t
 (** Set charset of given {!type:t}. *)
 
 val gemini : ?charset:string -> ?lang:string list -> unit -> t
@@ -45,4 +45,10 @@ val plaintext : t
 val text : string -> t
 (** [text "type"] is a shortcut for [text/type; charset=utf-8]. *)
 
+(** {1 Utils} *)
+
+val equal : t -> t -> bool
+(** Equality between MIME type. *)
+
 val to_string : t -> string
+(** [to_sting m] is the string representation of [m]. *)
