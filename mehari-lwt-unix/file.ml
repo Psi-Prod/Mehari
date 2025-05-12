@@ -9,18 +9,17 @@ module Log = (val Logs.src_log src)
 let meta =
   Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
 
-let ( let$ ) = Option.bind
-
 let parse_header in_chan =
   Lwt_io.read_line_opt in_chan >|= function
   | None -> None
   | Some header when Bytes.(of_string header |> length) > 1024 -> None
   | Some header ->
-      let$ grp = Re.exec_opt meta header in
-      let$ code = Re.Group.get grp 1 |> int_of_string_opt in
+      let ( let* ) = Option.bind in
+      let* grp = Re.exec_opt meta header in
+      let* code = Re.Group.get grp 1 |> int_of_string_opt in
       Some (code, Re.Group.get grp 2)
 
-let cgi_err = Mehari_io.respond Response.Status.cgi_error ""
+let cgi_err = Response.respond Response.Status.cgi_error ""
 
 let make_cgi_env req ~script_path =
   let open Mehari.Private.Cgi in
@@ -33,7 +32,7 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
     let* cwd = Lwt_unix.getcwd () in
     let env = make_cgi_env req ~script_path:(Filename.concat cwd path) in
     let timeout =
-      let* () = Lwt_unix.sleep timeout in
+      let+ () = Lwt_unix.sleep timeout in
       cgi_err
     in
     let cgi_script_exec =
@@ -42,7 +41,7 @@ let run_cgi ?(timeout = 5.0) ?(nph = false) path req =
           if nph then Lwt_io.read proc#stdout >|= Response.Private.unsafe_raw
           else
             parse_header proc#stdout >>= function
-            | None -> cgi_err
+            | None -> Lwt.return cgi_err
             | Some (code, meta) ->
                 let+ body = Lwt_io.read proc#stdout in
                 Response.Private.raw code meta body)
@@ -74,15 +73,13 @@ let read_chunks path =
         else Some (chunk, true))
     false
 
-let not_found = Mehari_io.respond Response.Status.not_found ""
-
 let respond_document ?(mime = Mehari.Mime.app_octet_stream) path =
   let* exists = Lwt_unix.file_exists path in
   if exists then
     let* chunks = read_chunks path in
-    let* cs = chunks () in
-    Mehari_io.respond_body (Response.Body.seq (fun () -> cs)) mime
-  else not_found
+    let+ cs = chunks () in
+    Response.body (Response.Body.seq (fun () -> cs)) mime
+  else Response.respond Status.not_found "" |> Lwt.return
 
 include Mehari.Private.Static.Make (struct
   module IO = Lwt

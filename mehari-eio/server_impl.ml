@@ -18,9 +18,9 @@ module type S = sig
     unit
 end
 
-module Make (Logger : Private.Logger_impl.S) :
-  S with module IO = Common.Direct = struct
-  module IO = Common.Direct
+module Make (Logger : Private.Logger_impl.S) : S with module IO = Direct =
+struct
+  module IO = Direct
 
   type handler = request -> response IO.t
 

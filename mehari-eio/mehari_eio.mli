@@ -1,7 +1,5 @@
 (** An IO module Mehari implementation based on [Eio] library. *)
 
-module Direct = Common.Direct
-
 (** {1 Net} *)
 
 (** @closed *)

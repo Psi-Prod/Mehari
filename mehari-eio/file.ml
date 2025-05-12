@@ -30,7 +30,7 @@ let respond_document ?(mime = Mime.app_octet_stream) path =
   with Eio.Io _ -> not_found
 
 include Private.Static.Make (struct
-  module IO = Common.Direct
+  module IO = Direct
 
   type path = [ `Dir ] Eio.Path.t
 

@@ -1,5 +1,5 @@
-module Direct = Common.Direct
-module IO = Common.Direct
+module Direct = Direct
+module IO = Direct
 
 module Clock = struct
   type t = [ `Clock of float ] Eio.Time.clock
