@@ -46,14 +46,6 @@ module type S = sig
       {!type:Mehari.Gemtext.t} and use [text/gemini] as {!type:Mehari.mime}
       type. *)
 
-  val respond_raw : int -> string -> string -> Mehari.response IO.t
-  (** Same as {!val:Mehari.Response.raw}, but the new {!type:Mehari.response} is
-      wrapped in a promise. *)
-
-  val respond_unsafe_raw : string -> Mehari.response IO.t
-  (** Same as {!val:Mehari.Response.unsafe_raw}, but the new
-      {!type:Mehari.response} is wrapped in a promise. *)
-
   (** {1 Entry point} *)
 
   val run :

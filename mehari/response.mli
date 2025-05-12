@@ -139,19 +139,6 @@ val gemtext : ?charset:string -> ?lang:string list -> Gemtext.t -> t
 (** Creates a successful response with given gemtext and use [text/gemini] as
     MIME type. *)
 
-val raw : int -> string -> string -> t
-(** [raw code meta body] creates a new raw response. Does not perform any check
-    on validity i.e. length of header or beginning with a byte order mark
-    [U+FEFF].
-
-    This function is mainly intended for CGI implementation. *)
-
-val unsafe_raw : string -> t
-(** [unsafe_raw resp] creates a new raw response. Does not perform any check on
-    validity i.e. length of header or beginning with a byte order mark [U+FEFF].
-
-    This function is mainly intended for CGI implementation. *)
-
 (** {1 Access} *)
 
 val status : t -> int
@@ -163,6 +150,20 @@ module Private : sig
   and stream = { body : (string -> unit) -> unit; flush : bool }
 
   val view_of_resp : t -> view
+
+  val raw : int -> string -> string -> t
+  (** [raw code meta body] creates a new raw response. Does not perform any
+      check on validity i.e. length of header or beginning with a byte order
+      mark [U+FEFF].
+
+      This function is mainly intended for CGI implementation. *)
+
+  val unsafe_raw : string -> t
+  (** [unsafe_raw resp] creates a new raw response. Does not perform any check
+      on validity i.e. length of header or beginning with a byte order mark
+      [U+FEFF].
+
+      This function is mainly intended for CGI implementation. *)
 end
 
 (**/**)

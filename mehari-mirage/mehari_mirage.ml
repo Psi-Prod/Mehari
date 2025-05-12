@@ -7,9 +7,6 @@ module type IO_RESPONSE = sig
 
   val respond_gemtext :
     ?charset:string -> ?lang:string list -> Gemtext.t -> response Lwt.t
-
-  val respond_raw : int -> string -> string -> response Lwt.t
-  val respond_unsafe_raw : string -> response Lwt.t
 end
 
 module type S = sig
@@ -64,8 +61,6 @@ module Make
   let respond_gemtext ?charset ?lang g =
     Response.gemtext ?charset ?lang g |> IO.return
 
-  let respond_raw c s b = Response.raw c s b |> IO.return
-  let respond_unsafe_raw r = Response.unsafe_raw r |> IO.return
   let set_log_lvl = Logger.set_level
   let logger = Logger.logger ()
   let debug = Logger.debug

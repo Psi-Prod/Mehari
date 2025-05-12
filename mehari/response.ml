@@ -94,11 +94,6 @@ let text txt = respond (Status.success (Body.string txt)) Mime.plaintext
 let gemtext ?charset ?lang g =
   Mime.gemini ?charset ?lang () |> respond (Status.success (Body.gemtext g))
 
-let raw code meta body =
-  Regular { status = code; kind = Immediate (fmt_meta code meta ^ body) }
-
-let unsafe_raw resp = Raw resp
-
 let status = function
   | Regular { status; _ } -> status
   | Raw _ -> invalid_arg "Mehari.Response.status"
@@ -114,4 +109,9 @@ module Private = struct
   let view_of_resp = function
     | Raw resp -> Immediate resp
     | Regular { kind; _ } -> kind
+
+  let raw code meta body =
+    Regular { status = code; kind = Immediate (fmt_meta code meta ^ body) }
+
+  let unsafe_raw resp = Raw resp
 end
