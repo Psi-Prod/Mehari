@@ -8,16 +8,19 @@ let () =
   Logs.set_level (Some Info);
   Logs.set_reporter (Logs_fmt.reporter ())
 
-let main () =
-  let* cert = X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" in
-  M.router
-    [
-      M.route "/" (fun _ ->
-          incr n;
-          M.info (fun log -> log "Request n°: %i" !n);
-          M.respond_text "This request is logged");
-    ]
-  |> M.logger
-  |> M.run_lwt ~certchains:[ cert ]
-
-let () = Lwt_main.run (main ())
+let () =
+  Lwt_main.run
+    begin
+      let* cert =
+        X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
+      in
+      M.router
+        [
+          M.route "/" (fun _ ->
+              incr n;
+              M.info (fun log -> log "Request n°: %i" !n);
+              M.respond_text "This request is logged");
+        ]
+      |> M.logger
+      |> M.run_lwt ~certs:(Single cert)
+    end

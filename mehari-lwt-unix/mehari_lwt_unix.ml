@@ -21,12 +21,12 @@ let stack ~v4 ~v6 =
 
 let default_ipv4 = Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
 
-let run_lwt ?port ?verify_url_host ?timeout ~certchains ?(v4 = default_ipv4) ?v6
-    callback =
+let run_lwt ?port ?verify_url_host ?timeout ?(v4 = default_ipv4) ?v6 ~certs
+    handler =
   Mirage_crypto_rng_unix.use_default ();
   let* stack = stack ~v4 ~v6 in
-  run ?port ?timeout ?verify_url_host ~certchains stack callback
+  run ?port ?timeout ?verify_url_host ~certs stack handler
 
-let run ?port ?verify_url_host ?timeout ~certchains ?v4 ?v6 callback =
-  run_lwt ?port ?timeout ?verify_url_host ~certchains ?v4 ?v6 callback
+let run ?port ?verify_url_host ?timeout ?v4 ?v6 ~certs callback =
+  run_lwt ?port ?timeout ?verify_url_host ?v4 ?v6 ~certs callback
   |> Lwt_main.run

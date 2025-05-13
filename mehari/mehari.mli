@@ -56,6 +56,10 @@ module Status = Response.Status
 
 module Mime = Mime
 
+(** {1 TLS certificates} *)
+
+module Certs = Certs
+
 (** {1 IO} *)
 
 module type NET = Signatures.NET
@@ -70,11 +74,6 @@ module type FS = Signatures.FS
 module Private : sig
   module type IO = Signatures.IO
   module type PCLOCK = Signatures.PCLOCK
-
-  module Cert : sig
-    val get_certs :
-      exn_msg:string -> Tls.Config.certchain list -> Tls.Config.own_cert
-  end
 
   module Cgi = Cgi
 

@@ -36,6 +36,7 @@ module Response = Response
 module Body = Response.Body
 module Status = Response.Status
 module Mime = Mime
+module Certs = Certs
 
 module type NET = Signatures.NET
 module type FS = Signatures.FS
@@ -43,12 +44,6 @@ module type FS = Signatures.FS
 module Private = struct
   module type IO = Signatures.IO
   module type PCLOCK = Signatures.PCLOCK
-
-  module Cert = struct
-    let get_certs ~exn_msg = function
-      | default :: mult -> `Multiple_default (default, mult)
-      | _ -> invalid_arg exn_msg
-  end
 
   module Cgi = Cgi
   module Logger_impl = Logger_impl

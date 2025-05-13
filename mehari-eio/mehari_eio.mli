@@ -1,17 +1,17 @@
 (** An IO module Mehari implementation based on [Eio] library. *)
 
+open Mehari
+
 (** {1 Net} *)
 
 module IO = Identity_reader_monad
 
 (** @closed *)
 include
-  Mehari.NET
-    with module IO := IO
-     and type clock := [ `Clock of float ] Eio.Time.clock
+  NET with module IO := IO and type clock := [ `Clock of float ] Eio.Time.clock
 
 (** @closed *)
-include Mehari.FS with module IO := IO and type dir_path := [ `Dir ] Eio.Path.t
+include FS with module IO := IO and type dir_path := [ `Dir ] Eio.Path.t
 
 (** {1 Entry point} *)
 
@@ -21,7 +21,7 @@ val run :
   ?timeout:float ->
   ?backlog:int ->
   ?addr:Eio.Net.Ipaddr.v4v6 ->
-  certchains:Tls.Config.certchain list ->
+  certs:Certs.t ->
   handler ->
   unit IO.t
 (** [run ?port ?verify_url_host ?backlog ?addr ~certchains handler] runs the
@@ -36,7 +36,4 @@ val run :
     - [backlog] is the the number of pending connections that can be queued up.
       Defaults to [4096].
     - [addr] is the socket addresses. Defaults to [Eio.Net.Ipaddr.V4.loopback].
-    - [certchains] is the list of form [[(certs, key); ...]], the last one is
-      considered default.
-
-    @raise Invalid_argument if [certchains] is empty. *)
+    - [certs] is the TLS certchains used. *)

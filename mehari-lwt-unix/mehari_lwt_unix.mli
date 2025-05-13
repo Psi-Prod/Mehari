@@ -1,13 +1,15 @@
 (** An IO module Mehari implementation for Unix and Windows using Lwt. Contains
     also extra features based on Unix filesystem such as {!section-cgi}. *)
 
+open Mehari
+
 (** {1 Net} *)
 
 include Mehari_mirage.S
 (** @closed *)
 
 (** @closed *)
-include Mehari.FS with module IO := IO and type dir_path := string
+include FS with module IO := IO and type dir_path := string
 
 (** {1:cgi CGI} *)
 
@@ -77,9 +79,9 @@ val run_lwt :
   ?port:int ->
   ?verify_url_host:bool ->
   ?timeout:float ->
-  certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
+  certs:Certs.t ->
   handler ->
   unit Lwt.t
 (** See {!val:Mehari_mirage.S.run}. *)
@@ -88,9 +90,9 @@ val run :
   ?port:int ->
   ?verify_url_host:bool ->
   ?timeout:float ->
-  certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
+  certs:Certs.t ->
   handler ->
   unit
 (** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)

@@ -11,8 +11,8 @@ let () =
   Eio_main.run @@ fun env ->
   Mirage_crypto_rng_unix.use_default ();
   let cert =
-    let open Eio.Path in
+    let ( / ) = Eio.Path.( / ) in
     X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
       ~priv_key:(env#cwd / "key.pem")
   in
-  Mehari_eio.run ~certchains:[ cert ] router env
+  Mehari_eio.run ~certs:(Single cert) router env

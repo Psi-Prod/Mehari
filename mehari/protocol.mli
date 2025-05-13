@@ -25,7 +25,7 @@ val make_request :
   tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
   ?client_cert:X509.Certificate.t ->
   client_request:string ->
-  X509.Certificate.t list ->
+  Certs.t ->
   (Request.t, err) result
 (** Perform some static check on client request *)
 

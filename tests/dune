@@ -1,3 +1,7 @@
 (test
  (name tests)
  (libraries alcotest conan-database.light mehari))
+
+(copy_files
+ (alias tests)
+ (files certchains/*))

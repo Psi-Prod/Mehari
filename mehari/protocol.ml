@@ -108,13 +108,8 @@ let check_host uri certs =
       | Ok dn -> (
           match Domain_name.host dn with
           | Ok h ->
-              let rec check = function
-                | [] -> Error WrongHost
-                | cert :: certs ->
-                    if X509.Certificate.supports_hostname cert h then Ok ()
-                    else check certs
-              in
-              check certs
+              if Certs.Private.supports_hostname certs h then Ok ()
+              else Error WrongHost
           | Error _ -> Error NotADomainName)
       | Error _ -> Error NotADomainName)
 

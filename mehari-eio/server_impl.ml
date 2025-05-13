@@ -11,7 +11,7 @@ module type S = sig
     ?timeout:float ->
     ?backlog:int ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
-    certchains:Tls.Config.certchain list ->
+    certs:Certs.t ->
     handler ->
     unit IO.t
 end
@@ -31,7 +31,7 @@ module Make (Logger : Private.Logger_impl.S) :
     env : Identity_reader_monad.env;
     port : int;
     timeout : float option;
-    certs : X509.Certificate.t list;
+    certs : Certs.t;
     verify_url_host : bool;
   }
 
@@ -122,20 +122,14 @@ module Make (Logger : Private.Logger_impl.S) :
     | exn -> raise exn
 
   let run ?(port = 1965) ?(verify_url_host = true) ?timeout ?(backlog = 4096)
-      ?(addr = Net.Ipaddr.V4.loopback) ~certchains handler env =
-    let certificates =
-      Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
-    in
+      ?(addr = Net.Ipaddr.V4.loopback) ~certs handler env =
+    let config = make_config ~env ~port ~timeout ~certs ~verify_url_host in
     let tls_config =
+      let certificates = Certs.Private.to_own_cert certs in
       Tls.Config.server ~version:(`TLS_1_2, `TLS_1_3) ~certificates
         ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
         ()
       |> Result.get_ok
-    in
-    let config =
-      make_config ~env ~port ~timeout
-        ~certs:(List.concat_map fst certchains)
-        ~verify_url_host
     in
     Eio.Switch.run (fun sw ->
         let socket =

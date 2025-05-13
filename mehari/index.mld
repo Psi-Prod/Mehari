@@ -259,11 +259,10 @@ mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
 
 By default, the server runs on port [1965] on IP [localhost] (usually [127.0.0.1]).
 
-This command generate certificates ([cert.pem] and [key.pem]),
-set server common name to [localhost] and it should work:
+This command generate certificates ([cert.pem] and [key.pem]) for common name [localhost]:
 
 {@bash[
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes --subj "/CN=localhost"
 ]}
 
 Here is what you have to do to start the server:
@@ -271,32 +270,28 @@ Here is what you have to do to start the server:
 Using {!Mehari_lwt_unix}:
 
 {@ocaml[
-let ( >>= ) = Lwt.Infix.( >>= )
+open Lwt.Syntax
 
-let main () =
-  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
-  |> Mehari_io.run_lwt router ~certchains:[ cert ]
-
-let () = Lwt_main.run (main ())
+let () = Lwt_main.run begin
+  let* cert =
+    X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
+  in
+  Mehari_lwt_unix.run_lwt ~certs:(Single cert) router
+end
 ]}
 
 Using {!Mehari_eio}:
 
 {@ocaml[
-let main ~net ~cwd =
-  let certchains =
-    Eio.Path.
-      [
-        X509_eio.private_of_pems ~cert:(cwd / "cert.pem")
-          ~priv_key:(cwd / "key.pem");
-      ]
-  in
-  Mehari_eio.run net ~certchains router
-
 let () =
   Eio_main.run @@ fun env ->
-  Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env @@ fun () ->
-  main ~net:env#net ~cwd:env#cwd
+  Mirage_crypto_rng_unix.use_default ();
+  let cert =
+    let ( / ) = Eio.Path.( / ) in
+    X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
+      ~priv_key:(env#cwd / "key.pem")
+  in
+  Mehari_eio.run ~certs:(Single cert) router env
 ]}
 
 {3 Virtual hosting}

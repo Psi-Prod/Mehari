@@ -21,28 +21,31 @@ open Mehari
 open Lwt.Syntax
 module M = Mehari_lwt_unix
 
-let main () =
-  let* cert = X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" in
-  M.router
-    [
-      M.route "/" (fun _ ->
-          Gemtext.
-            [
-              heading `H1 "Guestbook";
-              newline;
-              link "/submit" ~name:"Submit a new entry";
-              newline;
-              heading `H2 "Entries:";
-              text book#print;
-            ]
-          |> M.respond_gemtext);
-      M.route "/submit" (fun req ->
-          match Request.query req with
-          | None -> M.respond Status.input "Enter your message"
-          | Some msg ->
-              book#add_entry ~addr:(Request.ip req) msg;
-              M.respond Status.redirect_temp "/");
-    ]
-  |> M.run_lwt ~certchains:[ cert ]
-
-let () = Lwt_main.run (main ())
+let () =
+  Lwt_main.run
+    begin
+      let* cert =
+        X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
+      in
+      M.router
+        [
+          M.route "/" (fun _ ->
+              Gemtext.
+                [
+                  heading `H1 "Guestbook";
+                  newline;
+                  link "/submit" ~name:"Submit a new entry";
+                  newline;
+                  heading `H2 "Entries:";
+                  text book#print;
+                ]
+              |> M.respond_gemtext);
+          M.route "/submit" (fun req ->
+              match Request.query req with
+              | None -> M.respond Status.input "Enter your message"
+              | Some msg ->
+                  book#add_entry ~addr:(Request.ip req) msg;
+                  M.respond Status.redirect_temp "/");
+        ]
+      |> M.run_lwt ~certs:(Single cert)
+    end

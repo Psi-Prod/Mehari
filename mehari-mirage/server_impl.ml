@@ -1,4 +1,3 @@
-module Private = Mehari.Private
 open Mehari
 
 module type S = sig
@@ -12,7 +11,7 @@ module type S = sig
     ?port:int ->
     ?verify_url_host:bool ->
     ?timeout:float ->
-    certchains:Tls.Config.certchain list ->
+    certs:Certs.t ->
     stack ->
     handler ->
     unit IO.t
@@ -35,7 +34,7 @@ module Make
   type config = {
     port : int;
     timeout : float option;
-    certs : X509.Certificate.t list;
+    certs : Certs.t;
     verify_url_host : bool;
   }
 
@@ -140,21 +139,16 @@ module Make
     | `TLSWriteErr err ->
         Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
 
-  let run ?(port = 1965) ?(verify_url_host = true) ?timeout ~certchains stack
+  let run ?(port = 1965) ?(verify_url_host = true) ?timeout ~certs stack
       callback =
-    let certificates = Private.Cert.get_certs ~exn_msg:"run_lwt" certchains in
-
     let tls_config =
+      let certificates = Certs.Private.to_own_cert certs in
       Tls.Config.server ~certificates ~version:(`TLS_1_2, `TLS_1_3)
         ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
         ()
       |> Result.get_ok
     in
-    let config =
-      make_config ~port ~timeout
-        ~certs:(List.concat_map fst certchains)
-        ~verify_url_host
-    in
+    let config = make_config ~port ~timeout ~certs ~verify_url_host in
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
         Lwt.catch

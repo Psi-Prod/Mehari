@@ -52,12 +52,12 @@ module type S = sig
     ?port:int ->
     ?verify_url_host:bool ->
     ?timeout:float ->
-    certchains:Tls.Config.certchain list ->
+    certs:Certs.t ->
     stack ->
     handler ->
     unit IO.t
-  (** [run ?port ?verify_url_host  ?config ?timeout ?certchains stack handler]
-      runs the server using [host].
+  (** [run ?port ?verify_url_host  ?config ?timeout ~certs stack handler] runs
+      the server using [host].
 
       - [port] is the port to listen on. Defaults to [1965].
       - [verify_url_host], if true (by default), will verify if the URL hostname
@@ -66,8 +66,7 @@ module type S = sig
          sni.md}).
       - [timeout] is the maximum waiting time in seconds for the client to write
         a request after TLS handshake. Unset by default.
-      - [certchains] is the list of form [[(certs, key); ...]], the last one is
-        considered default.
+      - [certs] is the TLS certchains used.
 
       @raise Invalid_argument if [certchains] is empty. *)
 end
