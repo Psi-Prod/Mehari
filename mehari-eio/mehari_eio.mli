@@ -2,15 +2,16 @@
 
 (** {1 Net} *)
 
-(** @closed *)
-include
-  Mehari.NET
-    with module IO := Direct
-     and type clock := [ `Clock of float ] Eio.Time.clock
+module IO = Identity_reader_monad
 
 (** @closed *)
 include
-  Mehari.FS with module IO := Direct and type dir_path := [ `Dir ] Eio.Path.t
+  Mehari.NET
+    with module IO := IO
+     and type clock := [ `Clock of float ] Eio.Time.clock
+
+(** @closed *)
+include Mehari.FS with module IO := IO and type dir_path := [ `Dir ] Eio.Path.t
 
 (** {1 Entry point} *)
 
@@ -18,13 +19,12 @@ val run :
   ?port:int ->
   ?verify_url_host:bool ->
   ?config:Tls.Config.server ->
-  ?timeout:float * [ `Clock of float ] Eio.Time.clock ->
+  ?timeout:float ->
   ?backlog:int ->
   ?addr:Eio.Net.Ipaddr.v4v6 ->
   certchains:Tls.Config.certchain list ->
-  _ Eio.Net.t ->
   handler ->
-  unit
+  unit IO.t
 (** [run ?port ?verify_url_host ?config ?backlog ?addr certchains net handler]
     runs the server using [handler].
 

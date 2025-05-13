@@ -9,7 +9,7 @@ let incr_count handler req =
   handler req
 
 let main () =
-  let* certchains = Common.Lwt.load_certchains () in
+  let* cert = X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" in
   Mehari_io.router
     [
       Mehari_io.route "/" (fun _ ->
@@ -21,6 +21,6 @@ let main () =
       Mehari_io.route "/incr" ~mw:incr_count (fun _ ->
           Mehari_io.respond Status.redirect_temp "/");
     ]
-  |> Mehari_io.run_lwt ~certchains
+  |> Mehari_io.run_lwt ~certchains:[ cert ]
 
 let () = Lwt_main.run (main ())

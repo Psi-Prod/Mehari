@@ -1,19 +1,18 @@
-let router cwd =
+let router =
   Mehari_eio.router
     [
-      Mehari_eio.route "/" (fun _ ->
-          Mehari_eio.respond_document Eio.Path.(cwd / "README.md"));
-      Mehari_eio.route ~regex:true "/sources/(.*)" (Mehari_eio.static cwd);
+      Mehari_eio.route "/" (fun _ env ->
+          Mehari_eio.respond_document Eio.Path.(env#cwd / "README.md") env);
+      Mehari_eio.route ~regex:true "/sources/(.*)" (fun req env ->
+          Mehari_eio.static env#cwd req env);
     ]
 
-let main ~net ~cwd =
-  let certchains =
-    Eio.Path.
-      [
-        X509_eio.private_of_pems ~cert:(cwd / "cert.pem")
-          ~priv_key:(cwd / "key.pem");
-      ]
+let () =
+  Eio_main.run @@ fun env ->
+  Mirage_crypto_rng_unix.use_default ();
+  let cert =
+    let open Eio.Path in
+    X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
+      ~priv_key:(env#cwd / "key.pem")
   in
-  Mehari_eio.run net ~certchains (router cwd)
-
-let () = Common.Eio.run_server main
+  Mehari_eio.run ~certchains:[ cert ] router env

@@ -8,12 +8,16 @@ open Mehari
 let router =
   Mehari_eio.virtual_hosts ~meth:`ByURL
     [
-      ("foo", fun _ -> Response.text "foo");
-      ("bar", fun _ -> Response.text "bar");
+      ("foo", fun _ _ -> Response.text "foo");
+      ("bar", fun _ _ -> Response.text "bar");
     ]
 
-let main ~net ~cwd =
-  let certchains = Common.Eio.load_certchains cwd in
-  Mehari_eio.run net ~certchains ~verify_url_host:false router
-
-let () = Common.Eio.run_server main
+let () =
+  Eio_main.run @@ fun env ->
+  Mirage_crypto_rng_unix.use_default ();
+  let cert =
+    let open Eio.Path in
+    X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
+      ~priv_key:(env#cwd / "key.pem")
+  in
+  Mehari_eio.run ~certchains:[ cert ] ~verify_url_host:false router env

@@ -9,18 +9,17 @@ module type S = sig
     ?port:int ->
     ?verify_url_host:bool ->
     ?config:Tls.Config.server ->
-    ?timeout:float * [ `Clock of float ] Eio.Time.clock ->
+    ?timeout:float ->
     ?backlog:int ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
     certchains:Tls.Config.certchain list ->
-    _ Eio.Net.t ->
     handler ->
-    unit
+    unit IO.t
 end
 
-module Make (Logger : Private.Logger_impl.S) : S with module IO = Direct =
-struct
-  module IO = Direct
+module Make (Logger : Private.Logger_impl.S) :
+  S with module IO = Identity_reader_monad = struct
+  module IO = Identity_reader_monad
 
   type handler = request -> response IO.t
 
@@ -30,18 +29,26 @@ struct
   module Protocol = Private.Protocol
 
   type config = {
+    env : Identity_reader_monad.env;
     addr : Ipaddr.t;
     port : int;
-    timeout : (float * [ `Clock of float ] Eio.Time.clock) option;
+    timeout : float option;
     tls_config : Tls.Config.server;
     certs : X509.Certificate.t list;
     verify_url_host : bool;
   }
 
-  let make_config ~(addr : Net.Ipaddr.v4v6) ~port ~timeout ~tls_config ~certs
-      ~verify_url_host =
-    let addr = Ipaddr.of_octets_exn (addr :> string) in
-    { addr; port; timeout; tls_config; certs; verify_url_host }
+  let make_config ~env ~(addr : Net.Ipaddr.v4v6) ~port ~timeout ~tls_config
+      ~certs ~verify_url_host =
+    {
+      env;
+      addr = Ipaddr.of_octets_exn (addr :> string);
+      port;
+      timeout;
+      tls_config;
+      certs;
+      verify_url_host;
+    }
 
   let src = Logs.Src.create "mehari.eio"
 
@@ -66,7 +73,7 @@ struct
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
-  let handle_client config callback flow epoch =
+  let handle_client config handler flow epoch =
     let reader =
       Buf_read.of_flow flow ~initial_size:1025
         ~max_size:1025 (* Apparently not inclusive *)
@@ -78,7 +85,7 @@ struct
        let with_timeout =
          match config.timeout with
          | None -> fun f -> f ()
-         | Some (duration, clock) -> Eio.Time.with_timeout_exn clock duration
+         | Some duration -> Eio.Time.with_timeout_exn config.env#clock duration
        in
        match
          let client_request = with_timeout (fun () -> client_req reader) in
@@ -94,7 +101,7 @@ struct
            ~tls_version ?client_cert:peer_certificate ~client_request
            config.certs
        with
-       | Ok req -> callback req |> write_resp flow
+       | Ok req -> handler req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
      with
     | Buf_read.Buffer_limit_exceeded ->
@@ -105,9 +112,9 @@ struct
         Log.warn (fun log -> log "Timeout while reading client request"));
     Eio.Flow.shutdown flow `Send
 
-  let handler ~config callback flow _ =
+  let callback ~config handler flow _ =
     let server = Tls_eio.server_of_flow config.tls_config flow in
-    Tls_eio.epoch server |> handle_client config callback server
+    Tls_eio.epoch server |> handle_client config handler server
 
   let log_err = function
     | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
@@ -122,8 +129,8 @@ struct
     | exn -> raise exn
 
   let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
-      ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains net
-      callback =
+      ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains handler env
+      =
     let certificates =
       Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
     in
@@ -137,15 +144,16 @@ struct
           |> Result.get_ok
     in
     let config =
-      make_config ~addr ~port ~timeout ~tls_config
+      make_config ~env ~addr ~port ~timeout ~tls_config
         ~certs:(List.concat_map fst certchains)
         ~verify_url_host
     in
     Eio.Switch.run (fun sw ->
         let socket =
-          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw net
+          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw env#net
             (`Tcp (addr, port))
         in
         Log.info (fun log -> log "Listening on port %i" port);
-        handler ~config callback |> Eio.Net.run_server ~on_error:log_err socket)
+        let handler req = handler req env in
+        callback ~config handler |> Eio.Net.run_server ~on_error:log_err socket)
 end

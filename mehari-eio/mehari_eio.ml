@@ -1,5 +1,4 @@
-module Direct = Direct
-module IO = Direct
+module IO = Identity_reader_monad
 
 module Clock = struct
   type t = [ `Clock of float ] Eio.Time.clock
@@ -18,15 +17,15 @@ module Clock = struct
     (Int64.to_int days, Int64.add rem_ps frac_ps)
 end
 
-module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Clock) (Direct)
+module RateLimiter = Mehari.Private.Rate_limiter_impl.Make (Clock) (IO)
 
 module Logger =
   Mehari.Private.Logger_impl.Make
     (Clock)
     (struct
-      include Direct
+      include IO
 
-      let finally t f r = try f (t ()) with exn -> r exn
+      let finally t f r env = try f (t () env) env with exn -> r exn env
     end)
 
 module Router = Mehari.Private.Router_impl.Make (RateLimiter) (Logger)

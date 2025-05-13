@@ -1,6 +1,6 @@
 open Mehari
 
-let respond_document ?(mime = Mime.app_octet_stream) path =
+let respond_document ?(mime = Mime.app_octet_stream) path _ =
   try
     let chunk_size = 16384 in
     let body =
@@ -28,17 +28,17 @@ let respond_document ?(mime = Mime.app_octet_stream) path =
   with Eio.Io _ -> Response.respond Status.not_found ""
 
 include Private.Static.Make (struct
-  module IO = Direct
+  module IO = Identity_reader_monad
 
   type path = [ `Dir ] Eio.Path.t
 
-  let kind path =
+  let kind path _ =
     match (Eio.Path.stat ~follow:true path).kind with
     | (`Regular_file | `Directory) as f -> f
     | _ -> `Other
 
-  let exists _ = true
-  let read = Eio.Path.read_dir
+  let exists _ _ = true
+  let read path _ = Eio.Path.read_dir path
   let concat = Eio.Path.( / )
   let respond_document = respond_document
   let pp_io_err = Eio.Exn.pp
