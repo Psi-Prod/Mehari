@@ -38,7 +38,7 @@ module Private : sig
   val make :
     ?client_cert:X509.Certificate.t ->
     uri:Uri.t ->
-    client_addr:Ipaddr.t ->
+    client_ip:Ipaddr.t ->
     port:int ->
     sni:[ `host ] Domain_name.t ->
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->

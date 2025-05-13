@@ -18,7 +18,7 @@ type err =
   | WrongScheme  (** URL scheme is not gemini://. *)
 
 val make_request :
-  client_addr:Ipaddr.t ->
+  client_ip:Ipaddr.t ->
   ?hostname:[ `host ] Domain_name.t ->
   port:int ->
   verify_url_host:bool ->

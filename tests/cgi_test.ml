@@ -5,7 +5,7 @@ let test_cgi_env_1 =
   test_case "CGI env test - 1" `Quick (fun () ->
       let req =
         Protocol.make_request
-          ~client_addr:(Ipaddr.of_string_exn "80.0.10.30")
+          ~client_ip:(Ipaddr.of_string_exn "80.0.10.30")
           ~hostname:Domain_name.(of_string_exn "heyplzlookat.me" |> host_exn)
           ~port:1968 ~verify_url_host:false ~tls_version:`TLS_1_2
           ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi" []
@@ -47,7 +47,7 @@ let test_cgi_env_2 =
   test_case "CGI env test - 2" `Quick (fun () ->
       let req =
         Protocol.make_request
-          ~client_addr:(Ipaddr.of_string_exn "120.8.50.12")
+          ~client_ip:(Ipaddr.of_string_exn "120.8.50.12")
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~port:1965 ~verify_url_host:false ~tls_version:`TLS_1_3
           ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input" []
@@ -109,7 +109,7 @@ let test_cgi_env_3 =
       in
       let req =
         Protocol.make_request
-          ~client_addr:(Ipaddr.of_string_exn "80.0.10.160")
+          ~client_ip:(Ipaddr.of_string_exn "80.0.10.160")
           ~hostname:Domain_name.(of_string_exn "geminiprotocol.net" |> host_exn)
           ~port:1965 ~verify_url_host:false ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:

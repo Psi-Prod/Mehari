@@ -126,7 +126,7 @@ let check_port uri port =
 
 let ( let* ) = Result.bind
 
-let make_request ~client_addr ?hostname ~port ~verify_url_host ~tls_version
+let make_request ~client_ip ?hostname ~port ~verify_url_host ~tls_version
     ?client_cert ~client_request:input certs =
   let* sni = check_sni hostname in
   let* () = check_utf8_encoding input in
@@ -138,7 +138,7 @@ let make_request ~client_addr ?hostname ~port ~verify_url_host ~tls_version
   let* uri = check_path uri in
   let* () = if verify_url_host then check_host uri certs else Ok () in
   let* () = check_port uri port in
-  Request.Private.make ?client_cert ~uri ~client_addr ~port ~sni ~tls_version ()
+  Request.Private.make ?client_cert ~uri ~client_ip ~port ~sni ~tls_version ()
   |> Result.ok
 
 let pp_msg fmt =

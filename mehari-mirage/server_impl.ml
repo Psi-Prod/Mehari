@@ -24,26 +24,23 @@ module Make
     (Logger : Private.Logger_impl.S) :
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
-
-  type handler = request -> response IO.t
-
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
   module Protocol = Private.Protocol
   open Lwt.Infix
   open Lwt.Syntax
 
+  type handler = request -> response IO.t
+
   type config = {
-    addr : Ipaddr.t;
     port : int;
     timeout : float option;
-    tls_config : Tls.Config.server;
     certs : X509.Certificate.t list;
     verify_url_host : bool;
   }
 
-  let make_config ~addr ~port ~timeout ~tls_config ~certs ~verify_url_host =
-    { addr; port; timeout; tls_config; certs; verify_url_host }
+  let make_config ~port ~timeout ~certs ~verify_url_host =
+    { port; timeout; certs; verify_url_host }
 
   let src = Logs.Src.create "mehari.mirage"
 
@@ -79,8 +76,8 @@ module Make
 
   exception Timeout
 
-  let with_timeout _timeout f =
-    match Some 1.0 with
+  let with_timeout timeout f =
+    match timeout with
     | None -> f ()
     | Some duration ->
         let timeout =
@@ -96,11 +93,11 @@ module Make
         Ok ()
     | Error err -> Lwt.return_error err
 
-  let handle_client config callback flow epoch =
+  let handle_client ~client_ip config callback flow =
     let chan = Channel.create flow in
     with_timeout config.timeout (fun () -> read_client_req chan) >>= function
     | Ok client_request -> (
-        match epoch with
+        match TLS.epoch flow with
         | Ok { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let tls_version =
               (* We explicitely don't support TLS version < 1.2. *)
@@ -110,11 +107,8 @@ module Make
             in
             let* resp =
               match
-                Protocol.make_request ~port:config.port
-                  ~client_addr:config.addr
-                    (* Stack.TCP.dst  *)
-                    (* TODO: pass REAL client address *)
-                  ?hostname:own_name ~verify_url_host:config.verify_url_host
+                Protocol.make_request ~client_ip ?hostname:own_name
+                  ~port:config.port ~verify_url_host:config.verify_url_host
                   ~tls_version ?client_cert:peer_certificate ~client_request
                   config.certs
               with
@@ -127,10 +121,10 @@ module Make
         Protocol.to_response AboveMaxSize |> write_and_close chan flow
     | Error err -> Lwt.return_error err
 
-  let handler config callback flow =
-    TLS.server_of_flow config.tls_config flow >>= function
-    | Ok server -> TLS.epoch server |> handle_client config callback server
-    | Error err -> `TLSWriteErr err |> Lwt.return_error
+  let handler ~client_ip config tls_config callback flow =
+    TLS.server_of_flow tls_config flow >>= function
+    | Ok server -> handle_client ~client_ip config callback server
+    | Error err -> Lwt.return_error (`TLSWriteErr err)
 
   let log_err = function
     | `BufferLimitExceeded -> assert false
@@ -149,10 +143,7 @@ module Make
   let run ?(port = 1965) ?(verify_url_host = true) ?timeout ~certchains stack
       callback =
     let certificates = Private.Cert.get_certs ~exn_msg:"run_lwt" certchains in
-    let addr =
-      Stack.ip stack |> (Stack.IP.get_ip [@warning "-A"])
-      |> Fun.flip List.nth 0 (* Should not be empty. *)
-    in
+
     let tls_config =
       Tls.Config.server ~certificates ~version:(`TLS_1_2, `TLS_1_3)
         ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
@@ -160,14 +151,17 @@ module Make
       |> Result.get_ok
     in
     let config =
-      make_config ~addr ~port ~timeout ~tls_config
+      make_config ~port ~timeout
         ~certs:(List.concat_map fst certchains)
         ~verify_url_host
     in
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
         Lwt.catch
-          (fun () -> handler config callback flow >|= Result.iter_error log_err)
+          (fun () ->
+            let client_ip, _ = Stack.TCP.dst flow in
+            handler ~client_ip config tls_config callback flow
+            >|= Result.iter_error log_err)
           (function
             | Timeout ->
                 log_err `Timeout;

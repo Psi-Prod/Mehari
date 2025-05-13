@@ -29,25 +29,14 @@ module Make (Logger : Private.Logger_impl.S) :
 
   type config = {
     env : Identity_reader_monad.env;
-    addr : Ipaddr.t;
     port : int;
     timeout : float option;
-    tls_config : Tls.Config.server;
     certs : X509.Certificate.t list;
     verify_url_host : bool;
   }
 
-  let make_config ~env ~(addr : Net.Ipaddr.v4v6) ~port ~timeout ~tls_config
-      ~certs ~verify_url_host =
-    {
-      env;
-      addr = Ipaddr.of_octets_exn (addr :> string);
-      port;
-      timeout;
-      tls_config;
-      certs;
-      verify_url_host;
-    }
+  let make_config ~env ~port ~timeout ~certs ~verify_url_host =
+    { env; port; timeout; certs; verify_url_host }
 
   let src = Logs.Src.create "mehari.eio"
 
@@ -72,14 +61,16 @@ module Make (Logger : Private.Logger_impl.S) :
     let crlf = Buf_read.string "\r\n" in
     Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
 
-  let handle_client config handler flow epoch =
+  let handle_client ~client_ip config handler flow =
     let reader =
       Buf_read.of_flow flow ~initial_size:1025
         ~max_size:1025 (* Apparently not inclusive *)
     in
     (try
        let { Tls.Core.own_name; peer_certificate; protocol_version; _ } =
-         match epoch with Ok data -> data | Error () -> raise End_of_file
+         match Tls_eio.epoch flow with
+         | Ok data -> data
+         | Error () -> raise End_of_file
        in
        let with_timeout =
          match config.timeout with
@@ -94,11 +85,9 @@ module Make (Logger : Private.Logger_impl.S) :
            | `TLS_1_0 | `TLS_1_1 -> assert false
            | (`TLS_1_2 | `TLS_1_3) as version -> version
          in
-         Protocol.make_request ~port:config.port
-           ~client_addr:config.addr (* TODO: pass REAL client address *)
-           ?hostname:own_name ~verify_url_host:config.verify_url_host
-           ~tls_version ?client_cert:peer_certificate ~client_request
-           config.certs
+         Protocol.make_request ~client_ip ?hostname:own_name ~port:config.port
+           ~verify_url_host:config.verify_url_host ~tls_version
+           ?client_cert:peer_certificate ~client_request config.certs
        with
        | Ok req -> handler req |> write_resp flow
        | Error err -> Protocol.to_response err |> write_resp flow
@@ -111,9 +100,14 @@ module Make (Logger : Private.Logger_impl.S) :
         Log.warn (fun log -> log "Timeout while reading client request"));
     Eio.Flow.shutdown flow `Send
 
-  let callback ~config handler flow _ =
-    let server = Tls_eio.server_of_flow config.tls_config flow in
-    Tls_eio.epoch server |> handle_client config handler server
+  let callback tls_config config handler flow = function
+    | `Tcp (client_ip, _) ->
+        let client_ip =
+          Ipaddr.of_octets_exn (client_ip : Net.Ipaddr.v4v6 :> string)
+        in
+        let server = Tls_eio.server_of_flow tls_config flow in
+        handle_client ~client_ip config handler server
+    | `Unix _ -> assert false
 
   let log_err = function
     | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
@@ -139,7 +133,7 @@ module Make (Logger : Private.Logger_impl.S) :
       |> Result.get_ok
     in
     let config =
-      make_config ~env ~addr ~port ~timeout ~tls_config
+      make_config ~env ~port ~timeout
         ~certs:(List.concat_map fst certchains)
         ~verify_url_host
     in
@@ -150,5 +144,6 @@ module Make (Logger : Private.Logger_impl.S) :
         in
         Log.info (fun log -> log "Listening on port %i" port);
         let handler req = handler req env in
-        callback ~config handler |> Eio.Net.run_server ~on_error:log_err socket)
+        callback tls_config config handler
+        |> Eio.Net.run_server ~on_error:log_err socket)
 end
