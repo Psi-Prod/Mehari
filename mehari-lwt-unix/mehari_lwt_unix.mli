@@ -76,7 +76,6 @@ val run_cgi : ?timeout:float -> ?non_parsed:bool -> string -> handler
 val run_lwt :
   ?port:int ->
   ?verify_url_host:bool ->
-  ?config:Tls.Config.server ->
   ?timeout:float ->
   certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->
@@ -88,7 +87,6 @@ val run_lwt :
 val run :
   ?port:int ->
   ?verify_url_host:bool ->
-  ?config:Tls.Config.server ->
   ?timeout:float ->
   certchains:Tls.Config.certchain list ->
   ?v4:Ipaddr.V4.Prefix.t ->

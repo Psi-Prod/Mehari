@@ -11,7 +11,6 @@ module type S = sig
   val run :
     ?port:int ->
     ?verify_url_host:bool ->
-    ?config:Tls.Config.server ->
     ?timeout:float ->
     certchains:Tls.Config.certchain list ->
     stack ->
@@ -112,7 +111,9 @@ module Make
             let* resp =
               match
                 Protocol.make_request ~port:config.port
-                  ~client_addr:config.addr (* TODO: pass REAL client address *)
+                  ~client_addr:config.addr
+                    (* Stack.TCP.dst  *)
+                    (* TODO: pass REAL client address *)
                   ?hostname:own_name ~verify_url_host:config.verify_url_host
                   ~tls_version ?client_cert:peer_certificate ~client_request
                   config.certs
@@ -145,21 +146,18 @@ module Make
     | `TLSWriteErr err ->
         Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
 
-  let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout ~certchains
-      stack callback =
+  let run ?(port = 1965) ?(verify_url_host = true) ?timeout ~certchains stack
+      callback =
     let certificates = Private.Cert.get_certs ~exn_msg:"run_lwt" certchains in
     let addr =
       Stack.ip stack |> (Stack.IP.get_ip [@warning "-A"])
       |> Fun.flip List.nth 0 (* Should not be empty. *)
     in
     let tls_config =
-      match config with
-      | Some c -> c
-      | None ->
-          Tls.Config.server ~version:(`TLS_1_2, `TLS_1_3) ~certificates
-            ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-            ()
-          |> Result.get_ok
+      Tls.Config.server ~certificates ~version:(`TLS_1_2, `TLS_1_3)
+        ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+        ()
+      |> Result.get_ok
     in
     let config =
       make_config ~addr ~port ~timeout ~tls_config

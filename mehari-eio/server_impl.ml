@@ -8,7 +8,6 @@ module type S = sig
   val run :
     ?port:int ->
     ?verify_url_host:bool ->
-    ?config:Tls.Config.server ->
     ?timeout:float ->
     ?backlog:int ->
     ?addr:Eio.Net.Ipaddr.v4v6 ->
@@ -128,20 +127,16 @@ module Make (Logger : Private.Logger_impl.S) :
         Log.warn (fun log -> log "Concurrent connections")
     | exn -> raise exn
 
-  let run ?(port = 1965) ?(verify_url_host = true) ?config ?timeout
-      ?(backlog = 4096) ?(addr = Net.Ipaddr.V4.loopback) ~certchains handler env
-      =
+  let run ?(port = 1965) ?(verify_url_host = true) ?timeout ?(backlog = 4096)
+      ?(addr = Net.Ipaddr.V4.loopback) ~certchains handler env =
     let certificates =
       Private.Cert.get_certs certchains ~exn_msg:"Mehari_eio.run"
     in
     let tls_config =
-      match config with
-      | Some c -> c
-      | None ->
-          Tls.Config.server ~version:(`TLS_1_2, `TLS_1_3) ~certificates
-            ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-            ()
-          |> Result.get_ok
+      Tls.Config.server ~version:(`TLS_1_2, `TLS_1_3) ~certificates
+        ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+        ()
+      |> Result.get_ok
     in
     let config =
       make_config ~env ~addr ~port ~timeout ~tls_config
