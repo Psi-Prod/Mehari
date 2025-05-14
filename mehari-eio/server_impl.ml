@@ -16,7 +16,7 @@ module type S = sig
     unit IO.t
 end
 
-module Make (Logger : Private.Logger_impl.S) :
+module Make (Logger : Private.Signatures.LOGGER) :
   S with module IO = Identity_reader_monad = struct
   module IO = Identity_reader_monad
 

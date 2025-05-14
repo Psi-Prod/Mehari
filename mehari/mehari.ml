@@ -50,5 +50,6 @@ module Private = struct
   module Protocol = Protocol
   module Rate_limiter_impl = Rate_limiter_impl
   module Router_impl = Router_impl
+  module Signatures = Signatures
   module Static = Static
 end

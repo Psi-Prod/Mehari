@@ -16,6 +16,95 @@ module type IO = sig
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
 
+(** Describe a logger implementation. *)
+module type LOGGER = sig
+  module IO : IO
+
+  type clock
+  type handler = Request.t -> Response.t IO.t
+
+  val set_level : Logs.level -> unit
+  val logger : clock -> handler -> handler
+  val debug : 'a Logs.log
+  val info : 'a Logs.log
+  val warning : 'a Logs.log
+  val error : 'a Logs.log
+end
+
+(** Describe a rate limiter implementation. *)
+module type RATE_LIMITER = sig
+  module IO : IO
+
+  type t
+  type clock
+
+  val check : t -> Request.t -> Response.t IO.t option
+
+  val make :
+    clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
+end
+
+(** Describe a routeur implementation. *)
+module type ROUTER = sig
+  module IO : IO
+
+  type route
+  type rate_limiter
+  type handler = Request.t -> Response.t IO.t
+  type middleware = handler -> handler
+
+  val no_middleware : middleware
+  val pipeline : middleware list -> middleware
+  val router : route list -> handler
+
+  val route :
+    ?rate_limit:rate_limiter ->
+    ?mw:middleware ->
+    ?regex:bool ->
+    string ->
+    handler ->
+    route
+
+  val scope :
+    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
+
+  val no_route : route
+
+  val virtual_hosts :
+    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
+end
+
+(** Describe a file system implementation. *)
+module type FILE_SYSTEM = sig
+  module IO : IO
+
+  type path
+
+  val exists : path -> bool IO.t
+  val kind : path -> [ `Regular_file | `Directory | `Other ] IO.t
+  val read : path -> string list IO.t
+  val concat : path -> string -> path
+  val respond_document : ?mime:Mime.t -> path -> Response.t IO.t
+  val pp_io_err : Format.formatter -> exn -> unit
+end
+
+(** Static file serving. *)
+module type STATIC = sig
+  module IO : IO
+
+  type handler = Request.t -> Response.t IO.t
+  type dir_path
+
+  val static :
+    ?handler:(dir_path -> handler) ->
+    ?dir_listing:
+      (([ `Regular_file | `Directory | `Other ] * string) list -> handler) ->
+    ?index:string ->
+    ?show_hidden:bool ->
+    dir_path ->
+    handler
+end
+
 (** Module type containing all environment-dependent functions. *)
 module type NET = sig
   module IO : IO

@@ -20,7 +20,7 @@ end
 module Make
     (Stack : Tcpip.Stack.V4V6)
     (Time : Mirage_time.S)
-    (Logger : Private.Logger_impl.S) :
+    (Logger : Private.Signatures.LOGGER) :
   S with module IO = Lwt and type stack := Stack.t = struct
   module IO = Lwt
   module TLS = Tls_mirage.Make (Stack.TCP)

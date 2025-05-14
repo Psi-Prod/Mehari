@@ -1,35 +1,9 @@
-module type S = sig
-  module IO : Signatures.IO
-
-  type route
-  type rate_limiter
-  type handler = Request.t -> Response.t IO.t
-  type middleware = handler -> handler
-
-  val no_middleware : middleware
-  val pipeline : middleware list -> middleware
-  val router : route list -> handler
-
-  val route :
-    ?rate_limit:rate_limiter ->
-    ?mw:middleware ->
-    ?regex:bool ->
-    string ->
-    handler ->
-    route
-
-  val scope :
-    ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
-
-  val no_route : route
-
-  val virtual_hosts :
-    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
-end
-
-module Make (RateLimiter : Rate_limiter_impl.S) (Logger : Logger_impl.S) :
-  S with module IO = RateLimiter.IO and type rate_limiter := RateLimiter.t =
-struct
+module Make
+    (RateLimiter : Signatures.RATE_LIMITER)
+    (Logger : Signatures.LOGGER) :
+  Signatures.ROUTER
+    with module IO = RateLimiter.IO
+     and type rate_limiter := RateLimiter.t = struct
   module IO = RateLimiter.IO
 
   type handler = Request.t -> Response.t IO.t

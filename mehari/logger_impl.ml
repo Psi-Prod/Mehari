@@ -1,24 +1,11 @@
-module type S = sig
-  module IO : Signatures.IO
-
-  type clock
-  type handler = Request.t -> Response.t IO.t
-
-  val set_level : Logs.level -> unit
-  val logger : clock -> handler -> handler
-  val debug : 'a Logs.log
-  val info : 'a Logs.log
-  val warning : 'a Logs.log
-  val error : 'a Logs.log
-end
-
 module Make
     (Clock : Signatures.PCLOCK)
     (IO : sig
       include Signatures.IO
 
       val finally : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
-    end) : S with module IO = IO and type clock = Clock.t = struct
+    end) : Signatures.LOGGER with module IO = IO and type clock = Clock.t =
+struct
   module IO = IO
 
   type clock = Clock.t
