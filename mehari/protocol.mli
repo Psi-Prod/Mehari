@@ -22,7 +22,7 @@ val make_request :
   ?hostname:[ `host ] Domain_name.t ->
   port:int ->
   verify_url_host:bool ->
-  tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
+  tls_version:Tls.Core.tls_version ->
   ?client_cert:X509.Certificate.t ->
   client_request:string ->
   Certs.t ->
