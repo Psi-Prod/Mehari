@@ -107,7 +107,7 @@ module Make (Logger : Private.Signatures.LOGGER) :
         in
         let server = Tls_eio.server_of_flow tls_config flow in
         handle_client ~client_ip config handler server
-    | `Unix _ -> assert false
+    | `Unix _ -> assert false (* We listen on a TCP socket. *)
 
   let log_err = function
     | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
