@@ -2,8 +2,6 @@ open Lwt.Syntax
 module Stack = Tcpip_stack_socket.V4V6
 include Mehari_mirage.Make (Pclock) (Stack) (Time)
 
-type stack = unit
-
 let respond_document = File.respond_document
 let static = File.static
 let run_cgi = File.run_cgi

@@ -63,8 +63,13 @@ module Certs = Certs
 (** {1 IO} *)
 
 module type NET = Signatures.NET
+(** Module type containing all environment-dependent functions. *)
+
 module type FS = Signatures.FS
+(** Describe a file system implementation. *)
+
 module type SERVER = Signatures.SERVER
+(* Describe common server functionnality to define in each implementation. *)
 
 (**/**)
 

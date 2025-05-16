@@ -5,11 +5,11 @@ open Mehari
 
 (** {1 Net} *)
 
-include Mehari_mirage.S with type stack = unit
+include Mehari_mirage.S with type stack := unit
 (** @closed *)
 
 (** @closed *)
-include FS with module IO := Lwt and type dir_path := string
+include FS with type dir_path := string and module IO := Lwt
 
 (** {1:cgi CGI} *)
 

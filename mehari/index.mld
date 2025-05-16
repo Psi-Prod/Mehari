@@ -34,7 +34,7 @@ Mehari provides several packages:
 {2 Implementation choice}
 
 IO implementations of Mehari are roughly equivalent in terms of features.
-However, some differences exist, e.g. {{:Mehari_eio/index.html} Mehari_eio}
+However, some differences exist, e.g. {{:../mehari-eio/index.html} Mehari_eio}
 supports concurrent connections and should be preferred for a high performance
 server.
 
