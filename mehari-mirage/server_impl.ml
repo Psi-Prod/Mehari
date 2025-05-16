@@ -1,21 +1,6 @@
 open Mehari
-
-module type S = sig
-  type stack
-
-  module IO : Private.IO
-
-  type handler = request -> response IO.t
-
-  val run :
-    ?port:int ->
-    ?verify_url_host:bool ->
-    ?timeout:float ->
-    certs:Certs.t ->
-    stack ->
-    handler ->
-    unit IO.t
-end
+open Lwt.Infix
+open Lwt.Syntax
 
 type config = {
   port : int;
@@ -30,22 +15,33 @@ let make_config ~port ~timeout ~certs ~verify_url_host =
 module Make
     (Stack : Tcpip.Stack.V4V6)
     (Time : Mirage_time.S)
-    (Logger : Private.Signatures.LOGGER) :
-  S with module IO = Lwt and type stack := Stack.t = struct
+    (Logger : Private.Signatures.LOGGER) =
+struct
   module IO = Lwt
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
   module Protocol = Private.Protocol
-  open Lwt.Infix
-  open Lwt.Syntax
 
+  type stack = Stack.t
   type handler = request -> response IO.t
 
   let src = Logs.Src.create "mehari.mirage"
 
   module Log = (val Logs.src_log src)
 
-  exception Timeout (* Raised *)
+  let log_err = function
+    | `BufferLimitExceeded -> assert false
+    | `ConnectionClosed ->
+        Log.warn (fun log -> log "Connection has been closed prematurly")
+    | `Eof -> Log.warn (fun log -> log "EOF encountered prematurly")
+    | `ChannelWriteErr err ->
+        Log.warn (fun log ->
+            log "ChannelWriteErr: %a" Channel.pp_write_error err)
+    | `ChannelErr err -> Log.warn (fun log -> log "%a" Channel.pp_error err)
+    | `Timeout ->
+        Log.warn (fun log -> log "Timeout while reading client request")
+    | `TLSWriteErr err ->
+        Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
 
   let write_response chan flow resp =
     let write buf = Channel.write_string chan buf 0 (String.length buf) in
@@ -78,6 +74,7 @@ module Make
       loop 0 false
     in
     let with_timeout timeout f =
+      let exception Timeout in
       match timeout with
       | None -> f ()
       | Some duration ->
@@ -85,7 +82,12 @@ module Make
             let* () = Time.sleep_ns (Duration.of_f duration) in
             Lwt.fail Timeout
           in
-          Lwt.pick [ f (); timeout ]
+          Lwt.catch
+            (fun () -> Lwt.pick [ f (); timeout ])
+            (function
+              | Timeout ->
+                  Lwt.return_error `Timeout
+              | exn -> raise exn)
     in
     with_timeout timeout (fun () -> parse_request chan)
 
@@ -117,35 +119,14 @@ module Make
     | Ok server -> handle_client ~client_ip config server callback
     | Error err -> Lwt.return_error (`TLSWriteErr err)
 
-  let log_err = function
-    | `BufferLimitExceeded -> assert false
-    | `ConnectionClosed ->
-        Log.warn (fun log -> log "Connection has been closed prematurly")
-    | `Eof -> Log.warn (fun log -> log "EOF encountered prematurly")
-    | `ChannelWriteErr err ->
-        Log.warn (fun log ->
-            log "ChannelWriteErr: %a" Channel.pp_write_error err)
-    | `ChannelErr err -> Log.warn (fun log -> log "%a" Channel.pp_error err)
-    | `Timeout ->
-        Log.warn (fun log -> log "Timeout while reading client request")
-    | `TLSWriteErr err ->
-        Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
-
   let run ?(port = 1965) ?(verify_url_host = true) ?timeout ~certs stack
       callback =
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
-        Lwt.catch
-          (fun () ->
-            let client_ip, _ = Stack.TCP.dst flow in
-            let config = make_config ~port ~timeout ~certs ~verify_url_host in
-            let tls_config = Certs.Private.make_config certs in
-            handler ~client_ip config tls_config callback flow
-            >|= Result.iter_error log_err)
-          (function
-            | Timeout ->
-                log_err `Timeout;
-                Lwt.return_unit
-            | exn -> raise exn));
+        let client_ip, _ = Stack.TCP.dst flow in
+        let config = make_config ~port ~timeout ~certs ~verify_url_host in
+        let tls_config = Certs.Private.make_config certs in
+        handler ~client_ip config tls_config callback flow
+        >|= Result.iter_error log_err);
     Stack.listen stack
 end

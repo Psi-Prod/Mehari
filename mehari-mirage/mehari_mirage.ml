@@ -1,31 +1,11 @@
 open Mehari
 
-module type IO_RESPONSE = sig
-  val respond : 'a status -> 'a -> response Lwt.t
-  val respond_body : body -> mime -> response Lwt.t
-  val respond_text : string -> response Lwt.t
-
-  val respond_gemtext :
-    ?charset:string -> ?lang:string list -> Gemtext.t -> response Lwt.t
-end
-
-module type S = sig
-  module IO = Lwt
-  include NET with module IO := IO and type clock := unit
-
-  val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-
-  val logger : handler -> handler
-
-  include IO_RESPONSE
-  include Server_impl.S with module IO := IO
-end
+module type S = Interface.S
 
 module Make
     (PClock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    (Time : Mirage_time.S) : S with type stack = Stack.t = struct
+    (Time : Mirage_time.S) : Interface.S with type stack = Stack.t = struct
   module IO = Lwt
 
   module Clock = struct

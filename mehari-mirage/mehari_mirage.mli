@@ -1,78 +1,10 @@
 (** Mirage OS compatiblity. *)
 
-open Mehari
-
-module type S = sig
-  module IO = Lwt
-
-  type stack
-  (** TCP/IP stack. *)
-
-  (** {1 Net} *)
-
-  (** @closed *)
-  include NET with module IO := IO and type clock := unit
-
-  (** {1 Rate limit} *)
-
-  val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
-  (** Same as {!val:Mehari.NET.make_rate_limit} but without the required
-      trailing unit parameter. *)
-
-  (** {1 Logging} *)
-
-  val logger : handler -> handler
-  (** Same as {!val:Mehari.NET.logger} but without the required trailing unit
-      parameter. *)
-
-  (** {1 Response} *)
-
-  val respond : 'a status -> 'a -> response IO.t
-  (** Same as {!val:Mehari.Response.respond}, but the new response is wrapped in
-      a promise. *)
-
-  val respond_body : body -> mime -> response IO.t
-  (** Same as {!val:Mehari.Response.body} but respond with given
-      {!type:Mehari.body} and use given {!type:Mehari.mime} as mime type. *)
-
-  val respond_text : string -> response IO.t
-  (** Same as {!val:Mehari.Response.text} but respond with given text and use
-      [text/plain] as MIME type. *)
-
-  val respond_gemtext :
-    ?charset:string -> ?lang:string list -> Gemtext.t -> response IO.t
-  (** Same as {!val:Mehari.Response.gemtext} but respond with given
-      {!type:Mehari.Gemtext.t} and use [text/gemini] as {!type:Mehari.mime}
-      type. *)
-
-  (** {1 Entry point} *)
-
-  val run :
-    ?port:int ->
-    ?verify_url_host:bool ->
-    ?timeout:float ->
-    certs:Certs.t ->
-    stack ->
-    handler ->
-    unit IO.t
-  (** [run ?port ?verify_url_host  ?config ?timeout ~certs stack handler] runs
-      the server using [host].
-
-      - [port] is the port to listen on. Defaults to [1965].
-      - [verify_url_host], if true (by default), will verify if the URL hostname
-        corresponds to the server's certificate (chosen according to
-        {{:https://github.com/mirleft/ocaml-tls/blob/main/sni.md}ocaml-tls
-         sni.md}).
-      - [timeout] is the maximum waiting time in seconds for the client to write
-        a request after TLS handshake. Unset by default.
-      - [certs] is the TLS certchains used.
-
-      @raise Invalid_argument if [certchains] is empty. *)
-end
+module type S = Interface.S
+(** Describe a Mirage OS server signature. *)
 
 (** A functor building an IO module from Mirage components. *)
 module Make
-    (_ : Mirage_clock.PCLOCK)
+    (Clock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    (_ : Mirage_time.S) : S with type stack = Stack.t
+    (Time : Mirage_time.S) : S with type stack = Stack.t

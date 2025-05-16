@@ -1,6 +1,7 @@
 (library
  (name mehari_mirage)
  (public_name mehari-mirage)
+ (modules_without_implementation interface)
  (libraries
   lwt
   mirage-clock
