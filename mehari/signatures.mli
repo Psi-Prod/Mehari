@@ -276,6 +276,6 @@ module type SERVER = sig
       - [timeout] is the maximum time to wait for client to write a request
         after the TLS handshake. Unset by default.
       - [certs] is the TLS certchains used. See section "Certificate selection"
-        in {!Certs}.
+        in {!Mehari.Certs}.
       - [config] is the implementation dependant configuration used. *)
 end

@@ -26,7 +26,7 @@ module Make
       end)
 
   module Router = Private.Router_impl.Make (RateLimiter) (Logger)
-  module Server = Server_impl.Make (Stack) (Time) (Logger)
+  module Server = Server_impl.Make (PClock) (Stack) (Time) (Logger)
 
   type handler = Router.handler
   type middleware = handler -> handler

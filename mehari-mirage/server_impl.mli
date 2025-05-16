@@ -1,6 +1,7 @@
 (** Server implementation. *)
 
-module Make : (Stack : Tcpip.Stack.V4V6)
+module Make : (Clock : Mirage_clock.PCLOCK)
+  (Stack : Tcpip.Stack.V4V6)
   (Time : Mirage_time.S)
   (Logger : Mehari.Private.Signatures.LOGGER)
   -> sig

@@ -3,6 +3,7 @@ open Lwt.Infix
 open Lwt.Syntax
 
 module Make
+    (Clock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
     (Time : Mirage_time.S)
     (Logger : Private.Signatures.LOGGER) =
@@ -76,18 +77,22 @@ struct
             (fun () -> Lwt.pick [ f (); timeout ])
             (function Timeout -> Lwt.return_error `Timeout | exn -> raise exn)
     in
-    with_timeout timeout (fun () -> parse_request chan)
+    with_timeout timeout (fun () ->
+        parse_request chan
+        >|= Result.map (fun req ->
+                let occured_time = Clock.now_d_ps () |> Ptime.unsafe_of_d_ps in
+                (req, occured_time)))
 
   let handle_client ~client_ip ~port ~timeout flow handler =
     let chan = Channel.create flow in
     read_client_request ?timeout chan >>= function
-    | Ok client_request -> (
+    | Ok (client_request, req_time) -> (
         match TLS.epoch flow with
         | Ok { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let request =
               Protocol.make_request ~client_ip ?hostname:own_name ~port
                 ~tls_version:protocol_version ?client_cert:peer_certificate
-                ~client_request ()
+                ~client_request ~now:req_time ()
             in
             let* response =
               match request with

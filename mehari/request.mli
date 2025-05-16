@@ -44,6 +44,15 @@ module Private : sig
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
     unit ->
     t
+  (** Creates a request from given parameters.
+
+      - [client_cert] is the certificate provided by client, if any.
+      - [uri] is the URI requested by client.
+      - [client_ip] is the client IP address.
+      - [port] is the port of listening socket where request was received.
+      - [server_hostname] is the hostname of the server which received the
+        request.
+      - [tls_version] is the used TLS version. *)
 
   val server_hostname : t -> string
   val attach_params : t -> Re.Group.t option -> t

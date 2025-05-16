@@ -34,7 +34,10 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
       | None -> f ()
       | Some duration -> Time.with_timeout_exn clock duration f
     in
-    with_timeout clock timeout (fun () -> client_req reader)
+    with_timeout clock timeout (fun () ->
+        let request = client_req reader in
+        let occured_time = Time.now clock |> Ptime.of_float_s |> Option.get in
+        (request, occured_time))
 
   let write_response flow resp =
     let () =
@@ -55,7 +58,9 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
     Flow.shutdown flow `Send
 
   let gemini_exchange ~client_ip ~port ~timeout ~env flow handler =
-    let client_request = read_client_request ?timeout env#clock flow in
+    let client_request, req_time =
+      read_client_request ?timeout env#clock flow
+    in
     let { Tls.Core.own_name; peer_certificate; protocol_version; _ } =
       match Tls_eio.epoch flow with
       | Ok data -> data
@@ -65,7 +70,7 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
       let request =
         Protocol.make_request ~client_ip ?hostname:own_name ~port
           ~tls_version:protocol_version ?client_cert:peer_certificate
-          ~client_request ()
+          ~client_request ~now:req_time ()
       in
       match request with
       | Ok req -> handler req

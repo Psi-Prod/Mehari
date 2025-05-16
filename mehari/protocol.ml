@@ -1,6 +1,7 @@
 type err =
   | AboveMaxSize
   | BeginWithBOM
+  | ClientCertificateNotValid of X509.Validation.ca_error
   | EmptyURL
   | InvalidURL
   | MalformedUTF8
@@ -16,6 +17,7 @@ let equal_err e e' =
   match (e, e') with
   | AboveMaxSize, AboveMaxSize
   | BeginWithBOM, BeginWithBOM
+  | ClientCertificateNotValid _, ClientCertificateNotValid _
   | EmptyURL, EmptyURL
   | InvalidURL, InvalidURL
   | MalformedUTF8, MalformedUTF8
@@ -29,6 +31,7 @@ let equal_err e e' =
       true
   | AboveMaxSize, _
   | BeginWithBOM, _
+  | ClientCertificateNotValid _, _
   | EmptyURL, _
   | InvalidURL, _
   | MalformedUTF8, _
@@ -41,24 +44,26 @@ let equal_err e e' =
   | WrongScheme, _ ->
       false
 
-let pp_err fmt err =
-  Format.pp_print_string fmt
-  @@
+let pp_err ppf err =
+  let open Format in
   match err with
-  | AboveMaxSize -> "AboveMaxSize"
-  | BeginWithBOM -> "BeginWithBOM"
-  | EmptyURL -> "EmptyURL"
-  | InvalidURL -> "InvalidURL"
-  | MalformedUTF8 -> "MalformedUTF8"
-  | MissingScheme -> "MissingScheme"
-  | MissingHost -> "MissingHost"
-  | NotADomainName -> "NotADomainName"
-  | RelativePath -> "RelativePath"
-  | UserInfoNotAllowed -> "UserInfoNotAllowed"
-  | WrongPort -> "WrongPort"
-  | WrongScheme -> "WrongScheme"
+  | AboveMaxSize -> pp_print_string ppf "AboveMaxSize"
+  | BeginWithBOM -> pp_print_string ppf "BeginWithBOM"
+  | ClientCertificateNotValid ca_err ->
+      fprintf ppf {|ClientCertificateNotValid "%a"|} X509.Validation.pp_ca_error
+        ca_err
+  | EmptyURL -> pp_print_string ppf "EmptyURL"
+  | InvalidURL -> pp_print_string ppf "InvalidURL"
+  | MalformedUTF8 -> pp_print_string ppf "MalformedUTF8"
+  | MissingScheme -> pp_print_string ppf "MissingScheme"
+  | MissingHost -> pp_print_string ppf "MissingHost"
+  | NotADomainName -> pp_print_string ppf "NotADomainName"
+  | RelativePath -> pp_print_string ppf "RelativePath"
+  | UserInfoNotAllowed -> pp_print_string ppf "UserInfoNotAllowed"
+  | WrongPort -> pp_print_string ppf "WrongPort"
+  | WrongScheme -> pp_print_string ppf "WrongScheme"
 
-let check_request_is_utf8_encoded url =
+let check_utf8_encoded url =
   if String.is_valid_utf_8 url then Ok () else Error MalformedUTF8
 
 let check_url_length url =
@@ -67,7 +72,7 @@ let check_url_length url =
   else if length > 1024 then Error AboveMaxSize
   else Ok ()
 
-let check_dont_begin_with_bom url =
+let check_begin_bom url =
   if
     String.get_utf_8_uchar url 0
     |> Uchar.utf_decode_uchar |> Uchar.equal Uchar.bom
@@ -106,18 +111,25 @@ let check_port uri port =
   | None -> Ok ()
   | Some p -> if Int.equal port p then Ok () else Error WrongPort
 
+let check_client_cert_validity ~now = function
+  | None -> Ok ()
+  | Some cert ->
+      X509.Validation.valid_ca ~time:now cert
+      |> Result.map_error (fun ca_err -> ClientCertificateNotValid ca_err)
+
 let make_request ~client_ip ?hostname ~port ~tls_version ?client_cert
-    ~client_request:input () =
+    ~client_request ~now () =
   let ( let* ) = Result.bind in
-  let* () = check_request_is_utf8_encoded input in
-  let* () = check_url_length input in
-  let* () = check_dont_begin_with_bom input in
-  let uri = Uri.of_string input |> Uri.canonicalize in
+  let* () = check_utf8_encoded client_request in
+  let* () = check_url_length client_request in
+  let* () = check_begin_bom client_request in
+  let uri = Uri.of_string client_request |> Uri.canonicalize in
   let* () = check_gemini_scheme uri in
   let* uri_hostname = check_host uri in
   let* () = check_no_user_info uri in
   let* uri = check_path uri in
   let* () = check_port uri port in
+  let* () = check_client_cert_validity ~now client_cert in
   let server_hostname =
     Option.map Domain_name.to_string hostname
     |> Option.value ~default:uri_hostname
@@ -133,31 +145,37 @@ let make_request ~client_ip ?hostname ~port ~tls_version ?client_cert
     ~tls_version ()
   |> Result.ok
 
-let pp_msg fmt =
-  let fmt = Format.fprintf fmt in
+let pp_msg ppf =
+  let open Format in
   function
-  | AboveMaxSize -> fmt "Request has a size higher than 1024 bytes"
-  | BeginWithBOM -> fmt "The request begin with a U+FEFF byte order mark"
-  | EmptyURL -> fmt "URL is empty"
-  | InvalidURL -> fmt "invalid URL"
-  | MalformedUTF8 -> fmt "URL contains non-UTF8 byte sequence"
-  | MissingScheme -> fmt "URL has no scheme"
-  | MissingHost -> fmt "The host URL subcomponent is required"
-  | NotADomainName -> fmt "The host URL component is not a valid domain name"
-  | RelativePath -> fmt "URL path is relative"
+  | AboveMaxSize ->
+      pp_print_string ppf "Request has a size higher than 1024 bytes"
+  | BeginWithBOM ->
+      pp_print_string ppf "The request begin with a U+FEFF byte order mark"
+  | ClientCertificateNotValid ca_err -> X509.Validation.pp_ca_error ppf ca_err
+  | EmptyURL -> pp_print_string ppf "URL is empty"
+  | InvalidURL -> pp_print_string ppf "invalid URL"
+  | MalformedUTF8 -> pp_print_string ppf "URL contains non-UTF8 byte sequence"
+  | MissingScheme -> pp_print_string ppf "URL has no scheme"
+  | MissingHost -> pp_print_string ppf "The host URL subcomponent is required"
+  | NotADomainName ->
+      pp_print_string ppf "The host URL component is not a valid domain name"
+  | RelativePath -> pp_print_string ppf "URL path is relative"
   | UserInfoNotAllowed ->
-      fmt "URL contains userinfo subcomponent which is not allowed"
-  | WrongPort -> fmt "URL has an incorrect port number"
-  | WrongScheme -> fmt {|URL scheme is not "gemini://"|}
+      pp_print_string ppf
+        "URL contains userinfo subcomponent which is not allowed"
+  | WrongPort -> pp_print_string ppf "URL has an incorrect port number"
+  | WrongScheme -> pp_print_string ppf {|URL scheme is not "gemini://"|}
 
 let to_response err =
-  let body = Format.asprintf "%a" pp_msg err in
   let status =
     match err with
     | AboveMaxSize | BeginWithBOM | EmptyURL | InvalidURL | MalformedUTF8
     | MissingHost | MissingScheme | NotADomainName | RelativePath
     | UserInfoNotAllowed ->
         Response.Status.bad_request
+    | ClientCertificateNotValid _ -> Response.Status.cert_not_valid
     | WrongPort | WrongScheme -> Response.Status.proxy_request_refused
   in
-  Response.respond status body
+  let error_msg = Format.asprintf "%a" pp_msg err in
+  Response.respond status error_msg

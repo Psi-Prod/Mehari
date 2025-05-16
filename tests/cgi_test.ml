@@ -8,7 +8,8 @@ let test_cgi_env_1 =
           ~client_ip:(Ipaddr.of_string_exn "80.0.10.30")
           ~hostname:Domain_name.(of_string_exn "heyplzlookat.me" |> host_exn)
           ~port:1968 ~tls_version:`TLS_1_2
-          ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi" ()
+          ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi"
+          ~now:(Ptime_clock.now ()) ()
         |> Result.get_ok
       in
       let expected =
@@ -50,7 +51,8 @@ let test_cgi_env_2 =
           ~client_ip:(Ipaddr.of_string_exn "120.8.50.12")
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~port:1965 ~tls_version:`TLS_1_3
-          ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input" ()
+          ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input"
+          ~now:(Ptime_clock.now ()) ()
         |> Result.get_ok
       in
       let expected =
@@ -87,6 +89,7 @@ let test_cgi_env_2 =
 let test_cgi_env_3 =
   let open Alcotest in
   test_case "CGI env test - 3" `Quick (fun () ->
+      (* Generated with: openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes --subj "/CN=lil ocaml" *)
       let client_cert =
         "-----BEGIN CERTIFICATE-----\n\
          MIICpTCCAY0CCCDJEJOo5ojXMA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxp\n\
@@ -114,40 +117,45 @@ let test_cgi_env_3 =
           ~port:1965 ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:
             "gemini://geminiprotocol.net/docs/protocol-specification.gmi"
-          ()
-        |> Result.get_ok
+          ~now:(Ptime_clock.now ()) ()
       in
       let expected =
-        [|
-          ("AUTH_TYPE", "Certificate");
-          ("CONTENT_LENGTH", "");
-          ("CONTENT_TYPE", "");
-          ("GATEWAY_INTERFACE", "CGI/1.1");
-          ("PATH_INFO", "/docs/protocol-specification.gmi");
-          ("PATH_TRANSLATED", "/docs/protocol-specification.gmi");
-          ("QUERY_STRING", "");
-          ("REMOTE_ADDR", "80.0.10.160");
-          ("REMOTE_HOST", "80.0.10.160");
-          ("REMOTE_IDENT", "");
-          ("REMOTE_USER", "");
-          ("REQUEST_METHOD", "");
-          ("SCRIPT_NAME", "/foo/bar/foobar.ml");
-          ("SERVER_NAME", "geminiprotocol.net");
-          ("SERVER_PORT", "1965");
-          ("SERVER_PROTOCOL", "GEMINI");
-          ("SERVER_SOFTWARE", "Mehari/%%VERSION%%");
-          ( "TLS_CLIENT_HASH",
-            "G\016\147\221Zk\141\024\204\132\201\022Pp\131\170\024-\016\189*\163F\031\238\219E\160E\184\147\196"
-          );
-          ("TLS_CLIENT_SUBJECT", "lil ocaml");
-          ("TLS_CLIENT_ISSUER", "lil ocaml");
-        |]
+        Ok
+          [|
+            ("AUTH_TYPE", "Certificate");
+            ("CONTENT_LENGTH", "");
+            ("CONTENT_TYPE", "");
+            ("GATEWAY_INTERFACE", "CGI/1.1");
+            ("PATH_INFO", "/docs/protocol-specification.gmi");
+            ("PATH_TRANSLATED", "/docs/protocol-specification.gmi");
+            ("QUERY_STRING", "");
+            ("REMOTE_ADDR", "80.0.10.160");
+            ("REMOTE_HOST", "80.0.10.160");
+            ("REMOTE_IDENT", "");
+            ("REMOTE_USER", "");
+            ("REQUEST_METHOD", "");
+            ("SCRIPT_NAME", "/foo/bar/foobar.ml");
+            ("SERVER_NAME", "geminiprotocol.net");
+            ("SERVER_PORT", "1965");
+            ("SERVER_PROTOCOL", "GEMINI");
+            ("SERVER_SOFTWARE", "Mehari/%%VERSION%%");
+            ( "TLS_CLIENT_HASH",
+              "G\016\147\221Zk\141\024\204\132\201\022Pp\131\170\024-\016\189*\163F\031\238\219E\160E\184\147\196"
+            );
+            ("TLS_CLIENT_SUBJECT", "lil ocaml");
+            ("TLS_CLIENT_ISSUER", "lil ocaml");
+          |]
       in
       let computed =
-        Cgi.make req ~script_path:"/foo/bar/foobar.ml"
-          ~server_addr:Ipaddr.(V4 (V4.of_string_exn "152.19.95.83"))
-        |> Cgi.to_env
+        Result.map
+          (fun r ->
+            Cgi.make r ~script_path:"/foo/bar/foobar.ml"
+              ~server_addr:Ipaddr.(V4 (V4.of_string_exn "152.19.95.83"))
+            |> Cgi.to_env)
+          req
       in
-      check (array (pair string string)) "should be equal" expected computed)
+      check
+        (result (array (pair string string)) reject)
+        "should be equal" expected computed)
 
 let cases = ("cgi_test", [ test_cgi_env_1; test_cgi_env_2; test_cgi_env_3 ])
