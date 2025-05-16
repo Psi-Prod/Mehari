@@ -1,4 +1,4 @@
-(** X509 certificates and TLS certchains related types. *)
+(** TLS certchains and X509 certificates related types. *)
 
 (** Type for certchains providing. *)
 type t =

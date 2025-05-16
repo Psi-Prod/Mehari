@@ -9,8 +9,7 @@ module type S = sig
     ?port:int ->
     ?verify_url_host:bool ->
     ?timeout:float ->
-    ?backlog:int ->
-    ?addr:Eio.Net.Ipaddr.v4v6 ->
+    ?config:Config.t ->
     certs:Certs.t ->
     handler ->
     unit IO.t
@@ -117,12 +116,12 @@ module Make (Logger : Private.Signatures.LOGGER) :
         Log.warn (fun log -> log "Concurrent connections")
     | exn -> raise exn
 
-  let run ?(port = 1965) ?(verify_url_host = true) ?timeout ?(backlog = 4096)
-      ?(addr = Net.Ipaddr.V4.loopback) ~certs handler env =
+  let run ?(port = 1965) ?(verify_url_host = true) ?timeout
+      ?(config = Config.make ()) ~certs handler env =
     Eio.Switch.run (fun sw ->
         let socket =
-          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog ~sw env#net
-            (`Tcp (addr, port))
+          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog:config.backlog ~sw env#net
+            (`Tcp (config.addr, port))
         in
         Log.info (fun log -> log "Listening on port %i" port);
         Eio.Net.run_server ~on_error:log_err socket (fun flow -> function

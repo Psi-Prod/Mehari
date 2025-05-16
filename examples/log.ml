@@ -21,6 +21,5 @@ let () =
               M.info (fun log -> log "Request n°: %i" !n);
               M.respond_text "This request is logged");
         ]
-      |> M.logger
-      |> M.run_lwt ~certs:(Single cert)
+      |> M.logger |> M.run ~certs:(Single cert)
     end

@@ -52,4 +52,8 @@ let virtual_hosts = Router.virtual_hosts
 let make_rate_limit = RateLimiter.make
 let respond_document = File.respond_document
 let static = File.static
+
+type config = Config.t
+
+let config = Config.make
 let run = Server.run

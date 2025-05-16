@@ -13,6 +13,5 @@ let () =
           M.route ~regex:true "/echo/(.*)" (fun req ->
               Request.param req 1 |> M.respond_text);
         ]
-      |> M.logger
-      |> M.run_lwt ~certs:(Single cert)
+      |> M.logger |> M.run ~certs:(Single cert)
     end

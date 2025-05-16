@@ -25,5 +25,5 @@ let () =
           Mehari_io.route "/incr" ~mw:incr_count (fun _ ->
               Mehari_io.respond Status.redirect_temp "/");
         ]
-      |> Mehari_io.run_lwt ~certs:(Single cert)
+      |> Mehari_io.run ~certs:(Single cert)
     end

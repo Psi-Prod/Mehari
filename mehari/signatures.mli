@@ -254,3 +254,30 @@ module type FS = sig
       [show_hidden] decides whether hidden files should be listed. It defaults
       to [false] for security reasons. *)
 end
+
+(* Common server functionnality to define in each implementation. *)
+module type SERVER = sig
+  module IO : IO
+
+  type config
+  (** Implementation dependant configuration. *)
+
+  val run :
+    ?port:int ->
+    ?verify_url_host:bool ->
+    ?timeout:float ->
+    ?config:config ->
+    certs:Certs.t ->
+    (Request.t -> Response.t IO.t) ->
+    unit IO.t
+  (** [run ?port ?verify_url_host ?timeout ?config ~certs handler] runs a Gemini
+      server.
+
+      - [port] is the port to listen on. Defaults to [1965].
+      - [verify_url_host], if true (the default), will verify if the URL
+        hostname matchs one of hostname provided in [certs] certchains.
+      - [timeout] is the maximum time to wait for client to write a request
+        after the TLS handshake. Unset by default.
+      - [certs] is the TLS certchains used.
+      - [config] is the implementation dependant configuration used. *)
+end

@@ -17,5 +17,5 @@ let () =
           M.route "/high" ~rate_limit:high_limit (fun _ ->
               M.respond_text "2 requests per 10 seconds authorized");
         ]
-      |> M.run_lwt ~certs:(Single cert)
+      |> M.run ~certs:(Single cert)
     end

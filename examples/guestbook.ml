@@ -47,5 +47,5 @@ let () =
                   book#add_entry ~addr:(Request.ip req) msg;
                   M.respond Status.redirect_temp "/");
         ]
-      |> M.run_lwt ~certs:(Single cert)
+      |> M.run ~certs:(Single cert)
     end

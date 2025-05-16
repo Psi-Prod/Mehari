@@ -13,27 +13,20 @@ include
 (** @closed *)
 include FS with module IO := IO and type dir_path := [ `Dir ] Eio.Path.t
 
-(** {1 Entry point} *)
+(** {1 Server configuration} *)
 
-val run :
-  ?port:int ->
-  ?verify_url_host:bool ->
-  ?timeout:float ->
-  ?backlog:int ->
-  ?addr:Eio.Net.Ipaddr.v4v6 ->
-  certs:Certs.t ->
-  handler ->
-  unit IO.t
-(** [run ?port ?verify_url_host ?backlog ?addr ~certchains handler] runs the
-    server using [handler].
+type config
+(** Configuration parameters *)
 
-    - [port] is the port to listen on. Defaults to [1965].
-    - [verify_url_host], if true (by default), will verify if the URL hostname
-      corresponds to the server's certificate (chosen according to
-      {{:https://github.com/mirleft/ocaml-tls/blob/main/sni.md}ocaml-tls sni.md}).
-    - [timeout] is the maximum waiting time in seconds for the client to write a
-      request after TLS handshake. Unset by default.
+val config : ?backlog:int -> ?addr:Eio.Net.Ipaddr.v4v6 -> unit -> config
+(** Build a {!type-config} from given parameters.
+
     - [backlog] is the the number of pending connections that can be queued up.
       Defaults to [4096].
     - [addr] is the socket addresses. Defaults to [Eio.Net.Ipaddr.V4.loopback].
-    - [certs] is the TLS certchains used. *)
+*)
+
+(** {1 Run server} *)
+
+(** @inline *)
+include SERVER with type config := config and module IO := IO

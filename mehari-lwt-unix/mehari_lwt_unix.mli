@@ -5,11 +5,11 @@ open Mehari
 
 (** {1 Net} *)
 
-include Mehari_mirage.S
 (** @closed *)
+include Mehari_mirage.S with module IO := Lwt and type stack = unit
 
 (** @closed *)
-include FS with module IO := IO and type dir_path := string
+include FS with module IO := Lwt and type dir_path := string
 
 (** {1:cgi CGI} *)
 
@@ -73,26 +73,22 @@ val run_cgi : ?timeout:float -> ?non_parsed:bool -> string -> handler
       means that server no longer checks correctness of script output. Use it
       with caution. Defaults to [false]. *)
 
-(** {1 Entry point} *)
+(** {1 Server configuration} *)
 
-val run_lwt :
-  ?port:int ->
-  ?verify_url_host:bool ->
-  ?timeout:float ->
-  ?v4:Ipaddr.V4.Prefix.t ->
-  ?v6:Ipaddr.V6.Prefix.t ->
-  certs:Certs.t ->
-  handler ->
-  unit Lwt.t
-(** See {!val:Mehari_mirage.S.run}. *)
+type config
+(** Configuration parameters *)
 
-val run :
-  ?port:int ->
-  ?verify_url_host:bool ->
-  ?timeout:float ->
-  ?v4:Ipaddr.V4.Prefix.t ->
-  ?v6:Ipaddr.V6.Prefix.t ->
-  certs:Certs.t ->
-  handler ->
-  unit
-(** Like {!val:run_lwt} but calls [Lwt_main.run] internally. *)
+(** IP configuration. *)
+type ips =
+  | IPv4 of Ipaddr.V4.Prefix.t
+  | IPv6 of Ipaddr.V6.Prefix.t
+  | IPv4v6 of Ipaddr.V4.Prefix.t * Ipaddr.V6.Prefix.t
+
+val config : ips -> config
+(** Build a {!type-config} from an IP configuration. Listen by befault on
+    [127.0.0.1/8]. *)
+
+(** {1 Run server} *)
+
+(** @inline *)
+include SERVER with type config := config and module IO := Lwt

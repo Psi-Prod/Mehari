@@ -40,6 +40,7 @@ module Certs = Certs
 
 module type NET = Signatures.NET
 module type FS = Signatures.FS
+module type SERVER = Signatures.SERVER
 
 module Private = struct
   module type IO = Signatures.IO
