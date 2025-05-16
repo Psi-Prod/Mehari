@@ -275,6 +275,7 @@ module type SERVER = sig
       - [port] is the port to listen on. Defaults to [1965].
       - [timeout] is the maximum time to wait for client to write a request
         after the TLS handshake. Unset by default.
-      - [certs] is the TLS certchains used.
+      - [certs] is the TLS certchains used. See section "Certificate selection"
+        in {!Certs}.
       - [config] is the implementation dependant configuration used. *)
 end
