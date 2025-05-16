@@ -4,14 +4,17 @@ open Mehari
 
 (** {1 Net} *)
 
-module IO = Identity_reader_monad
+(** @closed *)
+include
+  NET
+    with type clock := [ `Clock of float ] Eio.Time.clock
+     and module IO := Identity_reader_monad
 
 (** @closed *)
 include
-  NET with module IO := IO and type clock := [ `Clock of float ] Eio.Time.clock
-
-(** @closed *)
-include FS with module IO := IO and type dir_path := [ `Dir ] Eio.Path.t
+  FS
+    with type dir_path := [ `Dir ] Eio.Path.t
+     and module IO := Identity_reader_monad
 
 (** {1 Server configuration} *)
 
@@ -29,4 +32,4 @@ val config : ?backlog:int -> ?addr:Eio.Net.Ipaddr.v4v6 -> unit -> config
 (** {1 Run server} *)
 
 (** @inline *)
-include SERVER with type config := config and module IO := IO
+include SERVER with type config := config and module IO := Identity_reader_monad

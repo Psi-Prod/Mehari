@@ -1,20 +1,5 @@
 open Mehari
 
-module type S = sig
-  module IO : Private.IO
-
-  type handler = request -> response IO.t
-
-  val run :
-    ?port:int ->
-    ?verify_url_host:bool ->
-    ?timeout:float ->
-    ?config:Config.t ->
-    certs:Certs.t ->
-    handler ->
-    unit IO.t
-end
-
 type config = {
   env : Identity_reader_monad.env;
   port : int;
@@ -26,20 +11,25 @@ type config = {
 let make_config ~env ~port ~timeout ~certs ~verify_url_host =
   { env; port; timeout; certs; verify_url_host }
 
-module Make (Logger : Private.Signatures.LOGGER) :
-  S with module IO = Identity_reader_monad = struct
-  module IO = Identity_reader_monad
-
-  type handler = request -> response IO.t
-
-  module Buf_read = Eio.Buf_read
-  module Buf_write = Eio.Buf_write
-  module Net = Eio.Net
+module Make (Logger : Private.Signatures.LOGGER) = struct
   module Protocol = Private.Protocol
+  open Eio
 
   let src = Logs.Src.create "mehari.eio"
 
   module Log = (val Logs.src_log src)
+
+  let log_err = function
+    | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
+    | Tls_eio.Tls_alert a ->
+        Log.warn (fun log ->
+            log "Tls alert: %S" @@ Tls.Packet.alert_type_to_string a)
+    | Tls_eio.Tls_failure f ->
+        Log.warn (fun log ->
+            log "Tls failure: %S" @@ Tls.Engine.string_of_failure f)
+    | Exn.Io (Net.E (Connection_reset _), _) ->
+        Log.warn (fun log -> log "Concurrent connections")
+    | exn -> raise exn
 
   let read_client_request ?timeout clock flow =
     let client_req =
@@ -53,7 +43,7 @@ module Make (Logger : Private.Signatures.LOGGER) :
     let with_timeout clock timeout f =
       match timeout with
       | None -> f ()
-      | Some duration -> Eio.Time.with_timeout_exn clock duration f
+      | Some duration -> Time.with_timeout_exn clock duration f
     in
     with_timeout clock timeout (fun () -> client_req reader)
 
@@ -73,7 +63,7 @@ module Make (Logger : Private.Signatures.LOGGER) :
           in
           body consume
     in
-    Eio.Flow.shutdown flow `Send
+    Flow.shutdown flow `Send
 
   let gemini_exchange ~client_ip
       { certs; port; env; timeout; verify_url_host; _ } flow handler =
@@ -101,30 +91,19 @@ module Make (Logger : Private.Signatures.LOGGER) :
         Protocol.to_response AboveMaxSize |> write_response flow
     | Failure _ -> Protocol.to_response InvalidURL |> write_response flow
     | End_of_file -> Log.warn (fun log -> log "EOF encountered prematurly")
-    | Eio.Time.Timeout ->
+    | Time.Timeout ->
         Log.warn (fun log -> log "Timeout while reading client request")
-
-  let log_err = function
-    | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
-    | Tls_eio.Tls_alert a ->
-        Log.warn (fun log ->
-            log "Tls alert: %S" @@ Tls.Packet.alert_type_to_string a)
-    | Tls_eio.Tls_failure f ->
-        Log.warn (fun log ->
-            log "Tls failure: %S" @@ Tls.Engine.string_of_failure f)
-    | Eio.Exn.Io (Eio.Net.E (Connection_reset _), _) ->
-        Log.warn (fun log -> log "Concurrent connections")
-    | exn -> raise exn
 
   let run ?(port = 1965) ?(verify_url_host = true) ?timeout
       ?(config = Config.make ()) ~certs handler env =
-    Eio.Switch.run (fun sw ->
+    Switch.run (fun sw ->
         let socket =
-          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog:config.backlog ~sw env#net
+          Net.listen ~reuse_addr:true ~reuse_port:true ~backlog:config.backlog
+            ~sw env#net
             (`Tcp (config.addr, port))
         in
         Log.info (fun log -> log "Listening on port %i" port);
-        Eio.Net.run_server ~on_error:log_err socket (fun flow -> function
+        Net.run_server ~on_error:log_err socket (fun flow -> function
           | `Tcp (client_ip, _) ->
               let client_ip =
                 Ipaddr.of_octets_exn (client_ip : Net.Ipaddr.v4v6 :> string)
