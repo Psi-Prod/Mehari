@@ -264,7 +264,6 @@ module type SERVER = sig
 
   val run :
     ?port:int ->
-    ?verify_url_host:bool ->
     ?timeout:float ->
     ?config:config ->
     certs:Certs.t ->
@@ -274,8 +273,6 @@ module type SERVER = sig
       server.
 
       - [port] is the port to listen on. Defaults to [1965].
-      - [verify_url_host], if true (the default), will verify if the URL
-        hostname matchs one of hostname provided in [certs] certchains.
       - [timeout] is the maximum time to wait for client to write a request
         after the TLS handshake. Unset by default.
       - [certs] is the TLS certchains used.

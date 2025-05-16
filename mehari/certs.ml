@@ -17,16 +17,4 @@ module Private = struct
       ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
       ()
     |> Result.get_ok
-
-  let supports_hostname certs host =
-    let supports_hostname =
-      List.exists (fun c -> X509.Certificate.supports_hostname c host)
-    in
-    match certs with
-    | Single (certs, _) -> supports_hostname certs
-    | Multiple [] -> false
-    | Multiple certs -> List.exists (fun (cs, _) -> supports_hostname cs) certs
-    | Multiple_default ((certs, _), certss) ->
-        supports_hostname certs
-        || List.exists (fun (cs, _) -> supports_hostname cs) certss
 end

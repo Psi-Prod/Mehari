@@ -28,8 +28,7 @@ let configure_stack ips =
   let* udp = Stack.UDP.connect ~ipv4_only ~ipv6_only ipv4 ipv6 in
   Stack.connect udp tcp
 
-let run ?port ?verify_url_host ?timeout ?(config = default_config) ~certs
-    handler =
+let run ?port ?timeout ?(config = default_config) ~certs handler =
   Mirage_crypto_rng_unix.use_default ();
   let* stack = configure_stack config in
-  run ?port ?timeout ?verify_url_host ~certs stack handler
+  run ?port ?timeout ~certs stack handler

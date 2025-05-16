@@ -2,16 +2,6 @@ open Mehari
 open Lwt.Infix
 open Lwt.Syntax
 
-type config = {
-  port : int;
-  timeout : float option;
-  certs : Certs.t;
-  verify_url_host : bool;
-}
-
-let make_config ~port ~timeout ~certs ~verify_url_host =
-  { port; timeout; certs; verify_url_host }
-
 module Make
     (Stack : Tcpip.Stack.V4V6)
     (Time : Mirage_time.S)
@@ -84,15 +74,11 @@ struct
           in
           Lwt.catch
             (fun () -> Lwt.pick [ f (); timeout ])
-            (function
-              | Timeout ->
-                  Lwt.return_error `Timeout
-              | exn -> raise exn)
+            (function Timeout -> Lwt.return_error `Timeout | exn -> raise exn)
     in
     with_timeout timeout (fun () -> parse_request chan)
 
-  let handle_client ~client_ip { certs; port; timeout; verify_url_host; _ } flow
-      handler =
+  let handle_client ~client_ip ~port ~timeout flow handler =
     let chan = Channel.create flow in
     read_client_request ?timeout chan >>= function
     | Ok client_request -> (
@@ -100,8 +86,8 @@ struct
         | Ok { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let request =
               Protocol.make_request ~client_ip ?hostname:own_name ~port
-                ~verify_url_host ~tls_version:protocol_version
-                ?client_cert:peer_certificate ~client_request certs
+                ~tls_version:protocol_version ?client_cert:peer_certificate
+                ~client_request ()
             in
             let* response =
               match request with
@@ -114,19 +100,17 @@ struct
         Protocol.to_response AboveMaxSize |> write_response chan flow
     | Error err -> Lwt.return_error err
 
-  let handler ~client_ip config tls_config callback flow =
+  let handler ~client_ip ~port ~timeout tls_config callback flow =
     TLS.server_of_flow tls_config flow >>= function
-    | Ok server -> handle_client ~client_ip config server callback
+    | Ok server -> handle_client ~client_ip ~port ~timeout server callback
     | Error err -> Lwt.return_error (`TLSWriteErr err)
 
-  let run ?(port = 1965) ?(verify_url_host = true) ?timeout ~certs stack
-      callback =
+  let run ?(port = 1965) ?timeout ~certs stack callback =
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
         let client_ip, _ = Stack.TCP.dst flow in
-        let config = make_config ~port ~timeout ~certs ~verify_url_host in
         let tls_config = Certs.Private.make_config certs in
-        handler ~client_ip config tls_config callback flow
+        handler ~client_ip ~port ~timeout tls_config callback flow
         >|= Result.iter_error log_err);
     Stack.listen stack
 end

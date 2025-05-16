@@ -83,7 +83,7 @@ module Make
   let virtual_hosts ?(meth = `SNI) domains_handler req =
     let req_host =
       match meth with
-      | `SNI -> Request.Private.sni req |> Domain_name.to_string
+      | `SNI -> Request.Private.server_hostname req
       | `ByURL ->
           Request.uri req |> Uri.host
           |> Option.get (* Guaranteed by [Protocol.make_request]. *)

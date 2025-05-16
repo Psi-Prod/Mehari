@@ -9,16 +9,15 @@ let mock_request client_request =
   Protocol.make_request
     ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
-    ~port:1917 ~verify_url_host:true ~tls_version:`TLS_1_3 ~client_request
-    (Single Certchains.localhost)
+    ~port:1917 ~tls_version:`TLS_1_3 ~client_request ()
 
 let client_ip_1 = Ipaddr.of_string_exn "80.120.170.10"
 
 let request_1 =
   Protocol.make_request ~client_ip:client_ip_1
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
-    ~port:1917 ~verify_url_host:false ~tls_version:`TLS_1_3
-    ~client_request:"gemini://localhost/foo/bar" (Single Certchains.localhost)
+    ~port:1917 ~tls_version:`TLS_1_3
+    ~client_request:"gemini://localhost/foo/bar" ()
 
 let test_request_uri_1 =
   let open Alcotest in
@@ -103,6 +102,31 @@ let test_request_invalid_domain_name =
       let computed = mock_request "gemini://foo..mdr/" in
       check (result reject request_err) "should be equal" expected computed)
 
+let test_request_ip_addr_hostname =
+  let open Alcotest in
+  test_case "request a valid IP address as hostname" `Quick (fun () ->
+      let expected = Ok () in
+      let computed =
+        Protocol.make_request ~port:1917
+          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
+          ~tls_version:`TLS_1_3 ~client_request:"gemini://80.120.170.11/test"
+          ?hostname:None ()
+        |> Result.map (fun _ -> ())
+      in
+      check (result unit request_err) "should be equal" expected computed)
+
+let test_request_invalid_ip_addr_hostname =
+  let open Alcotest in
+  test_case "request an invalid IP address as hostname" `Quick (fun () ->
+      let expected = Error Protocol.NotADomainName in
+      let computed =
+        Protocol.make_request ~port:1917
+          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
+          ~tls_version:`TLS_1_3 ~client_request:"gemini://80.120..170.11"
+          ?hostname:None ()
+      in
+      check (result pass request_err) "should be equal" expected computed)
+
 let test_request_relative_uri_path =
   let open Alcotest in
   test_case "request URI with a relative path test" `Quick (fun () ->
@@ -110,32 +134,11 @@ let test_request_relative_uri_path =
       let computed = mock_request "gemini://hello.foo" in
       check (result reject request_err) "should be equal" expected computed)
 
-let test_request_sni_required =
-  let open Alcotest in
-  test_case "request without SNI extension test" `Quick (fun () ->
-      let expected = Error Protocol.SNIExtRequired in
-      let computed =
-        Protocol.make_request ~port:1917
-          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~verify_url_host:true ~tls_version:`TLS_1_3 ~client_request:""
-          (Single Certchains.localhost) ?hostname:None
-      in
-      check (result reject request_err) "should be equal" expected computed)
-
 let test_request_user_info =
   let open Alcotest in
   test_case "request with URL containing userinfo" `Quick (fun () ->
       let expected = Error Protocol.UserInfoNotAllowed in
       let computed = mock_request "gemini://tim:mdp@example.com/" in
-      check (result reject request_err) "should be equal" expected computed)
-
-let test_request_wrong_host =
-  let open Alcotest in
-  test_case
-    "request with URL hostname which doesn't match certificates hostnames"
-    `Quick (fun () ->
-      let expected = Error Protocol.WrongHost in
-      let computed = mock_request "gemini://heyplzlookat.lol/" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_wrong_port =
@@ -146,9 +149,8 @@ let test_request_wrong_port =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
-          ~verify_url_host:true ~tls_version:`TLS_1_3 ~port:1917
-          ~client_request:"gemini://heyplzlookat.me:1848/"
-          (Single Certchains.heyplzlookatme)
+          ~tls_version:`TLS_1_3 ~port:1917
+          ~client_request:"gemini://heyplzlookat.me:1848/" ()
       in
       check (result reject request_err) "should be equal" expected computed)
 
@@ -173,10 +175,10 @@ let cases =
       test_request_missing_host;
       test_request_missing_scheme;
       test_request_invalid_domain_name;
+      test_request_ip_addr_hostname;
+      test_request_invalid_ip_addr_hostname;
       test_request_relative_uri_path;
-      test_request_sni_required;
       test_request_user_info;
-      test_request_wrong_host;
       test_request_wrong_port;
       test_request_wrong_scheme;
     ] )

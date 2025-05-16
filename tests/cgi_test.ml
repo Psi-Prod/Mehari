@@ -7,9 +7,8 @@ let test_cgi_env_1 =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.0.10.30")
           ~hostname:Domain_name.(of_string_exn "heyplzlookat.me" |> host_exn)
-          ~port:1968 ~verify_url_host:true ~tls_version:`TLS_1_2
-          ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi"
-          (Single Certchains.heyplzlookatme)
+          ~port:1968 ~tls_version:`TLS_1_2
+          ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi" ()
         |> Result.get_ok
       in
       let expected =
@@ -50,9 +49,8 @@ let test_cgi_env_2 =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "120.8.50.12")
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
-          ~port:1965 ~verify_url_host:true ~tls_version:`TLS_1_3
-          ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input"
-          (Single Certchains.localhost)
+          ~port:1965 ~tls_version:`TLS_1_3
+          ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input" ()
         |> Result.get_ok
       in
       let expected =
@@ -113,10 +111,10 @@ let test_cgi_env_3 =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.0.10.160")
           ~hostname:Domain_name.(of_string_exn "geminiprotocol.net" |> host_exn)
-          ~port:1965 ~verify_url_host:true ~tls_version:`TLS_1_3 ~client_cert
+          ~port:1965 ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:
             "gemini://geminiprotocol.net/docs/protocol-specification.gmi"
-          (Single Certchains.geminiprotocolnet)
+          ()
         |> Result.get_ok
       in
       let expected =

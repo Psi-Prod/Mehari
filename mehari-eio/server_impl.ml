@@ -1,16 +1,5 @@
 open Mehari
 
-type config = {
-  env : Identity_reader_monad.env;
-  port : int;
-  timeout : float option;
-  certs : Certs.t;
-  verify_url_host : bool;
-}
-
-let make_config ~env ~port ~timeout ~certs ~verify_url_host =
-  { env; port; timeout; certs; verify_url_host }
-
 module Make (Logger : Private.Signatures.LOGGER) = struct
   module Protocol = Private.Protocol
   open Eio
@@ -65,8 +54,7 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
     in
     Flow.shutdown flow `Send
 
-  let gemini_exchange ~client_ip
-      { certs; port; env; timeout; verify_url_host; _ } flow handler =
+  let gemini_exchange ~client_ip ~port ~timeout ~env flow handler =
     let client_request = read_client_request ?timeout env#clock flow in
     let { Tls.Core.own_name; peer_certificate; protocol_version; _ } =
       match Tls_eio.epoch flow with
@@ -76,8 +64,8 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
     let response =
       let request =
         Protocol.make_request ~client_ip ?hostname:own_name ~port
-          ~verify_url_host ~tls_version:protocol_version
-          ?client_cert:peer_certificate ~client_request certs
+          ~tls_version:protocol_version ?client_cert:peer_certificate
+          ~client_request ()
       in
       match request with
       | Ok req -> handler req
@@ -85,8 +73,8 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
     in
     write_response flow response
 
-  let handle_client ~client_ip config flow handler =
-    try gemini_exchange ~client_ip config flow handler with
+  let handle_client ~client_ip ~port ~timeout ~env flow handler =
+    try gemini_exchange ~client_ip ~port ~timeout ~env flow handler with
     | Buf_read.Buffer_limit_exceeded ->
         Protocol.to_response AboveMaxSize |> write_response flow
     | Failure _ -> Protocol.to_response InvalidURL |> write_response flow
@@ -94,8 +82,8 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
     | Time.Timeout ->
         Log.warn (fun log -> log "Timeout while reading client request")
 
-  let run ?(port = 1965) ?(verify_url_host = true) ?timeout
-      ?(config = Config.make ()) ~certs handler env =
+  let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler env
+      =
     Switch.run (fun sw ->
         let socket =
           Net.listen ~reuse_addr:true ~reuse_port:true ~backlog:config.backlog
@@ -110,9 +98,7 @@ module Make (Logger : Private.Signatures.LOGGER) = struct
               in
               let tls_config = Certs.Private.make_config certs in
               let srv = Tls_eio.server_of_flow tls_config flow in
-              let config =
-                make_config ~env ~port ~timeout ~certs ~verify_url_host
-              in
-              handle_client ~client_ip config srv (fun req -> handler req env)
+              handle_client ~client_ip ~port ~timeout ~env srv (fun req ->
+                  handler req env)
           | `Unix _ -> assert false (* We listen on a TCP socket. *)))
 end

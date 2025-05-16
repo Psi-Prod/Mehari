@@ -8,7 +8,7 @@ module type S = sig
 
   (** @closed *)
   include NET with module IO := Lwt and type clock := unit
-   (** See {!Mehari.NET}. *) 
+  (** See {!Mehari.NET}. *)
 
   (** {1 Rate limit} *)
 
@@ -45,7 +45,6 @@ module type S = sig
 
   val run :
     ?port:int ->
-    ?verify_url_host:bool ->
     ?timeout:float ->
     certs:Mehari.Certs.t ->
     stack ->

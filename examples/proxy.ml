@@ -20,4 +20,4 @@ let () =
     X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
       ~priv_key:(env#cwd / "key.pem")
   in
-  Mehari_eio.run ~certs:(Single cert) ~verify_url_host:false router env
+  Mehari_eio.run ~certs:(Single cert) router env

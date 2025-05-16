@@ -40,12 +40,12 @@ module Private : sig
     uri:Uri.t ->
     client_ip:Ipaddr.t ->
     port:int ->
-    sni:[ `host ] Domain_name.t ->
+    server_hostname:string ->
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
     unit ->
     t
 
-  val sni : t -> [ `host ] Domain_name.t
+  val server_hostname : t -> string
   val attach_params : t -> Re.Group.t option -> t
 end
 
