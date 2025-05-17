@@ -27,10 +27,15 @@ and line =
 and preformat = { alt : string option; text : string }
 
 val line_to_string : line -> string
-val of_string : string -> t
-val to_string : t -> string
+(** Convert a gemtext line to a string. *)
 
-(** {1 Facilities} *)
+val of_string : string -> t
+(** Creates a gemtext document from given string. *)
+
+val to_string : t -> string
+(** Convert a gemtext document to a string. *)
+
+(** {1 Smart constructors} *)
 
 val text : string -> line
 
@@ -42,5 +47,13 @@ val preformat : ?alt:string -> string -> line
 val heading : [ `H1 | `H2 | `H3 ] -> string -> line
 val list_item : string -> line
 val quote : string -> line
+
+(** {1 Pretty printing} *)
+
 val pp_line : Format.formatter -> line -> unit
 val pp : Format.formatter -> t -> unit
+
+(** {1 Equality} *)
+
+val equal_line : line -> line -> bool
+val equal : t -> t -> bool

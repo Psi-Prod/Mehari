@@ -60,10 +60,13 @@ module Regex = struct
           ])
 end
 
-type line_feed = LF | CRLF | EOF
+type line_feed = LF | CRLF
 
 (* Preserve line feed information to not erase it in pre-formatted blocks. *)
-let show = function LF -> "\n" | CRLF -> "\r\n" | EOF -> ""
+let string_of_line_feed = function
+  | None -> ""
+  | Some LF -> "\n"
+  | Some CRLF -> "\r\n"
 
 let split_lines text =
   let buf = Buffer.create 8192 in
@@ -77,11 +80,11 @@ let split_lines text =
         let content = Buffer.contents buf in
         Buffer.reset buf;
         cr := false;
-        acc := (content, CRLF) :: !acc
+        acc := (content, Some CRLF) :: !acc
     | '\n' ->
         let content = Buffer.contents buf in
         Buffer.reset buf;
-        acc := (content, LF) :: !acc
+        acc := (content, Some LF) :: !acc
     | c when !cr ->
         cr := false;
         Buffer.add_char buf '\r';
@@ -89,65 +92,82 @@ let split_lines text =
     | c -> Buffer.add_char buf c
   done;
   if !cr then Buffer.add_char buf '\r';
-  acc := (Buffer.contents buf, EOF) :: !acc;
+  acc := (Buffer.contents buf, None) :: !acc;
   List.rev !acc
 
 let of_string text =
-  let buf = Buffer.create 4096 in
-  let rec loop acc is_preformat alt = function
+  let rec loop acc preformat = function
     | [] -> List.rev acc
-    | (l, feed) :: ls -> (
-        match (String.starts_with ~prefix:"```" l, is_preformat) with
-        | true, true ->
+    | (line, feed) :: lines -> (
+        match (String.starts_with ~prefix:"```" line, preformat) with
+        | true, Some (alt, preformat) ->
             let text =
-              match Buffer.contents buf with
+              match Buffer.contents preformat with
               | "" -> ""
               | s -> String.sub s 0 (String.length s - 1)
             in
-            Buffer.reset buf;
-            loop (Preformat { alt; text } :: acc) false None ls
-        | true, false ->
+            loop (Preformat { alt; text } :: acc) None lines
+        | true, None ->
             let alt =
-              match String.sub l 3 (String.length l - 3) with
+              match String.sub line 3 (String.length line - 3) with
               | "" -> None
               | alt -> Some alt
             in
-            loop acc true alt ls
-        | false, true ->
-            Buffer.add_string buf l;
-            Buffer.add_string buf (show feed);
-            loop acc is_preformat alt ls
-        | false, false when l = "" -> loop (Text "" :: acc) is_preformat alt ls
-        | false, false ->
-            let line =
-              try
-                let grp = Re.exec Regex.h3 l in
-                Heading (`H3, Re.Group.get grp 1)
-              with Not_found -> (
+            loop acc (Some (alt, Buffer.create 4096)) lines
+        | false, (Some (_, preformat) as pf) ->
+            Buffer.add_string preformat line;
+            Buffer.add_string preformat (string_of_line_feed feed);
+            loop acc pf lines
+        | false, None ->
+            if line = "" then loop (Text "" :: acc) preformat lines
+            else
+              let line =
                 try
-                  let grp = Re.exec Regex.h2 l in
-                  Heading (`H2, Re.Group.get grp 1)
+                  let grp = Re.exec Regex.h3 line in
+                  Heading (`H3, Re.Group.get grp 1)
                 with Not_found -> (
                   try
-                    let grp = Re.exec Regex.h1 l in
-                    Heading (`H1, Re.Group.get grp 1)
+                    let grp = Re.exec Regex.h2 line in
+                    Heading (`H2, Re.Group.get grp 1)
                   with Not_found -> (
                     try
-                      let grp = Re.exec Regex.item l in
-                      ListItem (Re.Group.get grp 1)
+                      let grp = Re.exec Regex.h1 line in
+                      Heading (`H1, Re.Group.get grp 1)
                     with Not_found -> (
                       try
-                        let grp = Re.exec Regex.quote l in
-                        Quote (Re.Group.get grp 1)
+                        let grp = Re.exec Regex.item line in
+                        ListItem (Re.Group.get grp 1)
                       with Not_found -> (
                         try
-                          let grp = Re.exec Regex.link l in
-                          let url, name =
-                            (Re.Group.get grp 1, Re.Group.get_opt grp 2)
-                          in
-                          Link { url; name }
-                        with Not_found -> Text l)))))
-            in
-            loop (line :: acc) is_preformat alt ls)
+                          let grp = Re.exec Regex.quote line in
+                          Quote (Re.Group.get grp 1)
+                        with Not_found -> (
+                          try
+                            let grp = Re.exec Regex.link line in
+                            let url, name =
+                              (Re.Group.get grp 1, Re.Group.get_opt grp 2)
+                            in
+                            Link { url; name }
+                          with Not_found -> Text line)))))
+              in
+              loop (line :: acc) preformat lines)
   in
-  split_lines text |> loop [] false None
+  split_lines text |> loop [] None
+
+let equal_line l l' =
+  match (l, l') with
+  | Text t, Text t' -> String.equal t t'
+  | Link { url; name }, Link { url = url'; name = name' } ->
+      String.equal url url' && Option.equal String.equal name name'
+  | Preformat { alt; text }, Preformat { alt = alt'; text = text' } ->
+      Option.equal String.equal alt alt' && String.equal text text'
+  | Heading (`H1, h), Heading (`H1, h')
+  | Heading (`H2, h), Heading (`H2, h')
+  | Heading (`H3, h), Heading (`H3, h') ->
+      String.equal h h'
+  | ListItem i, ListItem i' -> String.equal i i'
+  | Quote q, Quote q' -> String.equal q q'
+  | (Text _ | Link _ | Preformat _ | Heading _ | ListItem _ | Quote _), _ ->
+      false
+
+let equal = List.equal equal_line
