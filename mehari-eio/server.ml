@@ -85,7 +85,7 @@ let handle_client ~client_ip ~port ~timeout ~env flow handler =
   | Time.Timeout ->
       Log.warn (fun log -> log "Timeout while reading client request")
 
-let run ?(port = 1965) ?timeout ?(config = Config.default) ~certs handler env =
+let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler env =
   Switch.run (fun sw ->
       let socket =
         Net.listen ~reuse_addr:true ~reuse_port:true ~backlog:config.backlog ~sw

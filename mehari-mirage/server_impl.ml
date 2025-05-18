@@ -41,7 +41,7 @@ struct
     in
     let () =
       match Response.Private.view_of_resp resp with
-      | Immediate bufs -> write bufs
+      | Immediate buf -> write buf
       | Chunks { body; _ } -> body write
     in
     flush chan >>= function
@@ -86,13 +86,13 @@ struct
   let handle_client ~client_ip ~port ~timeout flow handler =
     let chan = Channel.create flow in
     read_client_request ?timeout chan >>= function
-    | Ok (client_request, req_time) -> (
+    | Ok (client_request, timestamp) -> (
         match TLS.epoch flow with
         | Ok { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let request =
               Protocol.make_request ~client_ip ?hostname:own_name ~port
                 ~tls_version:protocol_version ?client_cert:peer_certificate
-                ~client_request ~now:req_time ()
+                ~client_request ~now:timestamp ()
             in
             let* response =
               match request with

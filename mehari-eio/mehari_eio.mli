@@ -29,9 +29,6 @@ module Config : sig
         up. Defaults to [4096].
       - [addr] is the socket addresses. Defaults to
         [Eio.Net.Ipaddr.V4.loopback]. *)
-
-  val default : t
-  (** The default configuration is [make ()]. *)
 end
 
 (** @inline *)
