@@ -53,7 +53,6 @@ let make_rate_limit = RateLimiter.make
 let respond_document = File.respond_document
 let static = File.static
 
-type config = Config.t
+module Config = Config
 
-let config = Config.make
 let run = Server.run

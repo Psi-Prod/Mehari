@@ -6,6 +6,8 @@ let src = Logs.Src.create "mehari.eio"
 
 module Log = (val Logs.src_log src)
 
+external reraise : exn -> 'a = "%reraise"
+
 let log_err = function
   | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
   | Tls_eio.Tls_alert a ->
@@ -16,7 +18,7 @@ let log_err = function
           log "Tls failure: %S" @@ Tls.Engine.string_of_failure f)
   | Exn.Io (Net.E (Connection_reset _), _) ->
       Log.warn (fun log -> log "Concurrent connections")
-  | exn -> raise exn
+  | exn -> reraise exn
 
 let read_client_request ?timeout clock flow =
   let client_req =
@@ -83,7 +85,7 @@ let handle_client ~client_ip ~port ~timeout ~env flow handler =
   | Time.Timeout ->
       Log.warn (fun log -> log "Timeout while reading client request")
 
-let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler env =
+let run ?(port = 1965) ?timeout ?(config = Config.default) ~certs handler env =
   Switch.run (fun sw ->
       let socket =
         Net.listen ~reuse_addr:true ~reuse_port:true ~backlog:config.backlog ~sw

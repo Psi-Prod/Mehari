@@ -260,7 +260,7 @@ module type SERVER = sig
   module IO : IO
 
   type config
-  (** Implementation dependant configuration. *)
+  (** System dependant configuration. *)
 
   val run :
     ?port:int ->

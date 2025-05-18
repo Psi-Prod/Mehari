@@ -73,22 +73,24 @@ val run_cgi : ?timeout:float -> ?non_parsed:bool -> string -> handler
       means that server no longer checks correctness of script output. Use it
       with caution. Defaults to [false]. *)
 
-(** {1 Server configuration} *)
-
-type config
-(** Configuration parameters *)
-
-(** IP configuration. *)
-type ips =
-  | IPv4 of Ipaddr.V4.Prefix.t
-  | IPv6 of Ipaddr.V6.Prefix.t
-  | IPv4v6 of Ipaddr.V4.Prefix.t * Ipaddr.V6.Prefix.t
-
-val config : ips -> config
-(** Build a {!type-config} from an IP configuration. Listen by befault on
-    [127.0.0.1/8]. *)
-
 (** {1 Run server} *)
 
+(** Server configuration. *)
+module Config : sig
+  type t
+
+  (** IP configuration. *)
+  type ip =
+    | IPv4 of Ipaddr.V4.Prefix.t
+    | IPv6 of Ipaddr.V6.Prefix.t
+    | IPv4v6 of Ipaddr.V4.Prefix.t * Ipaddr.V6.Prefix.t
+
+  val make : ip -> t
+  (** Build a configuration using given parameters. *)
+
+  val default : t
+  (** The default configuration listen on [127.0.0.1/8]. *)
+end
+
 (** @inline *)
-include SERVER with type config := config and module IO := Lwt
+include SERVER with type config := Config.t and module IO := Lwt
