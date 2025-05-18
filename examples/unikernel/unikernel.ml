@@ -1,27 +1,30 @@
-let src = Logs.Src.create "gemini-srv" ~doc:"Gemini server"
+open Cmdliner
 
-module Log = (val Logs.src_log src : Logs.LOG)
+let port =
+  let doc =
+    Arg.info ~doc:"The TCP port on which to listen for incoming connections."
+      [ "port" ]
+  in
+  Mirage_runtime.register_arg Arg.(value & opt (some int) None doc)
 
 module GeminiServer
-    (Random : Mirage_random.S)
     (FS : Mirage_kv.RO)
     (Keys : Mirage_kv.RO)
-    (P : Mirage_clock.PCLOCK)
-    (S : Tcpip.Stack.V4V6)
-    (T : Mirage_time.S) =
+    (S : Tcpip.Stack.V4V6) =
 struct
-  module X509 = Tls_mirage.X509 (Keys) (P)
-  module Mehari_io = Mehari_mirage.Make (P) (S) (T)
+  module X509 = Tls_mirage.X509 (Keys)
+  module Mehari_io = Mehari_mirage.Make (Mirage_ptime) (S) (Mirage_time)
+  open Mehari
   open Lwt.Infix
 
   let guess_mime path =
     if Filename.check_suffix path ".gmi" then
-      Mehari.gemini ~charset:"utf-8" ~lang:[ "en" ] ()
+      Mime.gemini ~charset:"utf-8" ~lang:[ "en" ] ()
     else
-      Mehari.from_filename ~charset:"utf-8" path
+      Mime.from_filename ~charset:"utf-8" path
       |> Option.value ~default:Mehari.no_mime
 
-  let not_found = Mehari_io.respond Mehari.not_found "not found"
+  let not_found = Response.not_found Status.not_found "not found" |> Lwt.return
 
   let serve fs path =
     Lwt.catch
@@ -30,17 +33,17 @@ struct
         | Ok body ->
             Mehari_io.respond_body (Mehari.string body) (guess_mime path)
         | Error err ->
-            Log.info (fun log -> log "%a" FS.pp_error err);
+            Logs.info (fun log -> log "%a" FS.pp_error err);
             not_found)
       (fun _ -> not_found)
 
   let router fs request =
-    match Mehari.target request with
+    match Request.target request with
     | "/" -> serve fs "index.gmi"
     | path -> serve fs path
 
-  let start _ fs keys _ stack _ =
-    X509.certificate keys `Default >>= fun cert ->
+  let start fs keys stack =
+    let* cert = X509.certificate keys `Default in
     router fs |> Mehari_io.logger
-    |> Mehari_io.run ?port:(Key_gen.port ()) ~certchains:[ cert ] stack
+    |> Mehari_io.run ?port:(Key_gen.port ()) ~certs:(Single cert) stack
 end
