@@ -98,3 +98,16 @@
    (>= 0.15.4))
   (tls-eio
    (>= 0.15.5))))
+
+(package
+ (name mehari-miou-unix)
+ (synopsis "Mehari IO implementation using Miou+Unix")
+ (depends
+  (ocaml
+   (>= 5.0.0))
+  (mehari
+   (= :version))
+  (miou
+   (>= 0.3))
+  (tls-miou-unix
+   (>= 2.0))))

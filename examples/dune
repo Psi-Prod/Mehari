@@ -8,17 +8,18 @@
   hello
   guestbook
   log
+  miou_backend
+  proxy
   rate_limit
   stream
-  vhost
-  proxy)
+  vhost)
  (libraries
   ipaddr
   eio_main
   mehari
   mehari-eio
   mehari-lwt-unix
-  mirage-crypto-rng-eio
+  mehari-miou-unix
   logs
   logs.fmt
   uri))
