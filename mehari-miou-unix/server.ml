@@ -143,6 +143,7 @@ let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler =
   in
   let sockaddr = Unix.ADDR_INET (Unix.inet_addr_of_string inet_addr, port) in
   Miou_unix.bind_and_listen ~backlog ~reuseaddr ~reuseport socket sockaddr;
+  Log.info (fun log -> log "Listening on port %i" port);
   let orphans = Miou.orphans () in
   while true do
     clean_up orphans;

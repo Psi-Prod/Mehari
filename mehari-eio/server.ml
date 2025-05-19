@@ -12,12 +12,12 @@ let log_err = function
   | End_of_file -> Log.warn (fun log -> log "Client closed socket prematurly")
   | Tls_eio.Tls_alert a ->
       Log.warn (fun log ->
-          log "Tls alert: %S" @@ Tls.Packet.alert_type_to_string a)
+          log "TLS alert: %S" @@ Tls.Packet.alert_type_to_string a)
   | Tls_eio.Tls_failure f ->
       Log.warn (fun log ->
-          log "Tls failure: %S" @@ Tls.Engine.string_of_failure f)
+          log "TLS failure: %S" @@ Tls.Engine.string_of_failure f)
   | Exn.Io (Net.E (Connection_reset _), _) ->
-      Log.warn (fun log -> log "Concurrent connections")
+      Log.warn (fun log -> log "Concurrent connections detected")
   | exn -> reraise exn
 
 let read_client_request ?timeout clock flow =

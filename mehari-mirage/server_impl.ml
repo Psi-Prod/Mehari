@@ -21,10 +21,12 @@ struct
   module Log = (val Logs.src_log src)
 
   let log_err = function
-    | `BufferLimitExceeded -> assert false
+    | `BufferLimitExceeded -> assert false (* We handle this case. *)
     | `ConnectionClosed ->
         Log.warn (fun log -> log "Connection has been closed prematurly")
-    | `Eof -> Log.warn (fun log -> log "EOF encountered prematurly")
+    | `PrematureEofWhileReadingClientReq ->
+        Log.warn (fun log ->
+            log "Premature end of file while reading client request")
     | `ChannelWriteErr err ->
         Log.warn (fun log ->
             log "ChannelWriteErr: %a" Channel.pp_write_error err)
@@ -32,7 +34,8 @@ struct
     | `Timeout ->
         Log.warn (fun log -> log "Timeout while reading client request")
     | `TLSWriteErr err ->
-        Log.warn (fun log -> log "TLSWriteErr: %a" TLS.pp_write_error err)
+        Log.warn (fun log ->
+            log "Error while writing TLS socket: %a" TLS.pp_write_error err)
 
   let write_response chan flow resp =
     let write buf = Channel.write_string chan buf 0 (String.length buf) in
@@ -55,11 +58,14 @@ struct
         Channel.read_char chan >>= function
         | Ok (`Data _) when n > 1024 -> Lwt.return_error `BufferLimitExceeded
         | Ok (`Data '\n') when cr -> Buffer.contents buf |> Lwt.return_ok
-        | Ok (`Data '\r') -> loop n true
+        | Ok (`Data '\r') ->
+            let n = if cr then n + 1 else n in
+            loop n true
         | Ok (`Data c) ->
             Buffer.add_char buf c;
+            let n = if cr then n + 1 else n in
             loop (n + 1) false
-        | Ok `Eof -> Lwt.return_error `Eof
+        | Ok `Eof -> Lwt.return_error `PrematureEofWhileReadingClientReq
         | Error err -> `ChannelErr err |> Lwt.return_error
       in
       loop 0 false
