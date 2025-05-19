@@ -1,5 +1,6 @@
 type t = {
   client_ip : Ipaddr.t;
+  client_port : int;
   port : int;
   uri : Uri.t;
   server_hostname : string;
@@ -12,15 +13,16 @@ let uri { uri; _ } = uri
 let target { uri; _ } = Uri.path uri
 let ip { client_ip; _ } = client_ip
 let port { port; _ } = port
-let server_hostname { server_hostname; _ } = server_hostname
 let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 let tls_version { tls_version; _ } = tls_version
 
-let make ?client_cert ~uri ~client_ip ~port ~server_hostname ~tls_version () =
+let make ?client_cert ~uri ~client_ip ~client_port ~port ~server_hostname
+    ~tls_version () =
   {
     uri;
     client_ip;
+    client_port;
     port;
     server_hostname;
     params = None;
@@ -40,6 +42,7 @@ let param t p =
 
 module Private = struct
   let make = make
-  let server_hostname = server_hostname
+  let client_port r = r.client_port
+  let server_hostname r = r.server_hostname
   let attach_params = attach_params
 end

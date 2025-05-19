@@ -21,6 +21,7 @@ type err =
 
 val make_request :
   client_ip:Ipaddr.t ->
+  client_port:int ->
   ?hostname:[ `host ] Domain_name.t ->
   port:int ->
   tls_version:Tls.Core.tls_version ->
@@ -31,7 +32,8 @@ val make_request :
   (Request.t, err) result
 (** Perform some static check on client request.
 
-    - [client_ip] is the client IP address.
+    - [client_ip] is the client IP address.
+    - [client_ip] is the client port number.
     - [hostname] is the hostname of the server which received the request.
     - [port] is the port of listening socket where request was received.
     - [tls_version] is the used TLS version (musts be >= 1.2).

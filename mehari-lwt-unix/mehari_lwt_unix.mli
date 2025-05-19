@@ -43,8 +43,8 @@ include FS with type dir_path := string and module IO := Lwt
     - [PATH_INFO] is [/cgi/script.cgi]
     - [PATH_TRANSLATED] is [/cgi/script.cgi]
     - [QUERY_STRING] is [an_input]
-    - [REMOTE_ADDR] is [127.0.0.1]
-    - [REMOTE_HOST] is same as [REMOTE_ADDR]
+    - [REMOTE_ADDR] is [127.0.0.1:client_port]
+    - [REMOTE_HOST] is same as [127.0.0.1]
     - [REMOTE_IDENT] is empty
     - [REMOTE_METHOD] is empty
     - [REMOTE_USER] is empty

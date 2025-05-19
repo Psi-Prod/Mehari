@@ -8,6 +8,7 @@ let uri = Alcotest.testable Uri.pp Uri.equal
 let mock_request client_request =
   Protocol.make_request
     ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
+    ~client_port:8132
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
     ~port:1917 ~tls_version:`TLS_1_3 ~client_request ~now:(Ptime_clock.now ())
     ()
@@ -15,7 +16,7 @@ let mock_request client_request =
 let client_ip_1 = Ipaddr.of_string_exn "80.120.170.10"
 
 let request_1 =
-  Protocol.make_request ~client_ip:client_ip_1
+  Protocol.make_request ~client_ip:client_ip_1 ~client_port:97416
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
     ~port:1917 ~tls_version:`TLS_1_3
     ~client_request:"gemini://localhost/foo/bar" ~now:(Ptime_clock.now ()) ()
@@ -112,6 +113,7 @@ let test_request_invalid_client_cert =
       let computed =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
+          ~client_port:78751
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~port:1917 ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:"gemini://foobar.com/" ~now ()
@@ -160,8 +162,9 @@ let test_request_ip_addr_hostname =
       let computed =
         Protocol.make_request ~port:1917
           ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~tls_version:`TLS_1_3 ~client_request:"gemini://80.120.170.11/test"
-          ?hostname:None ~now:(Ptime_clock.now ()) ()
+          ~client_port:78954 ~tls_version:`TLS_1_3
+          ~client_request:"gemini://80.120.170.11/test" ?hostname:None
+          ~now:(Ptime_clock.now ()) ()
         |> Result.map (fun _ -> ())
       in
       check (result unit request_err) "should be equal" expected computed)
@@ -173,8 +176,9 @@ let test_request_invalid_ip_addr_hostname =
       let computed =
         Protocol.make_request ~port:1917
           ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~tls_version:`TLS_1_3 ~client_request:"gemini://80.120..170.11"
-          ?hostname:None ~now:(Ptime_clock.now ()) ()
+          ~client_port:23654 ~tls_version:`TLS_1_3
+          ~client_request:"gemini://80.120..170.11" ?hostname:None
+          ~now:(Ptime_clock.now ()) ()
       in
       check (result pass request_err) "should be equal" expected computed)
 
@@ -199,6 +203,7 @@ let test_request_wrong_port =
       let computed =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
+          ~client_port:1254
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~tls_version:`TLS_1_3 ~port:1917
           ~client_request:"gemini://heyplzlookat.me:1848/"

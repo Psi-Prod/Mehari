@@ -39,6 +39,7 @@ module Private : sig
     ?client_cert:X509.Certificate.t ->
     uri:Uri.t ->
     client_ip:Ipaddr.t ->
+    client_port:int ->
     port:int ->
     server_hostname:string ->
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
@@ -49,10 +50,14 @@ module Private : sig
       - [client_cert] is the certificate provided by client, if any.
       - [uri] is the URI requested by client.
       - [client_ip] is the client IP address.
+      - [client_port] is the client port number.
       - [port] is the port of listening socket where request was received.
       - [server_hostname] is the hostname of the server which received the
         request.
       - [tls_version] is the used TLS version. *)
+
+  val client_port : t -> int
+  (* TODO document this *)
 
   val server_hostname : t -> string
   val attach_params : t -> Re.Group.t option -> t

@@ -89,16 +89,17 @@ struct
                 let occured_time = Clock.now_d_ps () |> Ptime.unsafe_of_d_ps in
                 (req, occured_time)))
 
-  let handle_client ~client_ip ~port ~timeout flow handler =
+  let handle_client ~client:(client_ip, client_port) ~port ~timeout flow handler
+      =
     let chan = Channel.create flow in
     read_client_request ?timeout chan >>= function
     | Ok (client_request, timestamp) -> (
         match TLS.epoch flow with
         | Ok { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let request =
-              Protocol.make_request ~client_ip ?hostname:own_name ~port
-                ~tls_version:protocol_version ?client_cert:peer_certificate
-                ~client_request ~now:timestamp ()
+              Protocol.make_request ~client_ip ~client_port ?hostname:own_name
+                ~port ~tls_version:protocol_version
+                ?client_cert:peer_certificate ~client_request ~now:timestamp ()
             in
             let* response =
               match request with
@@ -111,17 +112,17 @@ struct
         Protocol.to_response AboveMaxSize |> write_response chan flow
     | Error err -> Lwt.return_error err
 
-  let handler ~client_ip ~port ~timeout tls_config callback flow =
+  let handler ~client ~port ~timeout tls_config callback flow =
     TLS.server_of_flow tls_config flow >>= function
-    | Ok server -> handle_client ~client_ip ~port ~timeout server callback
+    | Ok server -> handle_client ~client ~port ~timeout server callback
     | Error err -> Lwt.return_error (`TLSWriteErr err)
 
   let run ?(port = 1965) ?timeout ~certs stack callback =
     Logger.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
-        let client_ip, _ = Stack.TCP.dst flow in
+        let client = Stack.TCP.dst flow in
         let tls_config = Certs.Private.make_config certs in
-        handler ~client_ip ~port ~timeout tls_config callback flow
+        handler ~client ~port ~timeout tls_config callback flow
         >|= Result.iter_error log_err);
     Stack.listen stack
 end

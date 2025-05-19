@@ -31,6 +31,9 @@ let make req ~script_path ~server_addr =
   let path_info = Request.target req |> Uri.pct_decode in
   let query_string = Request.query req |> or_empty in
   let client_addr = Request.ip req |> Ipaddr.to_string in
+  let remote_addr =
+    Printf.sprintf "%s:%i" client_addr @@ Request.Private.client_port req
+  in
   let server_name =
     match Request.uri req |> Uri.host with
     | Some hostname -> hostname
@@ -60,7 +63,7 @@ let make req ~script_path ~server_addr =
     path_info;
     path_translated = path_info;
     query_string;
-    remote_addr = client_addr;
+    remote_addr;
     remote_host = client_addr;
     remote_ident = "";
     remote_user = "";

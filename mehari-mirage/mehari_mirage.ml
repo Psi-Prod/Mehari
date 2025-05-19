@@ -26,7 +26,7 @@ module Make
       end)
 
   module Router = Private.Router_impl.Make (RateLimiter) (Logger)
-  module Server = Server_impl.Make (PClock) (Stack) (Time) (Logger)
+  module Srv = Server.Make (PClock) (Stack) (Time) (Logger)
 
   type handler = Router.handler
   type middleware = handler -> handler
@@ -55,5 +55,5 @@ module Make
   let no_route = Router.no_route
   let virtual_hosts = Router.virtual_hosts
   let make_rate_limit = RateLimiter.make ()
-  let run = Server.run
+  let run = Srv.run
 end

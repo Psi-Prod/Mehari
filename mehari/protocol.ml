@@ -117,8 +117,8 @@ let check_client_cert_validity ~now = function
       X509.Validation.valid_ca ~time:now cert
       |> Result.map_error (fun ca_err -> ClientCertificateNotValid ca_err)
 
-let make_request ~client_ip ?hostname ~port ~tls_version ?client_cert
-    ~client_request ~now () =
+let make_request ~client_ip ~client_port ?hostname ~port ~tls_version
+    ?client_cert ~client_request ~now () =
   let ( let* ) = Result.bind in
   let* () = check_utf8_encoded client_request in
   let* () = check_url_length client_request in
@@ -141,8 +141,8 @@ let make_request ~client_ip ?hostname ~port ~tls_version ?client_cert
         (* We explicitely don't support TLS version < 1.2 at server side. *)
     | (`TLS_1_2 | `TLS_1_3) as v -> v
   in
-  Request.Private.make ?client_cert ~uri ~client_ip ~port ~server_hostname
-    ~tls_version ()
+  Request.Private.make ?client_cert ~uri ~client_ip ~client_port ~port
+    ~server_hostname ~tls_version ()
   |> Result.ok
 
 let pp_msg ppf =

@@ -6,6 +6,7 @@ let test_cgi_env_1 =
       let req =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.0.10.30")
+          ~client_port:45620
           ~hostname:Domain_name.(of_string_exn "heyplzlookat.me" |> host_exn)
           ~port:1968 ~tls_version:`TLS_1_2
           ~client_request:"gemini://heyplzlookat.me/articles/mehari-0-3.gmi"
@@ -21,7 +22,7 @@ let test_cgi_env_1 =
           ("PATH_INFO", "/articles/mehari-0-3.gmi");
           ("PATH_TRANSLATED", "/articles/mehari-0-3.gmi");
           ("QUERY_STRING", "");
-          ("REMOTE_ADDR", "80.0.10.30");
+          ("REMOTE_ADDR", "80.0.10.30:45620");
           ("REMOTE_HOST", "80.0.10.30");
           ("REMOTE_IDENT", "");
           ("REMOTE_USER", "");
@@ -49,6 +50,7 @@ let test_cgi_env_2 =
       let req =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "120.8.50.12")
+          ~client_port:2756
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~port:1965 ~tls_version:`TLS_1_3
           ~client_request:"gemini://localhost/a-very-bad-man.gmi?some_input"
@@ -64,7 +66,7 @@ let test_cgi_env_2 =
           ("PATH_INFO", "/a-very-bad-man.gmi");
           ("PATH_TRANSLATED", "/a-very-bad-man.gmi");
           ("QUERY_STRING", "some_input");
-          ("REMOTE_ADDR", "120.8.50.12");
+          ("REMOTE_ADDR", "120.8.50.12:2756");
           ("REMOTE_HOST", "120.8.50.12");
           ("REMOTE_IDENT", "");
           ("REMOTE_USER", "");
@@ -113,6 +115,7 @@ let test_cgi_env_3 =
       let req =
         Protocol.make_request
           ~client_ip:(Ipaddr.of_string_exn "80.0.10.160")
+          ~client_port:68341
           ~hostname:Domain_name.(of_string_exn "geminiprotocol.net" |> host_exn)
           ~port:1965 ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:
@@ -129,7 +132,7 @@ let test_cgi_env_3 =
             ("PATH_INFO", "/docs/protocol-specification.gmi");
             ("PATH_TRANSLATED", "/docs/protocol-specification.gmi");
             ("QUERY_STRING", "");
-            ("REMOTE_ADDR", "80.0.10.160");
+            ("REMOTE_ADDR", "80.0.10.160:68341");
             ("REMOTE_HOST", "80.0.10.160");
             ("REMOTE_IDENT", "");
             ("REMOTE_USER", "");

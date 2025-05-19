@@ -96,7 +96,8 @@ let read_client_request ?timeout fd =
              in
              (req, occured_time)))
 
-let handle_client ~client_ip ~port ~timeout tls_config socket handler =
+let handle_client ~client:(client_ip, client_port) ~port ~timeout tls_config
+    socket handler =
   try
     let socket = Tls_miou_unix.server_of_fd tls_config socket in
     match read_client_request ?timeout socket with
@@ -104,9 +105,9 @@ let handle_client ~client_ip ~port ~timeout tls_config socket handler =
         match Tls_miou_unix.epoch socket with
         | Some { Tls.Core.own_name; peer_certificate; protocol_version; _ } ->
             let request =
-              Protocol.make_request ~client_ip ?hostname:own_name ~port
-                ~tls_version:protocol_version ?client_cert:peer_certificate
-                ~client_request ~now:timestamp ()
+              Protocol.make_request ~client_ip ~client_port ?hostname:own_name
+                ~port ~tls_version:protocol_version
+                ?client_cert:peer_certificate ~client_request ~now:timestamp ()
             in
             let response =
               match request with
@@ -129,10 +130,11 @@ let clean_up orphans =
   | Some (Some prm) -> (
       match Miou.await prm with Ok () -> () | Error exn -> raise exn)
 
-let ipaddr_of_sockaddr = function
+let client_info = function
   | Unix.ADDR_UNIX _ -> assert false
-  | ADDR_INET (inet_addr, _) ->
-      Unix.string_of_inet_addr inet_addr |> Ipaddr.of_string_exn
+  | ADDR_INET (inet_addr, port) ->
+      let ip = Unix.string_of_inet_addr inet_addr |> Ipaddr.of_string_exn in
+      (ip, port)
 
 let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler =
   let { Config.ip; backlog; reuseaddr; reuseport } = config in
@@ -147,13 +149,12 @@ let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler =
   let orphans = Miou.orphans () in
   while true do
     clean_up orphans;
-    let client, client_ip = Miou_unix.accept socket in
+    let client, client_addr = Miou_unix.accept socket in
     ignore
       (Miou.async ~orphans (fun () ->
            let tls_config = Certs.Private.make_config certs in
-           handle_client
-             ~client_ip:(ipaddr_of_sockaddr client_ip)
-             ~port ~timeout tls_config client handler
+           handle_client ~client:(client_info client_addr) ~port ~timeout
+             tls_config client handler
            |> Result.iter_error log_err))
   done;
   Miou_unix.close socket

@@ -57,7 +57,7 @@ let write_response flow resp =
   in
   Flow.shutdown flow `Send
 
-let gemini_exchange ~client_ip ~port ~timeout ~env flow handler =
+let gemini_exchange ~client_ip ~client_port ~port ~timeout ~env flow handler =
   let client_request, req_time = read_client_request ?timeout env#clock flow in
   let { Tls.Core.own_name; peer_certificate; protocol_version; _ } =
     match Tls_eio.epoch flow with
@@ -66,7 +66,7 @@ let gemini_exchange ~client_ip ~port ~timeout ~env flow handler =
   in
   let response =
     let request =
-      Protocol.make_request ~client_ip ?hostname:own_name ~port
+      Protocol.make_request ~client_ip ~client_port ?hostname:own_name ~port
         ~tls_version:protocol_version ?client_cert:peer_certificate
         ~client_request ~now:req_time ()
     in
@@ -76,8 +76,10 @@ let gemini_exchange ~client_ip ~port ~timeout ~env flow handler =
   in
   write_response flow response
 
-let handle_client ~client_ip ~port ~timeout ~env flow handler =
-  try gemini_exchange ~client_ip ~port ~timeout ~env flow handler with
+let handle_client ~client_ip ~client_port ~port ~timeout ~env flow handler =
+  try
+    gemini_exchange ~client_ip ~client_port ~port ~timeout ~env flow handler
+  with
   | Buf_read.Buffer_limit_exceeded ->
       Protocol.to_response AboveMaxSize |> write_response flow
   | Failure _ -> Protocol.to_response InvalidURL |> write_response flow
@@ -94,12 +96,12 @@ let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler env =
       in
       Log.info (fun log -> log "Listening on port %i" port);
       Net.run_server ~on_error:log_err socket (fun flow -> function
-        | `Tcp (client_ip, _) ->
+        | `Tcp (client_ip, client_port) ->
             let client_ip =
               Ipaddr.of_octets_exn (client_ip : Net.Ipaddr.v4v6 :> string)
             in
             let tls_config = Certs.Private.make_config certs in
             let srv = Tls_eio.server_of_flow tls_config flow in
-            handle_client ~client_ip ~port ~timeout ~env srv (fun req ->
-                handler req env)
+            handle_client ~client_ip ~client_port ~port ~timeout ~env srv
+              (fun req -> handler req env)
         | `Unix _ -> assert false (* We listen on a TCP socket. *)))
