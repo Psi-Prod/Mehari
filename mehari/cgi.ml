@@ -23,7 +23,7 @@ type t = {
 
 let or_empty = Option.value ~default:""
 
-let make req ~script_path ~server_addr =
+let make ?server_addr ~script_path req =
   let client_cert = Request.client_cert req in
   let auth_type =
     client_cert |> Option.map (fun _ -> "Certificate") |> or_empty
@@ -37,7 +37,7 @@ let make req ~script_path ~server_addr =
   let server_name =
     match Request.uri req |> Uri.host with
     | Some hostname -> hostname
-    | None -> Ipaddr.to_string server_addr
+    | None -> Option.fold server_addr ~none:"" ~some:Ipaddr.to_string
   in
   let server_port = Request.port req |> Int.to_string in
   let tls_client_hash, tls_client_subject, tls_client_issuer =
