@@ -10,6 +10,8 @@ include
     with type clock := [ `Clock of float ] Eio.Time.clock
      and module IO := Identity_reader_monad
 
+(** {1 Filesystem} *)
+
 (** @closed *)
 include
   FS
