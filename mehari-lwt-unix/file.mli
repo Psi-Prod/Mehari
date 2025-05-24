@@ -1,3 +1,3 @@
-include Mehari.FS with module IO := Lwt and type dir_path := string
+(** File system features implementation. *)
 
-val run_cgi : ?timeout:float -> ?non_parsed:bool -> string -> handler
+include Mehari.FS with module IO := Lwt and type dir_path := string

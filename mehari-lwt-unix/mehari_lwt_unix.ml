@@ -4,7 +4,7 @@ include Mehari_mirage.Make (Pclock) (Stack) (Time)
 
 let respond_document = File.respond_document
 let static = File.static
-let run_cgi = File.run_cgi
+let run_cgi = Cgi.run_cgi
 let default_ipv4 = Ipaddr.V4.Prefix.make 8 Ipaddr.V4.localhost
 
 module Config = struct
