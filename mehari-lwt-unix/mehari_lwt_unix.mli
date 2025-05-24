@@ -11,7 +11,7 @@ include Mehari_mirage.S with type stack := unit
 (** {1 Filesystem} *)
 
 (** @closed *)
-include FS with type dir_path := string and module IO := Lwt
+include FS with type path := string and module IO := Lwt
 
 (** {1 CGI} *)
 

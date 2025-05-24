@@ -214,11 +214,11 @@ module type FS = sig
   module IO : IO
 
   type handler = Request.t -> Response.t IO.t
-  type dir_path
+  type path
 
   (** {1 Static files} *)
 
-  val respond_document : ?mime:Mime.t -> dir_path -> Response.t IO.t
+  val respond_document : ?mime:Mime.t -> path -> Response.t IO.t
   (** Same as {!val:Mehari.Response.respond} but respond with content of given
       [filename] and use given {!type:Mehari.mime} as mime type. If [filename]
       is not present on filesystem, responds with
@@ -226,12 +226,12 @@ module type FS = sig
       supplied, document is served as {!val:Mehari.Mime.app_octet_stream}. *)
 
   val static :
-    ?handler:(dir_path -> handler) ->
+    ?handler:(path -> handler) ->
     ?dir_listing:
       (([ `Regular_file | `Directory | `Other ] * string) list -> handler) ->
     ?index:string ->
     ?show_hidden:bool ->
-    dir_path ->
+    path ->
     handler
   (** [static dir] validates the path parameter (retrieved by calling
       [Mehari.Request.param req 1]) by checking that it is relative and does not

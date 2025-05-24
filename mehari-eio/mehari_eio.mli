@@ -1,6 +1,7 @@
 (** An IO module Mehari implementation based on [Eio] library. *)
 
 open Mehari
+open Eio
 
 module Identity_reader_monad = Identity_reader_monad
 
@@ -9,7 +10,7 @@ module Identity_reader_monad = Identity_reader_monad
 (** @closed *)
 include
   NET
-    with type clock := [ `Clock of float ] Eio.Time.clock
+    with type clock := [ `Clock of float ] Time.clock
      and module IO := Identity_reader_monad
 
 (** {1 Filesystem} *)
@@ -17,7 +18,7 @@ include
 (** @closed *)
 include
   FS
-    with type dir_path := [ `Dir ] Eio.Path.t
+    with type path := [ `Dir ] Path.t
      and module IO := Identity_reader_monad
 
 (** {1 CGI} *)
@@ -31,13 +32,13 @@ include CGI with module IO := Identity_reader_monad
 module Config : sig
   type t
 
-  val make : ?backlog:int -> ?addr:Eio.Net.Ipaddr.v4v6 -> unit -> t
+  val make : ?backlog:int -> ?addr:Net.Ipaddr.v4v6 -> unit -> t
   (** Build a configuration using given parameters.
 
       - [backlog] is the the number of pending connections that can be queued
         up. Defaults to [4096].
       - [addr] is the socket addresses. Defaults to
-        [Eio.Net.Ipaddr.V4.loopback]. *)
+        [Net.Ipaddr.V4.loopback]. *)
 end
 
 (** @inline *)
