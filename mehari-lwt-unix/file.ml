@@ -2,31 +2,11 @@ open Mehari
 open Lwt.Infix
 open Lwt.Syntax
 
-(* TODO: true lazyness (is it even possible?) *)
-let rec unfold f u () =
-  f u >>= function
-  | None -> Lwt.return Seq.Nil
-  | Some (x, u') ->
-      let+ xs = unfold f u' () in
-      Seq.Cons (x, fun () -> xs)
-
-let read_chunks path =
-  let+ ic = Lwt_io.open_file path ~mode:Input in
-  unfold
-    (fun ended ->
-      if ended then Lwt_io.close ic >|= fun () -> None
-      else
-        let+ chunk = Lwt_io.read ~count:4096 ic in
-        if String.length chunk = 4096 then Some (chunk, false)
-        else Some (chunk, true))
-    false
-
 let respond_document ?(mime = Mehari.Mime.app_octet_stream) path =
   Lwt_unix.file_exists path >>= function
   | true ->
-      let* chunks = read_chunks path in
-      let+ cs = chunks () in
-      Response.body (Body.seq (fun () -> cs)) mime
+      let+ content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
+      Response.body (Body.string content) mime
   | false -> Response.respond Status.not_found "" |> Lwt.return
 
 include Private.Static.Make (struct
