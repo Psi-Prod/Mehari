@@ -18,6 +18,11 @@ include
     with type dir_path := [ `Dir ] Eio.Path.t
      and module IO := Identity_reader_monad
 
+(** {1 CGI} *)
+
+include CGI with module IO := Identity_reader_monad
+(** @closed *)
+
 (** {1 Run server} *)
 
 (** Server configuration. *)
