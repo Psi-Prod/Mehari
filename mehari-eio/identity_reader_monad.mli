@@ -1,3 +1,5 @@
+(** An identity reader monad to get rid of Eio capabilities. *)
+
 type env = Eio_unix.Stdenv.base
 type 'a t = env -> 'a
 

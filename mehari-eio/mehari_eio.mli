@@ -2,6 +2,8 @@
 
 open Mehari
 
+module Identity_reader_monad = Identity_reader_monad
+
 (** {1 Net} *)
 
 (** @closed *)

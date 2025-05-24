@@ -30,6 +30,7 @@ module Logger =
     end)
 
 module Router = Private.Router_impl.Make (RateLimiter) (Logger)
+module Identity_reader_monad = Identity_reader_monad
 
 type handler = Router.handler
 type middleware = handler -> handler
