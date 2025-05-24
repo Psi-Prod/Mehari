@@ -11,8 +11,8 @@ depends: [
   "dune" {>= "3.0"}
   "ocaml" {>= "5.0.0"}
   "mehari" {= version}
-  "miou" {>= "0.3"}
-  "tls-miou-unix" {>= "2.0"}
+  "miou" {>= "0.3.1"}
+  "tls-miou-unix" {>= "1.0.3"}
   "odoc" {with-doc}
 ]
 build: [

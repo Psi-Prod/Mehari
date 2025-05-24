@@ -1,4 +1,4 @@
 (library
  (name mehari_eio)
  (public_name mehari-eio)
- (libraries eio eio_main mehari logs tls tls-eio uri))
+ (libraries eio eio_main mehari tls tls-eio))

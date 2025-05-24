@@ -28,21 +28,21 @@
   (ocaml
    (>= 4.14))
   (conan
-   (>= 0.0.5))
+   (>= 0.0.6))
   (conan-database
-   (>= 0.0.5))
+   (>= 0.0.6))
   (ipaddr
    (>= 5.6.0))
   (logs
    (>= 0.7.0))
   (re
-   (>= 1.10.4))
+   (>= 1.12.0))
   (tls
-   (>= 0.16.0))
+   (>= 1.0.3))
   (uri
-   (>= 4.2.0))
+   (>= 4.4.0))
   (x509
-   (>= 0.16.2))))
+   (>= 1.0))))
 
 (package
  (name mehari-mirage)
@@ -57,11 +57,11 @@
   (mirage-time
    (>= 3.0.0))
   (tcpip
-   (>= 7.1.2))
+   (>= 8.0.1))
   (tls-mirage
-   (>= 0.15.4))
+   (>= 1.0.3))
   (tls-lwt
-   (>= 0.16.0))))
+   (>= 1.0.3))))
 
 (package
  (name mehari-lwt-unix)
@@ -80,7 +80,7 @@
   (mirage-time-unix
    (>= 3.0.0))
   (tcpip
-   (>= 7.1.2))))
+   (>= 8.0.1))))
 
 (package
  (name mehari-eio)
@@ -91,13 +91,13 @@
   (mehari
    (= :version))
   (eio
-   (>= 1.0))
-  (logs
-   (>= 0.7.0))
+   (>= 1.2))
+  (eio_main
+   (>= 1.2))
   (tls
-   (>= 0.15.4))
+   (>= 1.0.3))
   (tls-eio
-   (>= 0.15.5))))
+   (>= 1.0.3))))
 
 (package
  (name mehari-miou-unix)
@@ -108,6 +108,6 @@
   (mehari
    (= :version))
   (miou
-   (>= 0.3))
+   (>= 0.3.1))
   (tls-miou-unix
-   (>= 2.0))))
+   (>= 1.0.3))))

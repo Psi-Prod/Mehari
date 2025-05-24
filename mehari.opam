@@ -14,14 +14,14 @@ bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.0"}
   "ocaml" {>= "4.14"}
-  "conan" {>= "0.0.5"}
-  "conan-database" {>= "0.0.5"}
+  "conan" {>= "0.0.6"}
+  "conan-database" {>= "0.0.6"}
   "ipaddr" {>= "5.6.0"}
   "logs" {>= "0.7.0"}
-  "re" {>= "1.10.4"}
-  "tls" {>= "0.16.0"}
-  "uri" {>= "4.2.0"}
-  "x509" {>= "0.16.2"}
+  "re" {>= "1.12.0"}
+  "tls" {>= "1.0.3"}
+  "uri" {>= "4.4.0"}
+  "x509" {>= "1.0"}
   "odoc" {with-doc}
 ]
 build: [

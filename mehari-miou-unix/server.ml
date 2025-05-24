@@ -5,8 +5,6 @@ let src = Logs.Src.create "mehari.miou-unx"
 
 module Log = (val Logs.src_log src)
 
-external reraise : exn -> 'a = "%reraise"
-
 let log_err = function
   | `ClientReqAboveMaxSize ->
       Log.warn (fun log -> log "Client request is above max size")
@@ -86,7 +84,7 @@ let read_client_request ?timeout fd =
         match Miou.await_first [ timeout; Miou.async f ] with
         | Ok r -> r
         | Error Timeout -> Error `Timeout
-        | Error exn -> reraise exn)
+        | Error exn -> Miou.reraise exn)
   in
   with_timeout timeout (fun () ->
       parse_request fd
