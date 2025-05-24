@@ -13,7 +13,7 @@ include Mehari_mirage.S with type stack := unit
 (** @closed *)
 include FS with type dir_path := string and module IO := Lwt
 
-(** {1:cgi CGI} *)
+(** {1 CGI} *)
 
 (** @closed *)
 include CGI with module IO := Lwt

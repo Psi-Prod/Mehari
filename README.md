@@ -27,7 +27,7 @@ opam install mehari
 - MIME type inference from file content (using experimental [Conan](https://github.com/mirage/conan/) support)
 - Rate limit
 - Virtual hosting using SNI
-- CGI
+- CGI support
 - Long-running TCP connection
 
 ## Feedback

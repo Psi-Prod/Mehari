@@ -23,10 +23,13 @@ Mehari provides several packages:
   - {{:../mehari-mirage/index.html} Mehari_mirage} exposes an OS-independent
     interface.
 
+  - {{:../mehari-miou-unix/index.html} Mehari_miou_unix} uses the
+    {{:https://docs.osau.re/miou/Miou/index.html} Miou} library, and
+    specifically the UNIX bindings.
+
   - {{:../mehari-lwt-unix/index.html} Mehari_lwt_unix} uses the
     {{:https://ocsigen.org/lwt/} Lwt} library, and specifically the UNIX
-    bindings. Contains also extra features based on UNIX filesystem such as
-    CGI.
+    bindings.
 
   - {{:../mehari-eio/index.html} Mehari_eio} uses the
     {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0+ library.
@@ -259,7 +262,8 @@ mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
 
 By default, the server runs on port [1965] on IP [localhost] (usually [127.0.0.1]).
 
-This command generate certificates ([cert.pem] and [key.pem]) for common name [localhost]:
+This command generate a certificate and its associated private key ([cert.pem]
+and [key.pem]) for the domain name [localhost]:
 
 {@bash[
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes --subj "/CN=localhost"
