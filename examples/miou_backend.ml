@@ -17,6 +17,15 @@ let private_of_pems ~cert ~priv_key =
         "Private certificates (%s): failed to parse certificates %s" cert msg
       |> invalid_arg
 
+let router =
+  router
+    [
+      route "/" (fun _ -> respond_document "./README.md");
+      route ~regex:true "/echo/(.*)" (fun req ->
+          Request.param req 1 |> Response.text);
+      route ~regex:true "/sources/(.*)" (static "./");
+    ]
+
 let () =
   set_log_lvl Info;
   Logs.set_level (Some Info);
@@ -26,9 +35,4 @@ let () =
   Miou_unix.run @@ fun () ->
   Mirage_crypto_rng_unix.use_default ();
   let cert = private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" in
-  router
-    [
-      route ~regex:true "/echo/(.*)" (fun req ->
-          Request.param req 1 |> Response.text);
-    ]
-  |> logger |> run ~certs:(Single cert)
+  router |> logger |> run ~certs:(Single cert)

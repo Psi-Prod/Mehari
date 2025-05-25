@@ -15,8 +15,8 @@ include FS with type path := string and module IO := Lwt
 
 (** {1 CGI} *)
 
-(** @closed *)
 include CGI with module IO := Lwt
+(** @closed *)
 
 (** {1 Run server} *)
 

@@ -49,6 +49,8 @@ let scope = Router.scope
 let no_route = Router.no_route
 let virtual_hosts = Router.virtual_hosts
 let make_rate_limit = RateLimiter.make ()
+let respond_document = File.respond_document
+let static = File.static
 
 module Config = Config
 

@@ -7,6 +7,11 @@ open Mehari
 (** @closed *)
 include NET with type clock := unit and module IO := Identity_monad
 
+(** {1 Filesystem} *)
+
+(** @closed *)
+include FS with type path := string and module IO := Identity_monad
+
 (** {1 Rate limit} *)
 
 val make_rate_limit :
