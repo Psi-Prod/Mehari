@@ -221,7 +221,7 @@ module type FS = sig
   val respond_document : ?mime:Mime.t -> path -> Response.t IO.t
   (** Same as {!val:Mehari.Response.respond} but respond with content of given
       [filename] and use given {!type:Mehari.mime} as mime type. If [filename]
-      is not present on filesystem, responds with
+      is not present on filesystem or an error occured, responds with
       {!val:Mehari.Response.Status.not_found}. If [mime] parameter is not
       supplied, document is served as {!val:Mehari.Mime.app_octet_stream}. *)
 

@@ -33,7 +33,7 @@ include Private.Static.Make (struct
   type path = [ `Dir ] Eio.Path.t
 
   let kind path _ =
-    match (Eio.Path.stat ~follow:true path).kind with
+    match (Eio.Path.stat ~follow:false path).kind with
     | (`Regular_file | `Directory) as f -> f
     | _ -> `Other
 

@@ -2,7 +2,7 @@ open Mehari
 open Lwt.Infix
 open Lwt.Syntax
 
-let respond_document ?(mime = Mehari.Mime.app_octet_stream) path =
+let respond_document ?(mime = Mime.app_octet_stream) path =
   Lwt_unix.file_exists path >>= function
   | true ->
       let+ content = Lwt_io.with_file ~mode:Input path Lwt_io.read in
@@ -17,7 +17,7 @@ include Private.Static.Make (struct
   let kind path =
     Lwt.catch
       (fun () ->
-        Lwt_unix.lstat path >|= function
+        Lwt_unix.stat path >|= function
         | { st_kind = S_REG; _ } -> `Regular_file
         | { st_kind = S_DIR; _ } -> `Directory
         | _ -> `Other)

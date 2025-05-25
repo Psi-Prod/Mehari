@@ -2,7 +2,6 @@
 
 open Mehari
 open Eio
-
 module Identity_reader_monad = Identity_reader_monad
 
 (** {1 Net} *)
@@ -17,9 +16,7 @@ include
 
 (** @closed *)
 include
-  FS
-    with type path := [ `Dir ] Path.t
-     and module IO := Identity_reader_monad
+  FS with type path := [ `Dir ] Path.t and module IO := Identity_reader_monad
 
 (** {1 CGI} *)
 
@@ -37,8 +34,7 @@ module Config : sig
 
       - [backlog] is the the number of pending connections that can be queued
         up. Defaults to [4096].
-      - [addr] is the socket addresses. Defaults to
-        [Net.Ipaddr.V4.loopback]. *)
+      - [addr] is the socket addresses. Defaults to [Net.Ipaddr.V4.loopback]. *)
 end
 
 (** @inline *)
