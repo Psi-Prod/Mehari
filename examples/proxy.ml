@@ -6,7 +6,7 @@
 open Mehari
 
 let router =
-  Mehari_eio.virtual_hosts ~meth:`ByURL
+  Mehari_eio.virtual_hosts
     [
       ("foo", fun _ _ -> Response.text "foo");
       ("bar", fun _ _ -> Response.text "bar");

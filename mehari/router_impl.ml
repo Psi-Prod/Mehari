@@ -80,17 +80,10 @@ module Make
            in
            { route = (kind, r); handler = mw handler; rate_limit })
 
-  let virtual_hosts ?(meth = `SNI) domains_handler req =
-    let req_host =
-      match meth with
-      | `SNI -> Request.Private.server_hostname req
-      | `ByURL ->
-          Request.uri req |> Uri.host
-          |> Option.get (* Guaranteed by [Protocol.make_request]. *)
-    in
+  let virtual_hosts host_handlers req =
+    let hostname = Request.Private.server_hostname req in
     let _, handler =
-      (* Guaranteed by [Protocol.make_request]. *)
-      List.find (fun (d, _) -> String.equal d req_host) domains_handler
+      List.find (fun (host, _) -> String.equal hostname host) host_handlers
     in
     handler req
 

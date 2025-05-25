@@ -69,9 +69,7 @@ module type ROUTER = sig
     ?rate_limit:rate_limiter -> ?mw:middleware -> string -> route list -> route
 
   val no_route : route
-
-  val virtual_hosts :
-    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
+  val virtual_hosts : (string * handler) list -> handler
 end
 
 (** Describe a file system implementation. *)
@@ -188,12 +186,10 @@ module type NET = sig
 
   (** {1:host Virtual hosting} *)
 
-  val virtual_hosts :
-    ?meth:[ `ByURL | `SNI ] -> (string * handler) list -> handler
-  (** [virtual_hosts ?meth [(domain, handler); ...]] produces a {!type:handler}
-      which enables virtual hosting at the TLS-layer using SNI.
-      - [meth] can be used to choose which source to match the hostnames
-        against. Defaults to [`SNI]. *)
+  val virtual_hosts : (string * handler) list -> handler
+  (** [virtual_hosts [(host1, handler1); (host2, handler2); ...]] produces a
+      {!type:handler} which allows virtual hosting using TLS Server Name
+      Indication. *)
 
   (** {1 Logging} *)
 
