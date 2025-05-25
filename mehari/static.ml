@@ -23,33 +23,26 @@ struct
     in
     Fs.respond_document ?mime path
 
-  let parent_path =
-    Re.(compile (seq [ Re.group (seq [ rep1 any; char '/' ]); rep1 any ]))
-
   let default_listing files req =
     let dirs =
       List.map
         (fun (kind, fname) ->
           let name = Format.asprintf "%a %s" pp_kind kind fname in
-          Filename.concat (Request.target req) fname |> Gemtext.link ~name)
+          let url = Filename.concat (Request.target req) fname in
+          Gemtext.link ~name url)
         files
     in
     let title =
       Request.param req 1 |> Printf.sprintf "Index: %s" |> Gemtext.heading `H1
     in
     let menu =
-      if Request.target req = "" then title :: dirs
+      if Request.target req = "" then dirs
       else
-        match Request.uri req |> Uri.to_string |> Re.exec_opt parent_path with
-        | None -> title :: dirs
-        | Some grp ->
-            let name =
-              Format.asprintf "%a Parent directory" pp_kind `Directory
-            in
-            let link = Re.Group.get grp 1 |> Gemtext.link ~name in
-            title :: link :: Gemtext.newline :: dirs
+        let parent_url = Request.uri req |> Uri.to_string |> Filename.dirname in
+        let name = Format.asprintf "%a Parent directory" pp_kind `Directory in
+        Gemtext.link ~name parent_url :: Gemtext.newline :: dirs
     in
-    menu |> Response.gemtext |> Fs.IO.return
+    title :: menu |> Response.gemtext |> Fs.IO.return
 
   let read_dir ~show_hidden ~index path =
     let* files = Fs.read path in
