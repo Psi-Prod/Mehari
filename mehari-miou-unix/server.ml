@@ -138,8 +138,8 @@ let run ?(port = 1965) ?timeout ?(config = Config.make ()) ~certs handler =
   let { Config.ip; backlog; reuseaddr; reuseport } = config in
   let socket, inet_addr =
     match ip with
-    | V4 ip -> (Miou_unix.tcpv4 (), Ipaddr.V4.Prefix.to_string ip)
-    | V6 ip -> (Miou_unix.tcpv6 (), Ipaddr.V6.Prefix.to_string ip)
+    | V4 ip -> (Miou_unix.tcpv4 (), Ipaddr.V4.(Prefix.address ip |> to_string))
+    | V6 ip -> (Miou_unix.tcpv6 (), Ipaddr.V6.(Prefix.address ip |> to_string))
   in
   let sockaddr = Unix.ADDR_INET (Unix.inet_addr_of_string inet_addr, port) in
   Miou_unix.bind_and_listen ~backlog ~reuseaddr ~reuseport socket sockaddr;
