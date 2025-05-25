@@ -13,13 +13,4 @@
   rate_limit
   stream
   vhost)
- (libraries
-  ipaddr
-  eio_main
-  mehari
-  mehari-eio
-  mehari-lwt-unix
-  mehari-miou-unix
-  logs
-  logs.fmt
-  uri))
+ (libraries mehari mehari-eio mehari-lwt-unix mehari-miou-unix logs.fmt))
