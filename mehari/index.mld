@@ -258,6 +258,32 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3
 
 Here is what you have to do to start the server:
 
+Using {!Mehari_miou_unix}:
+
+{@ocaml[
+let private_of_pems ~cert ~priv_key =
+  let pem = In_channel.(with_open_text cert input_all) in
+  match X509.Certificate.decode_pem_multiple pem with
+  | Ok certs -> (
+      let pem = In_channel.(with_open_text priv_key input_all) in
+      match X509.Private_key.decode_pem pem with
+      | Ok key -> (certs, key)
+      | Error (`Msg msg) ->
+          Printf.sprintf "Private key (%s): failed to parse private key %s"
+            priv_key msg
+          |> invalid_arg)
+  | Error (`Msg msg) ->
+      Printf.sprintf
+        "Private certificates (%s): failed to parse certificates %s" cert msg
+      |> invalid_arg
+
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let cert = private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou_unix.run ~certs:(Single cert) router
+]}
+
 Using {!Mehari_lwt_unix}:
 
 {@ocaml[
