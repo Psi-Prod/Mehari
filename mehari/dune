@@ -2,7 +2,7 @@
  (name mehari)
  (public_name mehari)
  (modules_without_implementation signatures)
- (libraries conan.string conan-database.bindings ipaddr logs tls uri))
+ (libraries conan.string conan-database.bindings ipaddr logs ptime tls uri))
 
 (documentation
  (package mehari))

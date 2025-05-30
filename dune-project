@@ -35,6 +35,8 @@
    (>= 5.6.0))
   (logs
    (>= 0.7.0))
+  (ptime
+   (>= 1.2.0))
   (re
    (>= 1.12.0))
   (tls
@@ -42,7 +44,9 @@
   (uri
    (>= 4.4.0))
   (x509
-   (>= 1.0))))
+   (>= 1.0))
+  (alcotest :with-test)
+  (conan-database :with-test)))
 
 (package
  (name mehari-mirage)
