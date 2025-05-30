@@ -2,6 +2,8 @@ open Mehari
 open Lwt.Syntax
 module M = Mehari_lwt_unix
 
+let any = Path.variable ~from_string:Option.some ~to_string:Fun.id
+
 let () =
   Lwt_main.run
     begin
@@ -10,8 +12,9 @@ let () =
       in
       M.router
         [
-          M.route ~regex:true "/echo/(.*)" (fun req ->
-              Request.param req 1 |> M.respond_text);
+          M.route
+            Path.(~/"sources" /: any)
+            (fun target _req -> M.respond_text target);
         ]
       |> M.logger |> M.run ~certs:(Single cert)
     end

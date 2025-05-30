@@ -29,7 +29,7 @@ let () =
       in
       M.router
         [
-          M.route "/" (fun _ ->
+          M.route Path.root (fun _ ->
               Gemtext.
                 [
                   heading `H1 "Guestbook";
@@ -40,7 +40,9 @@ let () =
                   text book#print;
                 ]
               |> M.respond_gemtext);
-          M.route "/submit" (fun req ->
+          M.route
+            Path.(~/"submit")
+            (fun req ->
               match Request.query req with
               | None -> M.respond Status.input "Enter your message"
               | Some msg ->

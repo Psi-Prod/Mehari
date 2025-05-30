@@ -3,7 +3,7 @@ open Mehari
 let router =
   Mehari_eio.router
     [
-      Mehari_eio.route "/" (fun req _ ->
+      Mehari_eio.route Path.root (fun req _ ->
           match Request.client_cert req with
           | None -> Response.respond Status.client_cert_req "Certificate plz"
           | Some cert ->

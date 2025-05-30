@@ -1,9 +1,14 @@
 module M = Mehari_lwt_unix
+open Mehari
 open Lwt.Syntax
 
 let router =
   M.router
-    [ M.route "/cgi" (fun req -> M.run_cgi "./examples/cgi_script.py" req) ]
+    [
+      M.route
+        Path.(~/"cgi")
+        (fun req -> M.run_cgi "./examples/cgi_script.py" req);
+    ]
 
 let () =
   Lwt_main.run

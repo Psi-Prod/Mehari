@@ -17,13 +17,14 @@ let private_of_pems ~cert ~priv_key =
         "Private certificates (%s): failed to parse certificates %s" cert msg
       |> invalid_arg
 
+let any = Mehari.Path.variable ~from_string:Option.some ~to_string:Fun.id
+
 let router =
   router
     [
-      route "/" (fun _ -> respond_document "./README.md");
-      route ~regex:true "/echo/(.*)" (fun req ->
-          Request.param req 1 |> Response.text);
-      route ~regex:true "/sources/(.*)" (static "./");
+      route Path.root (fun _ -> respond_document "./README.md");
+      route Path.(~/"echo" /: any) (fun text _req -> Response.text text);
+      route Path.(~/"sources" /: any) (static "./");
     ]
 
 let () =

@@ -1,4 +1,5 @@
 module M = Mehari_lwt_unix
+open Mehari
 open Lwt.Syntax
 
 let n = ref 0
@@ -16,7 +17,7 @@ let () =
       in
       M.router
         [
-          M.route "/" (fun _ ->
+          M.route Path.root (fun _ ->
               incr n;
               M.info (fun log -> log "Request n°: %i" !n);
               M.respond_text "This request is logged");

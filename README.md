@@ -5,7 +5,7 @@ implements the
 [Gemini protocol specification](https://geminiprotocol.net/docs/protocol-specification.gmi).
 
 It takes heavy inspiration from [Dream](https://github.com/aantron/dream), a
-tidy, feature-complete Web framework.
+tidy feature-complete Web framework, and from [Nightmare](https://github.com/funkywork/nightmare), a powerful typesafe layer compatible with Dream.
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/59396366/211079934-44f65ed1-8cf7-4193-a815-8da94a85be5d.png" alt="banner"/>
@@ -23,6 +23,7 @@ opam install mehari
 ## Features
 
 - Mirage OS friendly
+- Type safe route API
 - Static files serving
 - MIME type inference from file content (using experimental [Conan](https://github.com/mirage/conan/) support)
 - Rate limit

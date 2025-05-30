@@ -1,4 +1,5 @@
 module M = Mehari_lwt_unix
+open Mehari
 open Lwt.Syntax
 
 let low_limit = M.make_rate_limit 5 `Minute
@@ -12,10 +13,14 @@ let () =
       in
       M.router
         [
-          M.route "/low" ~rate_limit:low_limit (fun _ ->
-              M.respond_text "5 requests per minute authorized");
-          M.route "/high" ~rate_limit:high_limit (fun _ ->
-              M.respond_text "2 requests per 10 seconds authorized");
+          M.route
+            Path.(~/"low")
+            ~rate_limit:low_limit
+            (fun _ -> M.respond_text "5 requests per minute authorized");
+          M.route
+            Path.(~/"high")
+            ~rate_limit:high_limit
+            (fun _ -> M.respond_text "2 requests per 10 seconds authorized");
         ]
       |> M.run ~certs:(Single cert)
     end

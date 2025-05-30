@@ -14,8 +14,7 @@ struct
     | `Directory -> Format.pp_print_string fmt "\u{1F4C1}"
     | `Other -> Format.pp_print_string fmt "\u{2753}"
 
-  let default_handler path req =
-    let fname = Request.param req 1 in
+  let default_handler fname path _ =
     let mime =
       match Mime.from_filename fname with
       | None when Filename.check_suffix fname ".gmi" -> Some (Mime.gemini ())
@@ -72,16 +71,21 @@ struct
 
   let not_found = Response.(respond Status.not_found "") |> Fs.IO.return
 
-  let static ?(handler = default_handler) ?(dir_listing = default_listing)
-      ?(index = "index.gmi") ?(show_hidden = false) base_path req =
-    let req_path = Request.param req 1 |> Uri.pct_decode in
-    if reference_parent req_path then not_found
+  let static ?handler ?(dir_listing = default_listing) ?(index = "index.gmi")
+      ?(show_hidden = false) base_path target req =
+    let target = Uri.pct_decode target in
+    if reference_parent target then not_found
     else
-      let path = Fs.concat base_path req_path in
+      let path = Fs.concat base_path target in
       try
         let* is_exists = Fs.exists path in
         if is_exists then
           let* kind = Fs.kind path in
+          let handler =
+            match handler with
+            | None -> default_handler target
+            | Some handler -> handler
+          in
           match kind with
           | `Regular_file -> handler path req
           | `Directory ->

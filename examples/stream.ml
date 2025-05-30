@@ -10,7 +10,7 @@ let count clock n =
           Some (Printf.sprintf "%i\n" i, Some (i + 1)))
     (Some 0)
 
-let router req env =
+let handler req env =
   match Request.query req with
   | None -> Response.respond Status.input "Enter a number"
   | Some number -> (
@@ -28,4 +28,4 @@ let () =
     X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
       ~priv_key:(env#cwd / "key.pem")
   in
-  Mehari_eio.run ~certs:(Single cert) router env
+  Mehari_eio.run ~certs:(Single cert) handler env

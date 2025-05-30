@@ -56,6 +56,10 @@ module Status = Response.Status
 
 module Mime = Mime
 
+(** {1:path Path} *)
+
+module Path = Path
+
 (** {1 TLS certificates} *)
 
 module Certs = Certs

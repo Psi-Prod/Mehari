@@ -1,10 +1,17 @@
+open Mehari
+
+let any = Path.variable ~from_string:Option.some ~to_string:Fun.id
+
 let router =
   Mehari_eio.router
     [
-      Mehari_eio.route "/" (fun _ env ->
+      Mehari_eio.route
+        Path.(root)
+        (fun _ env ->
           Mehari_eio.respond_document Eio.Path.(env#cwd / "README.md") env);
-      Mehari_eio.route ~regex:true "/sources/(.*)" (fun req env ->
-          Mehari_eio.static env#cwd req env);
+      Mehari_eio.route
+        Path.(~/"sources" /: any)
+        (fun target req env -> Mehari_eio.static env#cwd target req env);
     ]
 
 let () =

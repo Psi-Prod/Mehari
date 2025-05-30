@@ -36,6 +36,7 @@ module Response = Response
 module Body = Response.Body
 module Status = Response.Status
 module Mime = Mime
+module Path = Path
 module Certs = Certs
 
 module type NET = Signatures.NET

@@ -16,14 +16,16 @@ let () =
       in
       Mehari_io.router
         [
-          Mehari_io.route "/" (fun _ ->
+          Mehari_io.route Path.root (fun _ ->
               Mehari_io.respond_gemtext
                 [
                   Gemtext.link "/incr" ~name:"Increment counter";
                   Gemtext.text (Printf.sprintf "Counter = %i" !counter);
                 ]);
-          Mehari_io.route "/incr" ~mw:incr_count (fun _ ->
-              Mehari_io.respond Status.redirect_temp "/");
+          Mehari_io.route
+            Path.(~/"incr")
+            ~middlewares:[ incr_count ]
+            (fun _ -> Mehari_io.respond Status.redirect_temp "/");
         ]
       |> Mehari_io.run ~certs:(Single cert)
     end
