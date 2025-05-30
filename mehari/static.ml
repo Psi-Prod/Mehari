@@ -22,7 +22,7 @@ struct
     in
     Fs.respond_document ?mime path
 
-  let default_listing files req =
+  let default_listing fname files req =
     let dirs =
       List.map
         (fun (kind, fname) ->
@@ -31,9 +31,7 @@ struct
           Gemtext.link ~name url)
         files
     in
-    let title =
-      Request.param req 1 |> Printf.sprintf "Index: %s" |> Gemtext.heading `H1
-    in
+    let title = Printf.sprintf "Index: %s" fname |> Gemtext.heading `H1 in
     let menu =
       if Request.target req = "" then dirs
       else
@@ -71,8 +69,8 @@ struct
 
   let not_found = Response.(respond Status.not_found "") |> Fs.IO.return
 
-  let static ?handler ?(dir_listing = default_listing) ?(index = "index.gmi")
-      ?(show_hidden = false) base_path target req =
+  let static ?handler ?dir_listing ?(index = "index.gmi") ?(show_hidden = false)
+      base_path target req =
     let target = Uri.pct_decode target in
     if reference_parent target then not_found
     else
@@ -84,6 +82,11 @@ struct
           let handler =
             match handler with
             | None -> default_handler target
+            | Some handler -> handler
+          in
+          let dir_listing =
+            match dir_listing with
+            | None -> default_listing target
             | Some handler -> handler
           in
           match kind with

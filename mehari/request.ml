@@ -4,7 +4,6 @@ type t = {
   port : int;
   uri : Uri.t;
   server_hostname : string;
-  params : Re.Group.t option;
   client_cert : X509.Certificate.t option;
   tls_version : [ `TLS_1_2 | `TLS_1_3 ];
 }
@@ -25,24 +24,12 @@ let make ?client_cert ~uri ~client_ip ~client_port ~port ~server_hostname
     client_port;
     port;
     server_hostname;
-    params = None;
     client_cert;
     tls_version;
   }
-
-let attach_params t params = { t with params }
-
-let param t p =
-  let fail () = invalid_arg "Mehari.param" in
-  match t.params with
-  | None -> fail ()
-  | Some _ when p <= 0 -> fail ()
-  | Some grp -> (
-      match Re.Group.get_opt grp p with None -> fail () | Some param -> param)
 
 module Private = struct
   let make = make
   let client_port r = r.client_port
   let server_hostname r = r.server_hostname
-  let attach_params = attach_params
 end
