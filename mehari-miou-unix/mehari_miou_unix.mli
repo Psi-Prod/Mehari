@@ -12,6 +12,11 @@ include NET with type clock := unit and module IO := Identity_monad
 (** @closed *)
 include FS with type path := string and module IO := Identity_monad
 
+(** {1 CGI} *)
+
+include CGI with module IO := Identity_monad
+(** @closed *)
+
 (** {1 Rate limit} *)
 
 val make_rate_limit :

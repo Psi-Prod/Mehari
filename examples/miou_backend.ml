@@ -23,6 +23,7 @@ let router =
   router
     [
       route Path.root (fun _ -> respond_document "./README.md");
+      route Path.(~/"cgi") (run_cgi ~non_parsed:true "./examples/cgi_script.py");
       route Path.(~/"echo" /: any) (fun text _req -> Response.text text);
       route Path.(~/"sources" /: any) (static "./");
     ]
