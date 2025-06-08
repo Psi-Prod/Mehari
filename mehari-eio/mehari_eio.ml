@@ -17,8 +17,7 @@ module Clock = struct
     (Int64.to_int days, Int64.add rem_ps frac_ps)
 end
 
-module RateLimiter =
-  Private.Rate_limiter_impl.Make (Clock) (Identity_reader_monad)
+module RateLimiter = Private.Rate_limiter_impl.Make (Clock)
 
 module Logger =
   Private.Logger_impl.Make
@@ -29,7 +28,7 @@ module Logger =
       let finally t f r env = try f (t () env) env with exn -> r exn env
     end)
 
-module Router = Private.Router_impl.Make (RateLimiter) (Logger)
+module Router = Private.Router_impl.Make (RateLimiter) (Identity_reader_monad)
 module Identity_reader_monad = Identity_reader_monad
 
 type handler = Router.handler

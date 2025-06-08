@@ -1,10 +1,7 @@
-module Make
-    (RateLimiter : Signatures.RATE_LIMITER)
-    (Logger : Signatures.LOGGER) :
-  Signatures.ROUTER
-    with module IO = RateLimiter.IO
-     and type rate_limiter := RateLimiter.t = struct
-  module IO = RateLimiter.IO
+module Make (RateLimiter : Signatures.RATE_LIMITER) (IO : Signatures.IO) :
+  Signatures.ROUTER with module IO = IO and type rate_limiter := RateLimiter.t =
+struct
+  module IO = IO
 
   type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
@@ -47,7 +44,7 @@ module Make
                       Logs.info ~src:Logger_impl.src (fun log ->
                           log "'%a' is rate limited" Ipaddr.pp (Request.ip req));
                       handler req
-                  | Some resp -> resp))
+                  | Some resp -> IO.return resp))
           | None -> loop continue)
       | [] -> IO.return not_found
     in

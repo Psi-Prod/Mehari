@@ -28,12 +28,10 @@ end
 
 (** Describe a rate limiter implementation. *)
 module type RATE_LIMITER = sig
-  module IO : IO
-
   type t
   type clock
 
-  val check : t -> Request.t -> Response.t IO.t option
+  val check : t -> Request.t -> Response.t option
 
   val make :
     clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t

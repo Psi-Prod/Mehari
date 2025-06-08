@@ -14,7 +14,7 @@ module Make
     let now_d_ps () = PClock.now_d_ps ()
   end
 
-  module RateLimiter = Private.Rate_limiter_impl.Make (Clock) (IO)
+  module RateLimiter = Private.Rate_limiter_impl.Make (Clock)
 
   module Logger =
     Private.Logger_impl.Make
@@ -25,7 +25,7 @@ module Make
         let finally = try_bind
       end)
 
-  module Router = Private.Router_impl.Make (RateLimiter) (Logger)
+  module Router = Private.Router_impl.Make (RateLimiter) (Lwt)
   module Srv = Server.Make (PClock) (Stack) (Time)
 
   type handler = Router.handler

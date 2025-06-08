@@ -1,18 +1,14 @@
 module type S = sig
-  module IO : Signatures.IO
-
   type t
   type clock
 
-  val check : t -> Request.t -> Response.t IO.t option
+  val check : t -> Request.t -> Response.t option
 
   val make :
     clock -> ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> t
 end
 
-module Make (Clock : Signatures.PCLOCK) (IO : Signatures.IO) :
-  S with module IO = IO and type clock = Clock.t = struct
-  module IO = IO
+module Make (Clock : Signatures.PCLOCK) : S with type clock = Clock.t = struct
   module AddrMap = Stdlib.Map.Make (Ipaddr)
 
   type clock = Clock.t
@@ -40,8 +36,7 @@ module Make (Clock : Signatures.PCLOCK) (IO : Signatures.IO) :
     let n = AddrMap.find_opt addr t.history |> Option.fold ~none:1 ~some:succ in
     t.history <- AddrMap.add addr n t.history;
     if n > t.requests then
-      Response.(respond Status.slow_down) "Rate limited"
-      |> IO.return |> Option.some
+      Response.(respond Status.slow_down) "Rate limited" |> Option.some
     else None
 
   let make clock ?(period = 1) requests duration =
