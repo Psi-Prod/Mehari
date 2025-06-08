@@ -26,13 +26,16 @@ val tls_version : t -> [ `TLS_1_2 | `TLS_1_3 ]
 (**/**)
 
 module Private : sig
+  type hostname =
+    [ `DomainName of [ `host ] Domain_name.t | `IPAddr of Ipaddr.t ]
+
   val make :
     ?client_cert:X509.Certificate.t ->
     uri:Uri.t ->
     client_ip:Ipaddr.t ->
     client_port:int ->
     port:int ->
-    server_hostname:string ->
+    server_hostname:hostname ->
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
     unit ->
     t
@@ -50,7 +53,8 @@ module Private : sig
   val client_port : t -> int
   (* TODO document this *)
 
-  val server_hostname : t -> string
+  val server_hostname : t -> hostname
+  (** Server domain name or its IP address if missing. *)
 end
 
 (**/**)

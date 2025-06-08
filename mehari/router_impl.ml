@@ -9,6 +9,12 @@ module Make
   type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
 
+  type domain_handler = {
+    domain : [ `host ] Domain_name.t;
+    handler : handler;
+    all : handler option;
+  }
+
   type route =
     | Route : {
         path : ('continuation, handler) Path.t;
@@ -23,6 +29,8 @@ module Make
 
   let rec pipeline mws handler =
     match mws with [] -> handler | m :: ms -> m (pipeline ms handler)
+
+  let not_found = Response.(respond Status.not_found "")
 
   let router routes req =
     let target = Request.target req in
@@ -41,14 +49,27 @@ module Make
                       handler req
                   | Some resp -> resp))
           | None -> loop continue)
-      | [] -> Response.(respond Status.not_found "") |> IO.return
+      | [] -> IO.return not_found
     in
     loop routes
 
-  let virtual_hosts host_handlers req =
-    let hostname = Request.Private.server_hostname req in
-    let _, handler =
-      List.find (fun (host, _) -> String.equal hostname host) host_handlers
-    in
-    handler req
+  let domain ?all domain handler =
+    match Result.bind (Domain_name.of_string domain) Domain_name.host with
+    | Ok domain -> { domain; handler; all }
+    | Error (`Msg msg) ->
+        Format.kasprintf invalid_arg "Invalid domain name %S: %s" domain msg
+
+  let virtual_host host_handlers req =
+    match Request.Private.server_hostname req with
+    | `IPAddr _ -> IO.return not_found
+    | `DomainName requested -> begin
+        let matching_domain { domain; handler; all } =
+          if Domain_name.equal domain requested then Some handler
+          else if Domain_name.is_subdomain ~subdomain:requested ~domain then all
+          else None
+        in
+        match List.find_map matching_domain host_handlers with
+        | None -> IO.return not_found
+        | Some handler -> handler req
+      end
 end

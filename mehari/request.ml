@@ -3,10 +3,12 @@ type t = {
   client_port : int;
   port : int;
   uri : Uri.t;
-  server_hostname : string;
+  server_hostname : hostname;
   client_cert : X509.Certificate.t option;
   tls_version : [ `TLS_1_2 | `TLS_1_3 ];
 }
+
+and hostname = [ `DomainName of [ `host ] Domain_name.t | `IPAddr of Ipaddr.t ]
 
 let uri { uri; _ } = uri
 let target { uri; _ } = Uri.path uri
@@ -29,6 +31,8 @@ let make ?client_cert ~uri ~client_ip ~client_port ~port ~server_hostname
   }
 
 module Private = struct
+  type nonrec hostname = hostname
+
   let make = make
   let client_port r = r.client_port
   let server_hostname r = r.server_hostname

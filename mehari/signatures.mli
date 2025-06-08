@@ -52,6 +52,7 @@ module type ROUTER = sig
   type rate_limiter
   type handler = Request.t -> Response.t IO.t
   type middleware = handler -> handler
+  type domain_handler
 
   val route :
     ?rate_limit:rate_limiter ->
@@ -62,7 +63,8 @@ module type ROUTER = sig
 
   val router : route list -> handler
   val pipeline : middleware list -> middleware
-  val virtual_hosts : (string * handler) list -> handler
+  val domain : ?all:handler -> string -> handler -> domain_handler
+  val virtual_host : domain_handler list -> handler
 end
 
 (** Describe a generic file system. *)
@@ -116,6 +118,9 @@ module type NET = sig
   (** Middlewares take a {!type:handler}, and run some code before or after —
       producing a “bigger” {!type:handler}. See {!section-middleware}. *)
 
+  type domain_handler
+  (** Handler at domain name level. *)
+
   type clock
   (** System clock used by rate limiter. *)
 
@@ -160,10 +165,16 @@ module type NET = sig
 
   (** {1:host Virtual hosting} *)
 
-  val virtual_hosts : (string * handler) list -> handler
-  (** [virtual_hosts [(host1, handler1); (host2, handler2); ...]] produces a
-      {!type:handler} which allows virtual hosting using TLS Server Name
-      Indication. *)
+  val domain : ?all:handler -> string -> handler -> domain_handler
+  (** [domain ?all name handler] attaches [handler] to the domain name [name].
+      If [all] is set, it is used to handle domain names of form [*.name].
+
+      @raise Invalid_argument if [name] is not a valid domain name. *)
+
+  val virtual_host : domain_handler list -> handler
+  (** [virtual_host domain_handlers] creates a {!type:handler} which allows
+      virtual hosting using TLS Server Name Indication. Respond not found if the
+      server Common Name is an IP address. *)
 
   (** {1 Logging} *)
 

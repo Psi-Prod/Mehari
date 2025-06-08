@@ -30,6 +30,7 @@ module Make
 
   type handler = Router.handler
   type middleware = handler -> handler
+  type domain_handler = Router.domain_handler
   type route = Router.route
   type rate_limiter = RateLimiter.t
   type stack = Stack.t
@@ -50,7 +51,8 @@ module Make
   let pipeline = Router.pipeline
   let router = Router.router
   let route = Router.route
-  let virtual_hosts = Router.virtual_hosts
+  let domain = Router.domain
+  let virtual_host = Router.virtual_host
   let make_rate_limit = RateLimiter.make ()
   let run = Srv.run
 end

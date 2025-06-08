@@ -9,7 +9,6 @@
   guestbook
   log
   miou_backend
-  proxy
   rate_limit
   stream
   vhost)

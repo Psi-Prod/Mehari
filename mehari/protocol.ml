@@ -91,10 +91,10 @@ let check_host uri =
       match Domain_name.of_string h with
       | Ok dn -> (
           match Domain_name.host dn with
-          | Ok _ -> Ok h
+          | Ok host -> Ok (`DomainName host)
           | Error _ -> (
               match Ipaddr.of_string h with
-              | Ok _ -> Ok h
+              | Ok ip -> Ok (`IPAddr ip)
               | Error _ -> Error NotADomainName))
       | Error _ -> Error NotADomainName)
 
@@ -125,14 +125,13 @@ let make_request ~client_ip ~client_port ?hostname ~port ~tls_version
   let* () = check_begin_bom client_request in
   let uri = Uri.of_string client_request |> Uri.canonicalize in
   let* () = check_gemini_scheme uri in
-  let* uri_hostname = check_host uri in
+  let* requested_hostname = check_host uri in
   let* () = check_no_user_info uri in
   let* uri = check_path uri in
   let* () = check_port uri port in
   let* () = check_client_cert_validity ~now client_cert in
   let server_hostname =
-    Option.map Domain_name.to_string hostname
-    |> Option.value ~default:uri_hostname
+    match hostname with None -> requested_hostname | Some d -> `DomainName d
   in
   let tls_version =
     match tls_version with

@@ -1,10 +1,15 @@
 open Mehari
 
+let respond_text msg _ _ =
+  Format.kasprintf Response.text "Requesting subdomain %s" msg
+
 let router =
-  Mehari_eio.virtual_hosts
+  Mehari_eio.virtual_host
     [
-      ("localhost.foo", fun _ _ -> Response.text "Requesting subdomain foo");
-      ("localhost.bar", fun _ _ -> Response.text "Requesting subdomain bar");
+      Mehari_eio.domain "foo.localhost" (respond_text "foo")
+        ~all:(respond_text "*.foo");
+      Mehari_eio.domain "bar.localhost"
+        (respond_text "Requesting subdomain bar");
     ]
 
 let () =
