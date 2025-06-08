@@ -26,7 +26,7 @@ module Make
       end)
 
   module Router = Private.Router_impl.Make (RateLimiter) (Logger)
-  module Srv = Server.Make (PClock) (Stack) (Time) (Logger)
+  module Srv = Server.Make (PClock) (Stack) (Time)
 
   type handler = Router.handler
   type middleware = handler -> handler
@@ -42,17 +42,13 @@ module Make
   let respond_gemtext ?charset ?lang g =
     Response.gemtext ?charset ?lang g |> IO.return
 
-  let set_log_lvl = Logger.set_level
   let logger = Logger.logger ()
-  let debug = Logger.debug
-  let info = Logger.info
-  let warning = Logger.warning
-  let error = Logger.error
   let pipeline = Router.pipeline
   let router = Router.router
   let route = Router.route
   let domain = Router.domain
   let virtual_host = Router.virtual_host
   let make_rate_limit = RateLimiter.make ()
+  let log_src = Srv.log_src
   let run = Srv.run
 end

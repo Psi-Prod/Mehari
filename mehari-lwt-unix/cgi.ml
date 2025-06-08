@@ -49,7 +49,7 @@ let run_cgi ?(timeout = 5.0) ?(non_parsed = false) path req =
     Lwt.pick [ timeout; cgi_script_exec ]
   in
   Lwt.catch run (function exn ->
-      Logs.err (fun log ->
+      Log.err (fun log ->
           log "Exception occured during CGI script running: %S"
             (Printexc.to_string exn));
       Lwt.reraise exn)

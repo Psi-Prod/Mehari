@@ -43,6 +43,9 @@ module type S = sig
 
   (** {1 Run server} *)
 
+  val log_src : Logs.src
+  (** See {!Mehari.SERVER.log_src}. *)
+
   val run :
     ?port:int ->
     ?timeout:float ->

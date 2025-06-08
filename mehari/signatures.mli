@@ -23,12 +23,7 @@ module type LOGGER = sig
   type clock
   type handler = Request.t -> Response.t IO.t
 
-  val set_level : Logs.level -> unit
   val logger : clock -> handler -> handler
-  val debug : 'a Logs.log
-  val info : 'a Logs.log
-  val warning : 'a Logs.log
-  val error : 'a Logs.log
 end
 
 (** Describe a rate limiter implementation. *)
@@ -178,16 +173,11 @@ module type NET = sig
 
   (** {1 Logging} *)
 
-  val set_log_lvl : Logs.level -> unit
-  (** Set Mehari's logger to the given log level. *)
-
   val logger : clock -> middleware
   (** Logs and times requests. Time spent logging is included. *)
 
-  val debug : 'a Logs.log
-  val info : 'a Logs.log
-  val warning : 'a Logs.log
-  val error : 'a Logs.log
+  val log_src : Logs.src
+  (** Server's logs source. *)
 end
 
 (** Module type containing all file system relative features. *)
@@ -308,6 +298,9 @@ module type SERVER = sig
 
   type config
   (** System dependant configuration. *)
+
+  val log_src : Logs.src
+  (** Server's logs source. *)
 
   val run :
     ?port:int ->

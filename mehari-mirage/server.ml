@@ -5,8 +5,7 @@ open Lwt.Syntax
 module Make
     (Clock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    (Time : Mirage_time.S)
-    (Logger : Private.Signatures.LOGGER) =
+    (Time : Mirage_time.S) =
 struct
   module IO = Lwt
   module TLS = Tls_mirage.Make (Stack.TCP)
@@ -16,9 +15,9 @@ struct
   type stack = Stack.t
   type handler = request -> response IO.t
 
-  let src = Logs.Src.create "mehari.mirage"
+  let log_src = Logs.Src.create "mehari.mirage"
 
-  module Log = (val Logs.src_log src)
+  module Log = (val Logs.src_log log_src)
 
   let log_err = function
     | `BufferLimitExceeded -> assert false (* We handle this case. *)
@@ -118,7 +117,7 @@ struct
     | Error err -> Lwt.return_error (`TLSWriteErr err)
 
   let run ?(port = 1965) ?timeout ~certs stack callback =
-    Logger.info (fun log -> log "Listening on port %i" port);
+    Log.info (fun log -> log "Listening on port %i" port);
     Stack.TCP.listen (Stack.tcp stack) ~port (fun flow ->
         let client = Stack.TCP.dst flow in
         let tls_config = Certs.Private.make_config certs in

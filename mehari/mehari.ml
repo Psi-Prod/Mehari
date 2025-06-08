@@ -39,6 +39,8 @@ module Mime = Mime
 module Path = Path
 module Certs = Certs
 
+let log_src = Logger_impl.src
+
 module type NET = Signatures.NET
 module type FS = Signatures.FS
 module type CGI = Signatures.CGI

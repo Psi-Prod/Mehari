@@ -1,9 +1,9 @@
 open Mehari
 module Protocol = Private.Protocol
 
-let src = Logs.Src.create "mehari.miou-unx"
+let log_src = Logs.Src.create "mehari.miou-unx"
 
-module Log = (val Logs.src_log src)
+module Log = (val Logs.src_log log_src)
 
 let log_err = function
   | `ClientReqAboveMaxSize ->

@@ -44,7 +44,7 @@ module Make
               | Some limiter -> (
                   match RateLimiter.check limiter req with
                   | None ->
-                      Logger.info (fun log ->
+                      Logs.info ~src:Logger_impl.src (fun log ->
                           log "'%a' is rate limited" Ipaddr.pp (Request.ip req));
                       handler req
                   | Some resp -> resp))

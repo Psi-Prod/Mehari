@@ -1,5 +1,8 @@
 (** Logger functorized implementation. *)
 
+val src : Logs.src
+(** Mehari's logs source. *)
+
 module Make : (Clock : Signatures.PCLOCK)
   (IO : sig
      include Signatures.IO

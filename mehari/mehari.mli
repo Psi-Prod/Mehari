@@ -78,6 +78,9 @@ module type CGI = Signatures.CGI
 module type SERVER = Signatures.SERVER
 (* Describe common server functionnality to define in each implementation. *)
 
+val log_src : Logs.src
+(** Mehari's logs source. *)
+
 (**/**)
 
 (** {1 Private} *)

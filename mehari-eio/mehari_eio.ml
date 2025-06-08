@@ -38,12 +38,7 @@ type domain_handler = Router.domain_handler
 type route = Router.route
 type rate_limiter = RateLimiter.t
 
-let set_log_lvl = Logger.set_level
 let logger = Logger.logger
-let debug = Logger.debug
-let info = Logger.info
-let warning = Logger.warning
-let error = Logger.error
 let pipeline = Router.pipeline
 let router = Router.router
 let route = Router.route
@@ -56,4 +51,5 @@ let run_cgi = Cgi.run_cgi
 
 module Config = Config
 
+let log_src = Server.log_src
 let run = Server.run

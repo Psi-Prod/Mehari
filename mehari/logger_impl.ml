@@ -1,3 +1,7 @@
+let src = Logs.Src.create "mehari.log"
+
+module Log = (val Logs.src_log src)
+
 module Make
     (Clock : Signatures.PCLOCK)
     (IO : sig
@@ -10,13 +14,6 @@ struct
 
   type clock = Clock.t
   type handler = Request.t -> Response.t IO.t
-
-  let src = Logs.Src.create "mehari.log"
-
-  module Log = (val Logs.src_log src)
-
-  let debug, info, warning, error = Log.(debug, info, warn, err)
-  let set_level lvl = Logs.Src.set_level src (Some lvl)
 
   let iter_backtrace f backtrace =
     String.split_on_char '\n' backtrace

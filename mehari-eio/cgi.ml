@@ -26,7 +26,7 @@ let run_process ~script_path req mgr =
     match Process.await proc with
     | `Exited 0 -> ()
     | status ->
-        Logs.warn (fun log ->
+        Log.warn (fun log ->
             log "CGI script terminates with an abnormal exit status: %a"
               Process.pp_status status)
   in
@@ -44,7 +44,7 @@ let run_cgi ?(timeout = 5.0) ?(non_parsed = false) script_path req env =
     | Ok resp -> resp
     | Error `Timeout -> cgi_err
   with exn ->
-    Logs.err (fun log ->
+    Log.err (fun log ->
         log "Exception occured during CGI script running: %S"
           (Printexc.to_string exn));
     reraise exn

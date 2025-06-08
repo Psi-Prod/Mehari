@@ -2,9 +2,9 @@ open Mehari
 open Eio
 module Protocol = Mehari.Private.Protocol
 
-let src = Logs.Src.create "mehari.eio"
+let log_src = Logs.Src.create "mehari.eio"
 
-module Log = (val Logs.src_log src)
+module Log = (val Logs.src_log log_src)
 
 external reraise : exn -> 'a = "%reraise"
 

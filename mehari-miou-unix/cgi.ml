@@ -38,7 +38,7 @@ let run_process path env =
       Miou_unix.close fd;
       Some output
   | status ->
-      Logs.warn (fun log ->
+      Log.warn (fun log ->
           log "CGI script terminates with an abnormal exit status: %a"
             pp_process_status status);
       None
@@ -65,7 +65,7 @@ let run_cgi ?(timeout = 5.0) ?(non_parsed = false) script_path req =
           | Some output -> Response.Private.unsafe_raw output
         else failwith "not implemented")
   with exn ->
-    Logs.err (fun log ->
+    Log.err (fun log ->
         log "Exception occured during CGI script running: %S"
           (Printexc.to_string exn));
     Miou.reraise exn
