@@ -22,7 +22,7 @@ struct
       Mime.gemini ~charset:"utf-8" ~lang:[ "en" ] ()
     else
       Mime.from_filename ~charset:"utf-8" path
-      |> Option.value ~default:Mehari.no_mime
+      |> Option.value ~default:Mime.app_octet_stream
 
   let not_found = Response.not_found Status.not_found "not found" |> Lwt.return
 
@@ -31,7 +31,7 @@ struct
       (fun () ->
         FS.get fs (Mirage_kv.Key.v path) >>= function
         | Ok body ->
-            Mehari_io.respond_body (Mehari.string body) (guess_mime path)
+            Mehari_io.respond_body (Body.string body) (guess_mime path)
         | Error err ->
             Logs.info (fun log -> log "%a" FS.pp_error err);
             not_found)
