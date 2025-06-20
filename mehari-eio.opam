@@ -13,7 +13,6 @@ depends: [
   "mehari" {= version}
   "eio" {>= "1.2"}
   "eio_main" {>= "1.2"}
-  "tls" {>= "1.0.3"}
   "tls-eio" {>= "1.0.3"}
   "odoc" {with-doc}
 ]
