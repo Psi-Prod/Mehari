@@ -9,10 +9,9 @@ homepage: "https://github.com/Psi-Prod/Mehari"
 bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.0"}
-  "ocaml" {>= "5.0.0"}
   "mehari" {= version}
-  "miou" {>= "0.3.1"}
   "tls-miou-unix" {>= "1.0.3"}
+  "tls-eio" {>= "2.0.3"}
   "odoc" {with-doc}
 ]
 build: [

@@ -3,7 +3,7 @@
  (public_name mehari-mirage)
  (modules_without_implementation interface)
  (libraries
-  lwt
+  ipaddr
   mirage-clock
   mirage-channel
   mirage-time

@@ -11,11 +11,10 @@ depends: [
   "dune" {>= "3.0"}
   "mehari" {= version}
   "mehari-mirage" {= version}
-  "lwt" {>= "5.6.1"}
   "mirage-clock-unix" {>= "4.2.0"}
-  "mirage-flow-unix" {>= "3.0.0"}
+  "mirage-flow-unix" {>= "5.0.0"}
   "mirage-time-unix" {>= "3.0.0"}
-  "tcpip" {>= "8.0.1"}
+  "tcpip" {>= "9.0.1"}
   "odoc" {with-doc}
 ]
 build: [

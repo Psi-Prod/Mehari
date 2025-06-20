@@ -32,21 +32,14 @@
   (conan-database
    (>= 0.0.6))
   (ipaddr
-   (>= 5.6.0))
+   (>= 5.6.1))
   (logs
-   (>= 0.7.0))
-  (ptime
-   (>= 1.2.0))
-  (re
-   (>= 1.12.0))
+   (>= 0.10.0))
   (tls
-   (>= 1.0.3))
+   (>= 2.0.3))
   (uri
    (>= 4.4.0))
-  (x509
-   (>= 1.0))
-  (alcotest :with-test)
-  (conan-database :with-test)))
+  (alcotest :with-test)))
 
 (package
  (name mehari-mirage)
@@ -54,18 +47,20 @@
  (depends
   (mehari
    (= :version))
-  (lwt
+  (ipaddr
    (>= 5.6.1))
+  (mirage-clock
+   (>= 4.2.0))
   (mirage-channel
-   (>= 4.1.0))
+   (>= 5.0.0))
   (mirage-time
    (>= 3.0.0))
   (tcpip
-   (>= 8.0.1))
+   (>= 9.0.1))
   (tls-mirage
-   (>= 1.0.3))
+   (>= 2.0.3))
   (tls-lwt
-   (>= 1.0.3))))
+   (>= 2.0.3))))
 
 (package
  (name mehari-lwt-unix)
@@ -75,23 +70,19 @@
    (= :version))
   (mehari-mirage
    (= :version))
-  (lwt
-   (>= 5.6.1))
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-flow-unix
-   (>= 3.0.0))
+   (>= 5.0.0))
   (mirage-time-unix
    (>= 3.0.0))
   (tcpip
-   (>= 8.0.1))))
+   (>= 9.0.1))))
 
 (package
  (name mehari-eio)
  (synopsis "Mehari IO implementation using Eio")
  (depends
-  (ocaml
-   (>= 5.0.0))
   (mehari
    (= :version))
   (eio
@@ -105,11 +96,9 @@
  (name mehari-miou-unix)
  (synopsis "Mehari IO implementation using Miou+Unix")
  (depends
-  (ocaml
-   (>= 5.0.0))
   (mehari
    (= :version))
-  (miou
-   (>= 0.3.1))
   (tls-miou-unix
-   (>= 1.0.3))))
+   (>= 1.0.3))
+  (tls-eio
+   (>= 2.0.3))))

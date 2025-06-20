@@ -9,7 +9,6 @@ homepage: "https://github.com/Psi-Prod/Mehari"
 bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.0"}
-  "ocaml" {>= "5.0.0"}
   "mehari" {= version}
   "eio" {>= "1.2"}
   "eio_main" {>= "1.2"}

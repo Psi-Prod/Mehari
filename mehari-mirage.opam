@@ -10,12 +10,13 @@ bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.0"}
   "mehari" {= version}
-  "lwt" {>= "5.6.1"}
-  "mirage-channel" {>= "4.1.0"}
+  "ipaddr" {>= "5.6.1"}
+  "mirage-clock" {>= "4.2.0"}
+  "mirage-channel" {>= "5.0.0"}
   "mirage-time" {>= "3.0.0"}
-  "tcpip" {>= "8.0.1"}
-  "tls-mirage" {>= "1.0.3"}
-  "tls-lwt" {>= "1.0.3"}
+  "tcpip" {>= "9.0.1"}
+  "tls-mirage" {>= "2.0.3"}
+  "tls-lwt" {>= "2.0.3"}
   "odoc" {with-doc}
 ]
 build: [
