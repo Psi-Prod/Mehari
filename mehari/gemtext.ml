@@ -5,7 +5,7 @@ and line =
   | Link of { url : string; name : string option }
   | Preformat of preformat
   | Heading of [ `H1 | `H2 | `H3 ] * string
-  | ListItem of string
+  | List_item of string
   | Quote of string
 
 and preformat = { alt : string option; text : string }
@@ -15,7 +15,7 @@ let newline = Text ""
 let link ?name url = Link { url; name }
 let preformat ?alt text = Preformat { alt; text }
 let heading h text = Heading (h, text)
-let list_item text = ListItem text
+let list_item text = List_item text
 let quote text = Quote text
 
 let line_to_string = function
@@ -29,12 +29,37 @@ let line_to_string = function
   | Heading (`H1, t) -> Printf.sprintf "# %s" t
   | Heading (`H2, t) -> Printf.sprintf "## %s" t
   | Heading (`H3, t) -> Printf.sprintf "### %s" t
-  | ListItem t -> Printf.sprintf "* %s" t
+  | List_item t -> Printf.sprintf "* %s" t
   | Quote t -> Printf.sprintf ">%s" t
 
 let to_string lines = lines |> List.map line_to_string |> String.concat "\n"
 let pp_line ppf line = Format.pp_print_string ppf @@ line_to_string line
 let pp ppf lines = Format.pp_print_string ppf @@ to_string lines
+
+let paragraph gemtext s =
+  let doc = ref [] in
+  let cr = ref false in
+  let buf = Buffer.create (String.length s) in
+  for i = 0 to String.length s - 1 do
+    match String.unsafe_get s i with
+    | '\r' -> cr := true
+    | '\n' when !cr ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | '\n' ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | c ->
+        if !cr then Buffer.add_char buf '\r';
+        Buffer.add_char buf c;
+        cr := false
+  done;
+  List.rev
+  @@ match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc
 
 module Regex = struct
   let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
@@ -136,7 +161,7 @@ let of_string text =
                     with Not_found -> (
                       try
                         let grp = Re.exec Regex.item line in
-                        ListItem (Re.Group.get grp 1)
+                        List_item (Re.Group.get grp 1)
                       with Not_found -> (
                         try
                           let grp = Re.exec Regex.quote line in
@@ -157,17 +182,16 @@ let of_string text =
 let equal_line l l' =
   match (l, l') with
   | Text t, Text t' -> String.equal t t'
-  | Link { url; name }, Link { url = url'; name = name' } ->
-      String.equal url url' && Option.equal String.equal name name'
-  | Preformat { alt; text }, Preformat { alt = alt'; text = text' } ->
-      Option.equal String.equal alt alt' && String.equal text text'
+  | Link l, Link l' ->
+      String.equal l.url l'.url && Option.equal String.equal l.name l'.name
+  | Preformat p, Preformat p' ->
+      Option.equal String.equal p.alt p'.alt && String.equal p.text p'.text
   | Heading (`H1, h), Heading (`H1, h')
   | Heading (`H2, h), Heading (`H2, h')
   | Heading (`H3, h), Heading (`H3, h') ->
       String.equal h h'
-  | ListItem i, ListItem i' -> String.equal i i'
+  | List_item i, List_item i' -> String.equal i i'
   | Quote q, Quote q' -> String.equal q q'
-  | (Text _ | Link _ | Preformat _ | Heading _ | ListItem _ | Quote _), _ ->
-      false
+  | _ -> false
 
 let equal = List.equal equal_line

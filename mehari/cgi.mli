@@ -3,6 +3,7 @@
     @see < https://www.rfc-editor.org/rfc/rfc3875 > *)
 
 type t
+(** CGI environment variables.*)
 
 val make : ?server_addr:Ipaddr.t -> script_path:string -> Request.t -> t
 (** [make ?server_addr ~script_path req] creates a CGI environment. *)

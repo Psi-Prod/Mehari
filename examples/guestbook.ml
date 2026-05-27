@@ -1,9 +1,11 @@
+open Mehari
+
 let book =
   object
     val mutable entries = []
 
     method add_entry ~addr msg =
-      entries <- (Ptime_clock.now (), addr, msg) :: entries
+      entries <- (Mirage_ptime.now (), addr, msg) :: entries
 
     method print =
       let buf = Buffer.create 4096 in
@@ -17,37 +19,35 @@ let book =
       Buffer.contents buf
   end
 
-open Mehari
-open Lwt.Syntax
-module M = Mehari_lwt_unix
+let router =
+  let open Router in
+  router
+    [
+      route Path.root (fun _ ->
+          Gemtext.
+            [
+              heading `H1 "Guestbook";
+              newline;
+              link "/submit" ~name:"Submit a new entry";
+              newline;
+              heading `H2 "Entries:";
+              text book#print;
+            ]
+          |> Response.gemtext);
+      route
+        Path.(~/"submit")
+        (fun req ->
+          match Request.query req with
+          | None -> Response.respond Status.input "Enter your message"
+          | Some msg ->
+              book#add_entry ~addr:(Request.ip req) msg;
+              Response.respond Status.redirect_temp "/");
+    ]
 
 let () =
-  Lwt_main.run
-    begin
-      let* cert =
-        X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
-      in
-      M.router
-        [
-          M.route Path.root (fun _ ->
-              Gemtext.
-                [
-                  heading `H1 "Guestbook";
-                  newline;
-                  link "/submit" ~name:"Submit a new entry";
-                  newline;
-                  heading `H2 "Entries:";
-                  text book#print;
-                ]
-              |> M.respond_gemtext);
-          M.route
-            Path.(~/"submit")
-            (fun req ->
-              match Request.query req with
-              | None -> M.respond Status.input "Enter your message"
-              | Some msg ->
-                  book#add_entry ~addr:(Request.ip req) msg;
-                  M.respond Status.redirect_temp "/");
-        ]
-      |> M.run ~certs:(Single cert)
-    end
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

@@ -9,32 +9,13 @@ type request = Request.t
 type response = Response.t
 (** [response] is an alias for {!type:Response.t}. See {!section-response}. *)
 
-type 'a status = 'a Response.Status.t
-(** [status] is an alias for {!type:Response.Status.t}. See {!section-status}.
-*)
-
-type mime = Mime.t
-(** [mime] is an alias for {!type:Mime.t}. See {!section-mime}. *)
-
-type body = Response.Body.t
-(** [body] is an alias for {!type:Response.Body.t}. See {!section-body}. *)
+type handler = Handler.t
+(** Handlers are asynchronous functions from {!type:request} to
+    {!type:response}. *)
 
 (** {1:gemtext Gemtext} *)
 
 module Gemtext = Gemtext
-
-val paragraph : (string -> Gemtext.line) -> string -> Gemtext.t
-(** [paragraph to_gemtext str] is a convenient function to transform a string
-    containing line breaks ([CR] or [CRLF]) into a Gemtext document.
-
-    {@ocaml[
-      open Mehari.Gemtext
-
-      let () =
-        assert (
-          Mehari.paragraph quote "hello\nworld"
-          = [ quote "hello"; quote "world" ])
-    ]} *)
 
 (** {1:request Request} *)
 
@@ -44,60 +25,49 @@ module Request = Request
 
 module Response = Response
 
-(** {1:body Response body} *)
-
-module Body = Response.Body
-
 (** {1:status Response status} *)
 
 module Status = Response.Status
+
+(** {1 Response body} *)
+
+module Body = Response.Body
 
 (** {1:mime Mime} *)
 
 module Mime = Mime
 
-(** {1:path Path} *)
+(** {1 Handler} *)
+
+module Handler = Handler
+
+(** {1 Middleware} *)
+
+module Middleware = Middleware
+
+(** {1 Path} *)
 
 module Path = Path
 
-(** {1 TLS certificates} *)
+(** {1 Router} *)
 
-module Certs = Certs
+module Router = Router
 
-(** {1 IO} *)
+(** {1:rate_limit Rate limit} *)
 
-module type NET = Signatures.NET
-(** Describe all environment-dependent functions. *)
+module Rate_limit = Rate_limit
 
-module type FS = Signatures.FS
-(** Describe functions that need a file system. *)
+(** {1 Logger} *)
 
-module type CGI = Signatures.CGI
-(* Describe CGI scripting functions. *)
+module Logger = Logger
 
-module type SERVER = Signatures.SERVER
-(* Describe common server functionnality to define in each implementation. *)
+(** {1 Server implementation} *)
 
-val log_src : Logs.src
-(** Mehari's logs source. *)
+module Server = Server
 
 (**/**)
 
-(** {1 Private} *)
-
-(** You can ignore it, unless you are porting [Mehari] to a new platform not
-    supported by the existing IO backends. *)
-module Private : sig
-  module type IO = Signatures.IO
-  module type PCLOCK = Signatures.PCLOCK
-
-  module Cgi = Cgi
-  module Logger_impl = Logger_impl
-  module Protocol = Protocol
-  module Rate_limiter_impl = Rate_limiter_impl
-  module Router_impl = Router_impl
-  module Signatures = Signatures
-  module Static = Static
-end
+module Cgi = Cgi
+module Protocol = Protocol
 
 (**/**)

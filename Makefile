@@ -18,4 +18,4 @@ fmt:
 	dune build @fmt --auto-promote
 
 deps:
-	opam install --deps-only .
+	opam install . --deps-only --with-test --with-dev

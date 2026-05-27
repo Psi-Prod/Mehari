@@ -1,5 +1,5 @@
 (** A slighty modified version of Nightmare service API, many thanks to them!
-    Refer to if necessary to the
+    Refer to the
     {{:https://github.com/funkywork/nightmare/blob/main/lib/service/path.mli}original
      specification} if necessary.
 
@@ -113,12 +113,12 @@ val add_variable :
     path:
 
     {[
-      let a_path =
-        root
-        |> add_constant "get_messages"
-        |> add_variable int |> add_constant "by_user" |> add_variable string
-        |> add_constant "in_category"
-        |> add_variable string
+    let a_path =
+      root
+      |> add_constant "get_messages"
+      |> add_variable int |> add_constant "by_user" |> add_variable string
+      |> add_constant "in_category"
+      |> add_variable string
     ]} *)
 
 (** {2 Infix operators} *)
@@ -158,8 +158,8 @@ include module type of Infix
     operators, writing a path that captures these fragments is much shorter:
 
     {[
-      let a_path =
-        ~/"get_message" /: int / "by_user" /: string / "in_category" /: string
+    let a_path =
+      ~/"get_message" /: int / "by_user" /: string / "in_category" /: string
     ]} *)
 
 (**/**)
@@ -178,12 +178,12 @@ module Private : sig
       For example, let's consider this function:
 
       {[
-        sscanf
-          (~/"test" / "of" /: int /: string /: bool)
-          uri_str
-          (fun x y z ->
-            let bool_message = if z then "[x]" else "[x]" in
-            Format.asprintf "%s - %s (%d)" bool_message y x)
+      sscanf
+        (~/"test" / "of" /: int /: string /: bool)
+        uri_str
+        (fun x y z ->
+          let bool_message = if z then "[x]" else "[x]" in
+          Format.asprintf "%s - %s (%d)" bool_message y x)
       ]}
 
       We see that it can only accept URIs that are suffixed with ["/test/of/"]

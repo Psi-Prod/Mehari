@@ -1,13 +1,4 @@
 (library
  (name mehari_mirage)
  (public_name mehari-mirage)
- (modules_without_implementation interface)
- (libraries
-  ipaddr
-  mirage-clock
-  mirage-channel
-  mirage-time
-  mehari
-  tcpip
-  tls-lwt
-  tls-mirage))
+ (libraries mehari mnet mnet-tls mirage-ptime))

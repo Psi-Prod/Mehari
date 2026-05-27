@@ -15,8 +15,8 @@ let gemtext =
       | Heading (`H1, h) -> Fmt.pf ppf "Heading (`H1, %S)" h
       | Heading (`H2, h) -> Fmt.pf ppf "Heading (`H2, %S)" h
       | Heading (`H3, h) -> Fmt.pf ppf "Heading (`H3, %S)" h
-      | ListItem i -> Fmt.string ppf i
-      | Quote q -> Fmt.string ppf q
+      | List_item i -> Fmt.pf ppf "List_item %S" i
+      | Quote q -> Fmt.pf ppf "Quote %S" q
     in
     Fmt.Dump.list pp_line ppf t
   in
@@ -26,18 +26,18 @@ let doc1 =
   {|#Foo
 # Foo
 ##Foo
-## Foo 
+## Foo
 ###Foo
 ### Foo
- # Foo 
+ # Foo
 #### gros piège
 *Bar
- *Bar 
+ *Bar
 * Bar
  * Bar
 * *Bar
 **Bar
->Foo 
+>Foo
 > Foo
  > Foo
 >>>hééhéhhé
@@ -50,7 +50,7 @@ let doc1 =
 #foo
 ```
 ```foo
-# Bar  
+# Bar
 
 ```|}
 
@@ -66,7 +66,7 @@ Here is an example of a Python parser that demonstrates the truth of that statem
 ```python
 …
 ```
-	
+
 End of the article with a newline.
 |}
 
@@ -75,10 +75,10 @@ let doc3 =
 sous gros test
 => heyplzlookat.me
 => heyplzlookat.me HeyPlzLookAtMe
-#  Foo 
+#  Foo
 ## Foo
 ### Foo
-* *** Bar 
+* *** Bar
 >Karl Marx
 ><><>fais pas bleh
 ```
@@ -103,8 +103,9 @@ Mehari is our pure OCaml Gemini server. It runs this site and supports various f
 
 It is also cross-platform and supports Eio with OCaml >= 5.0.0 as well as Mirage OS and UNIX.
 
-=>   https://github.com/Psi-Prod/Mehari  
-=>  https://docs.heyplzlookat.me/mehari/ |}
+=>   https://github.com/Psi-Prod/Mehari
+=>  https://docs.heyplzlookat.me/mehari/
+|}
 
 let test_parsing_1 =
   let open Alcotest in
@@ -115,18 +116,18 @@ let test_parsing_1 =
             heading `H1 "Foo";
             heading `H1 "Foo";
             heading `H2 "Foo";
-            heading `H2 "Foo ";
+            heading `H2 "Foo";
             heading `H3 "Foo";
             heading `H3 "Foo";
-            text " # Foo ";
+            text " # Foo";
             heading `H3 "# gros piège";
             text "*Bar";
-            text " *Bar ";
+            text " *Bar";
             list_item "Bar";
             text " * Bar";
             list_item "*Bar";
             text "**Bar";
-            quote "Foo ";
+            quote "Foo";
             quote " Foo";
             text " > Foo";
             quote ">>hééhéhhé";
@@ -136,7 +137,7 @@ let test_parsing_1 =
             link "foo" ~name:"Bar";
             text "";
             preformat "#foo";
-            preformat ~alt:"foo" "# Bar  \n";
+            preformat ~alt:"foo" "# Bar\n";
           ]
       in
       let computed = Gemtext.of_string doc1 in
@@ -161,7 +162,7 @@ let test_parsing_2 =
               "Here is an example of a Python parser that demonstrates the \
                truth of that statement:";
             preformat "…" ~alt:"python";
-            text "\t";
+            text "";
             text "End of the article with a newline.";
             text "";
           ]
@@ -179,10 +180,10 @@ let test_parsing_3 =
             text "sous gros test";
             link "heyplzlookat.me";
             link "heyplzlookat.me" ~name:"HeyPlzLookAtMe";
-            heading `H1 "Foo ";
+            heading `H1 "Foo";
             heading `H2 "Foo";
             heading `H3 "Foo";
-            list_item "*** Bar ";
+            list_item "*** Bar";
             quote "Karl Marx";
             quote "<><>fais pas bleh";
             preformat "( ´ ▽ ` )";
@@ -218,6 +219,7 @@ let test_parsing_4 =
             text "";
             link "https://github.com/Psi-Prod/Mehari";
             link "https://docs.heyplzlookat.me/mehari/";
+            text "";
           ]
       in
       let computed = Gemtext.of_string doc4 in
@@ -244,7 +246,7 @@ let test_printing_1 =
                 "Here is an example of a Python parser that demonstrates the \
                  truth of that statement:";
               preformat ~alt:"python" "…";
-              text "\t";
+              text "";
               text "End of the article with a newline.";
               text "";
             ])
@@ -263,10 +265,10 @@ let test_printing_2 =
               text "sous gros test";
               link "heyplzlookat.me";
               link "heyplzlookat.me" ~name:"HeyPlzLookAtMe";
-              heading `H1 " Foo ";
+              heading `H1 " Foo";
               heading `H2 "Foo";
               heading `H3 "Foo";
-              list_item "*** Bar ";
+              list_item "*** Bar";
               quote "Karl Marx";
               quote "<><>fais pas bleh";
               preformat "( ´ ▽ ` )";

@@ -5,13 +5,12 @@
     Note that if a string containing line breaks ([CR] or [CRLF]) is given to
     functions {!val:heading}, {!val:list_item} and {!val:quote} only the first
     line will be formatted and the others treated as normal text. To avoid this
-    behavior, see {!val:Mehari.paragraph}.
+    behavior, see {!val:paragraph}.
 
     {@ocaml[
-      open Mehari.Gemtext
+    open Mehari.Gemtext
 
-      let () =
-        assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
+    let () = assert ([ quote "hello\nworld" ] = [ quote "hello"; text "world" ])
     ]} *)
 
 type t = line list
@@ -21,7 +20,7 @@ and line =
   | Link of { url : string; name : string option }
   | Preformat of preformat
   | Heading of [ `H1 | `H2 | `H3 ] * string
-  | ListItem of string
+  | List_item of string
   | Quote of string
 
 and preformat = { alt : string option; text : string }
@@ -34,6 +33,17 @@ val of_string : string -> t
 
 val to_string : t -> string
 (** Convert a gemtext document to a string. *)
+
+val paragraph : (string -> line) -> string -> t
+(** [paragraph to_gemtext str] is a convenient function to transform a string
+    containing line breaks ([CR] or [CRLF]) into a Gemtext document.
+
+    {@ocaml[
+    open Mehari.Gemtext
+
+    let () =
+      assert (paragraph quote "hello\nworld" = [ quote "hello"; quote "world" ])
+    ]} *)
 
 (** {1 Smart constructors} *)
 

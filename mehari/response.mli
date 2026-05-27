@@ -6,15 +6,6 @@ module Body : sig
   type t
   (** Gemini response body. *)
 
-  (** {2:note-on-data-stream-response A note on data stream response}
-
-      Mehari offers ways to keep client connections open forever and stream data
-      in real time such as {!val:seq} and {!val:stream} functions when the
-      [flush] parameter is specified. It is important to note that most Gemini
-      clients do not support streaming and should be used with caution. That's
-      why this parameter is set to [false] by default in all the functions that
-      Mehari expose. *)
-
   val string : string -> t
   (** Creates a body from a string. *)
 
@@ -32,16 +23,12 @@ module Body : sig
         content
       ]} *)
 
-  val seq : ?flush:bool -> string Seq.t -> t
-  (** Creates a body from a string sequence. See
-      {!section:"note-on-data-stream-response"} for a description of [flush]
-      parameter. *)
+  val seq : string Seq.t -> t
+  (** Creates a body from a string sequence. *)
 
-  val stream : ?flush:bool -> ((string -> unit) -> unit) -> t
-  (** [stream (fun consume -> ...)] creates a body from a data stream. Each call
-      to [consume] write the given input on socket. Useful for stream data or
-      file chunk in real time. See {!section:"note-on-data-stream-response"} for
-      a description of [flush] parameter. *)
+  val stream : string Flux.stream -> t
+  (** [stream s] creates a body from a data stream. Useful for streaming large
+      data file. *)
 end
 
 (** {1 Status} *)
@@ -146,10 +133,9 @@ val status : t -> int
 (**/**)
 
 module Private : sig
-  type view = Immediate of string | Chunks of stream
-  and stream = { body : (string -> unit) -> unit; flush : bool }
+  type view = String of string | Stream of string Flux.stream
 
-  val view_of_resp : t -> view
+  val to_view : t -> view
 
   val raw : int -> string -> string -> t
   (** [raw code meta body] creates a new raw response. Does not perform any

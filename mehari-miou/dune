@@ -1,0 +1,4 @@
+(library
+ (name mehari_miou)
+ (public_name mehari-miou)
+ (libraries mehari ipaddr.unix miou.unix tls-miou-unix))

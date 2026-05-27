@@ -1,26 +1,25 @@
 open Mehari
-open Lwt.Syntax
 
-let n = ref 0
+let n = Atomic.make 0
+
+let router =
+  Router.router
+    [
+      Router.route Path.root (fun _ ->
+          Atomic.incr n;
+          Logs.info ~src:Logger.src (fun log ->
+              log "Request n°: %i" (Atomic.get n));
+          Response.text "This request is logged");
+    ]
 
 let () =
-  Logs.Src.set_level Mehari.log_src (Some Info);
-  Logs.Src.set_level Mehari_lwt_unix.log_src (Some Info);
+  Logs.Src.set_level Logger.src (Some Info);
   Logs.set_reporter (Logs_fmt.reporter ())
 
 let () =
-  Lwt_main.run
-    begin
-      let* cert =
-        X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
-      in
-      Mehari_lwt_unix.router
-        [
-          Mehari_lwt_unix.route Path.root (fun _ ->
-              incr n;
-              Logs.info (fun log -> log "Request n°: %i" !n);
-              Mehari_lwt_unix.respond_text "This request is logged");
-        ]
-      |> Mehari_lwt_unix.logger
-      |> Mehari_lwt_unix.run ~certs:(Single cert)
-    end
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

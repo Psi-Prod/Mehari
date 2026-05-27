@@ -1,31 +1,30 @@
 open Mehari
 
-let count clock n =
+let count n =
   Seq.unfold
     (function
       | None -> None
       | Some i when Int.equal i n -> Some ("End", None)
       | Some i ->
-          Eio.Time.sleep clock 1.;
+          Miou_unix.sleep 1.;
           Some (Printf.sprintf "%i\n" i, Some (i + 1)))
     (Some 0)
 
-let handler req env =
+let handler req =
   match Request.query req with
   | None -> Response.respond Status.input "Enter a number"
-  | Some number -> (
-      match int_of_string_opt number with
+  | Some number ->
+      begin match int_of_string_opt number with
       | None -> Response.respond Status.bad_request "Enter a valid number!"
       | Some n ->
-          let body = count env#clock n |> Response.Body.seq ~flush:true in
-          Response.body body Mime.plaintext)
+          let body = Body.seq (count n) in
+          Response.body body Mime.plaintext
+      end
 
 let () =
-  Eio_main.run @@ fun env ->
+  Miou_unix.run @@ fun () ->
   Mirage_crypto_rng_unix.use_default ();
-  let cert =
-    let ( / ) = Eio.Path.( / ) in
-    X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
-      ~priv_key:(env#cwd / "key.pem")
-  in
-  Mehari_eio.run ~certs:(Single cert) handler env
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger handler)

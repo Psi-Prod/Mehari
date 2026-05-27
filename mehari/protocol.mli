@@ -1,27 +1,26 @@
 (** Client request validation. *)
 
 type err =
-  | AboveMaxSize  (** Request has a size higher than 1024 bytes. *)
-  | BeginWithBOM  (** The request begin with a U+FEFF byte order mark. *)
-  | ClientCertificateNotValid of X509.Validation.ca_error
+  | Above_max_size  (** Request has a size higher than 1024 bytes. *)
+  | Begin_with_BOM  (** The request begin with a U+FEFF byte order mark. *)
+  | Empty_URL  (** URL is empty. *)
+  | Invalid_client_cert of X509.Validation.ca_error
       (** Provided client certificate is not valid. *)
-  | EmptyURL  (** URL is empty. *)
-  | InvalidURL  (** Invalid URL. *)
-  | MalformedUTF8  (** URL contains non-UTF8 byte sequence. *)
-  | MissingHost  (** The host URL subcomponent is required.*)
-  | MissingScheme  (** URL has no scheme. *)
-  | NotADomainName
+  | Invalid_domain_name
       (** The host URL component is not a valid domain name nor an IP address.
       *)
-  | RelativePath  (** URL path is relative. *)
-  | UserInfoNotAllowed
+  | Invalid_URL  (** Invalid URL. *)
+  | Malformed_UTF8  (** URL contains non-UTF8 byte sequence. *)
+  | Missing_host  (** The host URL subcomponent is required.*)
+  | Missing_scheme  (** URL has no scheme. *)
+  | Relative_path  (** URL path is relative. *)
+  | User_info_not_allowed
       (** URL contains userinfo subcomponent which is not allowed. *)
-  | WrongPort  (** URL has an incorrect port number. *)
-  | WrongScheme  (** URL scheme is not gemini://. *)
+  | Wrong_port  (** URL has an incorrect port number. *)
+  | Wrong_scheme  (** URL scheme is not gemini://. *)
 
 val make_request :
-  client_ip:Ipaddr.t ->
-  client_port:int ->
+  client:Ipaddr.t * int ->
   ?hostname:[ `host ] Domain_name.t ->
   port:int ->
   tls_version:Tls.Core.tls_version ->
@@ -32,8 +31,7 @@ val make_request :
   (Request.t, err) result
 (** Perform some static check on client request.
 
-    - [client_ip] is the client IP address.
-    - [client_ip] is the client port number.
+    - [client] is the client IP address and its port number.
     - [hostname] is the hostname of the server which received the request.
     - [port] is the port of listening socket where request was received.
     - [tls_version] is the used TLS version (musts be >= 1.2).

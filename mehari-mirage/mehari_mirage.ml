@@ -1,54 +1,37 @@
 open Mehari
 
-module type S = Interface.S
+module Runtime = struct
+  type stack = Mnet.TCP.state
+  type listener = Mnet.TCP.listen
 
-module Make
-    (PClock : Mirage_clock.PCLOCK)
-    (Stack : Tcpip.Stack.V4V6)
-    (Time : Mirage_time.S) : Interface.S with type stack = Stack.t = struct
-  module IO = Lwt
+  let listen = Mnet.TCP.listen
 
-  module Clock = struct
-    type t = unit
+  module TLS = struct
+    include Mnet_tls
 
-    let now_d_ps () = PClock.now_d_ps ()
+    let peer flow = file_descr flow |> Mnet.TCP.peers |> snd
+
+    let really_read fd ?off ?len buf =
+      try Ok (really_read fd ?off ?len buf) with
+      | Tls_alert a -> Error (`Tls_alert a)
+      | Tls_failure f -> Error (`Tls_failure f)
+
+    let write flow ?off ?len s =
+      try Ok (write flow ?off ?len s)
+      with Closed_by_peer -> Error `Connection_closed
+
+    let close flow = Mnet_tls.shutdown flow `read_write
   end
 
-  module RateLimiter = Private.Rate_limiter_impl.Make (Clock)
+  module TCP = struct
+    type t = Mnet.TCP.flow
 
-  module Logger =
-    Private.Logger_impl.Make
-      (Clock)
-      (struct
-        include Lwt
+    let accept = Mnet.TCP.accept
+    let tls_upgrade config flow = Mnet_tls.server_of_fd config flow
+  end
 
-        let finally = try_bind
-      end)
-
-  module Router = Private.Router_impl.Make (RateLimiter) (Lwt)
-  module Srv = Server.Make (PClock) (Stack) (Time)
-
-  type handler = Router.handler
-  type middleware = handler -> handler
-  type domain_handler = Router.domain_handler
-  type route = Router.route
-  type rate_limiter = RateLimiter.t
-  type stack = Stack.t
-
-  let respond s i = Response.respond s i |> IO.return
-  let respond_body b m = Response.body b m |> IO.return
-  let respond_text t = Response.text t |> IO.return
-
-  let respond_gemtext ?charset ?lang g =
-    Response.gemtext ?charset ?lang g |> IO.return
-
-  let logger = Logger.logger ()
-  let pipeline = Router.pipeline
-  let router = Router.router
-  let route = Router.route
-  let domain = Router.domain
-  let virtual_host = Router.virtual_host
-  let make_rate_limit = RateLimiter.make ()
-  let log_src = Srv.log_src
-  let run = Srv.run
+  let now = Mirage_ptime.now
+  let sleep secs = Mkernel.sleep (Int.of_float (1_000_000_000. *. secs))
 end
+
+include Server.Make (Runtime)

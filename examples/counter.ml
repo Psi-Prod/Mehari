@@ -1,6 +1,4 @@
-module Mehari_io = Mehari_lwt_unix
 open Mehari
-open Lwt.Syntax
 
 let counter = ref 0
 
@@ -8,24 +6,25 @@ let incr_count handler req =
   incr counter;
   handler req
 
+let router =
+  Router.router
+    [
+      Router.route Path.root (fun _ ->
+          Response.gemtext
+            [
+              Gemtext.link "/incr" ~name:"Increment counter";
+              Gemtext.text (Printf.sprintf "Counter = %i" !counter);
+            ]);
+      Router.route
+        Path.(~/"incr")
+        ~middlewares:[ incr_count ]
+        (fun _ -> Response.respond Status.redirect_temp "/");
+    ]
+
 let () =
-  Lwt_main.run
-    begin
-      let* cert =
-        X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
-      in
-      Mehari_io.router
-        [
-          Mehari_io.route Path.root (fun _ ->
-              Mehari_io.respond_gemtext
-                [
-                  Gemtext.link "/incr" ~name:"Increment counter";
-                  Gemtext.text (Printf.sprintf "Counter = %i" !counter);
-                ]);
-          Mehari_io.route
-            Path.(~/"incr")
-            ~middlewares:[ incr_count ]
-            (fun _ -> Mehari_io.respond Status.redirect_temp "/");
-        ]
-      |> Mehari_io.run ~certs:(Single cert)
-    end
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

@@ -21,12 +21,13 @@ let with_charset c t = { t with charset = Some c }
 let from_filename ?charset fname =
   match Filename.extension fname with
   | "" -> None
-  | dot_ext -> (
+  | dot_ext -> begin
       let ext = String.sub dot_ext 1 (String.length dot_ext - 1) in
       match Conan_bindings.Extensions.(Map.find_opt ext map) with
       | None -> None
       | Some [] -> assert false
-      | Some (m :: _) -> make ?charset m |> Option.some)
+      | Some (m :: _) -> Some (make ?charset m)
+    end
 
 let from_content ?charset ~tree content =
   match Conan_string.run ~database:(Conan.Process.database ~tree) content with
@@ -48,8 +49,7 @@ let to_string { mime; charset; lang } =
   in
   mime ^ charset ^ lang
 
-let equal { mime; charset; lang }
-    { mime = mime'; charset = charset'; lang = lang' } =
-  String.equal mime mime'
-  && Option.equal String.equal charset charset'
-  && List.equal String.equal lang lang'
+let equal m m' =
+  String.equal m.mime m'.mime
+  && Option.equal String.equal m.charset m'.charset
+  && List.equal String.equal m.lang m'.lang

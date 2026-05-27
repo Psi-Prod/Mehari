@@ -1,0 +1,32 @@
+(executable
+ (name unikernel)
+ (link_flags :standard -cclib "-z solo5-abi=hvt")
+ (foreign_stubs
+  (language c)
+  (names manifest))
+ (libraries
+  mehari
+  mehari-mirage
+  cmdliner
+  mkernel
+  mirage-crypto-rng-mkernel
+  mirage-ptime.solo5
+  mnet
+  mnet-tls
+  gmp
+  tls))
+
+(rule
+ (targets manifest.c)
+ (enabled_if
+  (= %{context_name} "default"))
+ (action
+  (write-file manifest.c "")))
+
+(rule
+ (targets manifest.c)
+ (deps manifest.json)
+ (enabled_if
+  (= %{context_name} "solo5"))
+ (action
+  (run solo5-elftool gen-manifest manifest.json manifest.c)))

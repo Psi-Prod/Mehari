@@ -1,20 +1,17 @@
 open Mehari
-open Lwt.Syntax
-module M = Mehari_lwt_unix
 
-let any = Path.variable ~from_string:Option.some ~to_string:Fun.id
+let router =
+  Router.router
+    [
+      Router.route
+        Path.(~/"sources" /: string)
+        (fun target _req -> Response.text target);
+    ]
 
 let () =
-  Lwt_main.run
-    begin
-      let* cert =
-        X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem"
-      in
-      M.router
-        [
-          M.route
-            Path.(~/"sources" /: any)
-            (fun target _req -> M.respond_text target);
-        ]
-      |> M.logger |> M.run ~certs:(Single cert)
-    end
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

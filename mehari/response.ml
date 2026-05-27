@@ -1,27 +1,26 @@
-type t = Regular of response | Raw of string
-and response = { status : int; kind : kind }
-and kind = Immediate of string | Chunks of stream
-and stream = { body : (string -> unit) -> unit; flush : bool }
+type t = Structured of response | Raw of string
+and response = { status : int; body : body }
+and body = String of string | Stream of stream
+and stream = string Flux.stream
 
 module Body = struct
   type t = String of string | Gemtext of Gemtext.t | Stream of stream
 
   let string t = String t
   let gemtext g = Gemtext g
-  let stream ?(flush = false) body = Stream { body; flush }
+  let stream s = Stream s
 
   let lines l =
-    stream ~flush:false (fun consume ->
-        List.iter
-          (fun line ->
-            consume line;
-            consume "\n")
-          l)
-
-  let seq ?flush s = stream ?flush (fun consume -> Seq.iter consume s)
+    let open Flux in
+    Stream.via
+      (Flow.map (fun line -> line ^ "\n"))
+      (Stream.from (Source.list l))
+    |> stream
 
   let page ~title body =
     gemtext Gemtext.[ heading `H1 title; text "\n"; text body ]
+
+  let seq s = stream Flux.(Stream.from (Source.seq s))
 end
 
 module Status = struct
@@ -66,18 +65,12 @@ let validate code meta body =
   else
     let meta = fmt_meta code meta in
     match body with
-    | None -> Immediate meta
-    | Some (Body.String t) -> Immediate (meta ^ t)
-    | Some (Gemtext g) -> Immediate (meta ^ Gemtext.to_string g)
-    | Some (Stream { body; flush }) ->
-        Chunks
-          {
-            body =
-              (fun consume ->
-                consume meta;
-                body consume);
-            flush;
-          }
+    | None -> String meta
+    | Some (Body.String t) -> String (meta ^ t)
+    | Some (Gemtext g) -> String (meta ^ Gemtext.to_string g)
+    | Some (Body.Stream s) ->
+        let header = Flux.(Stream.from (Source.list [ meta ])) in
+        Stream (Flux.Stream.concat header s)
 
 let to_response (type a) ((code, status) : a Status.t) (m : a) =
   let meta, body =
@@ -85,7 +78,7 @@ let to_response (type a) ((code, status) : a Status.t) (m : a) =
     | Success body -> (Mime.to_string m, Some body)
     | Meta -> (m, None)
   in
-  Regular { status = code; kind = validate code meta body }
+  Structured { status = code; body = validate code meta body }
 
 let respond status info = to_response status info
 let body body = respond (Status.success body)
@@ -95,23 +88,19 @@ let gemtext ?charset ?lang g =
   Mime.gemini ?charset ?lang () |> respond (Status.success (Body.gemtext g))
 
 let status = function
-  | Regular { status; _ } -> status
+  | Structured { status; _ } -> status
   | Raw _ -> invalid_arg "Mehari.Response.status"
 
 module Private = struct
-  type view = kind = Immediate of string | Chunks of stream
+  type view = body = String of string | Stream of stream
 
-  type nonrec stream = stream = {
-    body : (string -> unit) -> unit;
-    flush : bool;
-  }
+  let to_view = function
+    | Raw resp -> String resp
+    | Structured { body; _ } -> body
 
-  let view_of_resp = function
-    | Raw resp -> Immediate resp
-    | Regular { kind; _ } -> kind
-
-  let raw code meta body =
-    Regular { status = code; kind = Immediate (fmt_meta code meta ^ body) }
+  let raw status meta body =
+    let body = String (fmt_meta status meta ^ body) in
+    Structured { status; body }
 
   let unsafe_raw resp = Raw resp
 end

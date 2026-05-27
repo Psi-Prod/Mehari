@@ -8,7 +8,7 @@ type t = {
   tls_version : [ `TLS_1_2 | `TLS_1_3 ];
 }
 
-and hostname = [ `DomainName of [ `host ] Domain_name.t | `IPAddr of Ipaddr.t ]
+and hostname = Domain_name of [ `host ] Domain_name.t | Ip_addr of Ipaddr.t
 
 let uri { uri; _ } = uri
 let target { uri; _ } = Uri.path uri
@@ -18,11 +18,11 @@ let query { uri; _ } = Uri.verbatim_query uri
 let client_cert { client_cert; _ } = client_cert
 let tls_version { tls_version; _ } = tls_version
 
-let make ?client_cert ~uri ~client_ip ~client_port ~port ~server_hostname
+let make ?client_cert ~uri ~client:(ip, client_port) ~port ~server_hostname
     ~tls_version () =
   {
     uri;
-    client_ip;
+    client_ip = ip;
     client_port;
     port;
     server_hostname;
@@ -31,7 +31,9 @@ let make ?client_cert ~uri ~client_ip ~client_port ~port ~server_hostname
   }
 
 module Private = struct
-  type nonrec hostname = hostname
+  type nonrec hostname = hostname =
+    | Domain_name of [ `host ] Domain_name.t
+    | Ip_addr of Ipaddr.t
 
   let make = make
   let client_port r = r.client_port

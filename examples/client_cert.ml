@@ -1,9 +1,9 @@
 open Mehari
 
 let router =
-  Mehari_eio.router
+  Router.router
     [
-      Mehari_eio.route Path.root (fun req _ ->
+      Router.route Path.root (fun req ->
           match Request.client_cert req with
           | None -> Response.respond Status.client_cert_req "Certificate plz"
           | Some cert ->
@@ -19,11 +19,9 @@ let router =
     ]
 
 let () =
-  Eio_main.run @@ fun env ->
+  Miou_unix.run @@ fun () ->
   Mirage_crypto_rng_unix.use_default ();
-  let cert =
-    let ( / ) = Eio.Path.( / ) in
-    X509_eio.private_of_pems ~cert:(env#cwd / "cert.pem")
-      ~priv_key:(env#cwd / "key.pem")
-  in
-  Mehari_eio.run ~certs:(Single cert) router env
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

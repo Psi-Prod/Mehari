@@ -4,12 +4,11 @@
   client_cert
   counter
   echo
-  eio_backend
+  file_serving
   hello
   guestbook
   log
-  miou_backend
   rate_limit
   stream
   vhost)
- (libraries mehari mehari-eio mehari-lwt-unix mehari-miou-unix logs.fmt))
+ (libraries mehari mehari-miou mirage-crypto-rng-miou-unix logs.fmt))

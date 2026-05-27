@@ -9,10 +9,10 @@ val target : t -> string
 (** Path of requested URL. For example, "/foo/bar". *)
 
 val ip : t -> Ipaddr.t
-(** Address of client sending the request. *)
+(** Address of the client who sent the request. *)
 
 val port : t -> int
-(** Port of requested URL. *)
+(** Port of the requested URL. *)
 
 val query : t -> string option
 (** User URI query, if presents. *)
@@ -26,14 +26,12 @@ val tls_version : t -> [ `TLS_1_2 | `TLS_1_3 ]
 (**/**)
 
 module Private : sig
-  type hostname =
-    [ `DomainName of [ `host ] Domain_name.t | `IPAddr of Ipaddr.t ]
+  type hostname = Domain_name of [ `host ] Domain_name.t | Ip_addr of Ipaddr.t
 
   val make :
     ?client_cert:X509.Certificate.t ->
     uri:Uri.t ->
-    client_ip:Ipaddr.t ->
-    client_port:int ->
+    client:Ipaddr.t * int ->
     port:int ->
     server_hostname:hostname ->
     tls_version:[ `TLS_1_2 | `TLS_1_3 ] ->
@@ -51,7 +49,7 @@ module Private : sig
       - [tls_version] is the used TLS version. *)
 
   val client_port : t -> int
-  (* TODO document this *)
+  (* Client port. *)
 
   val server_hostname : t -> hostname
   (** Server domain name or its IP address if missing. *)

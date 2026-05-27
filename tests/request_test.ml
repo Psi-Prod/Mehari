@@ -1,5 +1,4 @@
 open Mehari
-open Mehari.Private
 
 let ipaddr = Alcotest.testable Ipaddr.pp (fun i i' -> Ipaddr.compare i i' = 0)
 let request_err = Alcotest.testable Protocol.pp_err Protocol.equal_err
@@ -7,16 +6,15 @@ let uri = Alcotest.testable Uri.pp Uri.equal
 
 let mock_request client_request =
   Protocol.make_request
-    ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-    ~client_port:8132
+    ~client:(Ipaddr.of_string_exn "80.120.170.10", 8132)
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
-    ~port:1917 ~tls_version:`TLS_1_3 ~client_request ~now:(Ptime_clock.now ())
+    ~port:1917 ~tls_version:`TLS_1_3 ~client_request ~now:(Mirage_ptime.now ())
     ()
 
 let client_ip_1 = Ipaddr.of_string_exn "80.120.170.10"
 
 let request_1 =
-  Protocol.make_request ~client_ip:client_ip_1 ~client_port:97416
+  Protocol.make_request ~client:(client_ip_1, 97416)
     ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
     ~port:1917 ~tls_version:`TLS_1_3
     ~client_request:"gemini://localhost/foo/bar" ~now:(Ptime_clock.now ()) ()
@@ -54,7 +52,7 @@ let test_request_ip_1 =
 let test_request_above_max_size =
   let open Alcotest in
   test_case "request above max size test" `Quick (fun () ->
-      let expected = Error Protocol.AboveMaxSize in
+      let expected = Error Protocol.Above_max_size in
       let computed =
         let address = "gemini://foo.lol/" in
         mock_request
@@ -65,7 +63,7 @@ let test_request_above_max_size =
 let test_request_begin_with_bom =
   let open Alcotest in
   test_case "request begin with BOM test" `Quick (fun () ->
-      let expected = Error Protocol.BeginWithBOM in
+      let expected = Error Protocol.Begin_with_BOM in
       let computed = mock_request "\u{feff}" in
       check (result reject request_err) "should be equal" expected computed)
 
@@ -107,13 +105,12 @@ let test_request_invalid_client_cert =
       let now = Ptime_clock.now () in
       let expected =
         Error
-          (Protocol.ClientCertificateNotValid
+          (Protocol.Invalid_client_cert
              (`CACertificateExpired (client_cert, Some now)))
       in
       let computed =
         Protocol.make_request
-          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~client_port:78751
+          ~client:(Ipaddr.of_string_exn "80.120.170.10", 78751)
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~port:1917 ~tls_version:`TLS_1_3 ~client_cert
           ~client_request:"gemini://foobar.com/" ~now ()
@@ -123,35 +120,35 @@ let test_request_invalid_client_cert =
 let test_request_empty_url =
   let open Alcotest in
   test_case "request with empty URL test" `Quick (fun () ->
-      let expected = Error Protocol.EmptyURL in
+      let expected = Error Protocol.Empty_URL in
       let computed = mock_request "" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_malformed_utf8 =
   let open Alcotest in
   test_case "request containing malformed UTF-8 test" `Quick (fun () ->
-      let expected = Error Protocol.MalformedUTF8 in
+      let expected = Error Protocol.Malformed_UTF8 in
       let computed = mock_request "\xED\xBF\xBF" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_missing_host =
   let open Alcotest in
   test_case "request URI with missing host test" `Quick (fun () ->
-      let expected = Error Protocol.MissingHost in
+      let expected = Error Protocol.Missing_host in
       let computed = mock_request "gemini:///foo.gmi" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_missing_scheme =
   let open Alcotest in
   test_case "request URI with missing scheme test" `Quick (fun () ->
-      let expected = Error Protocol.MissingScheme in
+      let expected = Error Protocol.Missing_scheme in
       let computed = mock_request "heyplzlookat.me/gemlog.gmi" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_invalid_domain_name =
   let open Alcotest in
   test_case "request URI with invalid domain name test" `Quick (fun () ->
-      let expected = Error Protocol.NotADomainName in
+      let expected = Error Protocol.Invalid_domain_name in
       let computed = mock_request "gemini://foo..mdr/" in
       check (result reject request_err) "should be equal" expected computed)
 
@@ -161,10 +158,9 @@ let test_request_ip_addr_hostname =
       let expected = Ok () in
       let computed =
         Protocol.make_request ~port:1917
-          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~client_port:78954 ~tls_version:`TLS_1_3
-          ~client_request:"gemini://80.120.170.11/test" ?hostname:None
-          ~now:(Ptime_clock.now ()) ()
+          ~client:(Ipaddr.of_string_exn "80.120.170.10", 78954)
+          ~tls_version:`TLS_1_3 ~client_request:"gemini://80.120.170.11/test"
+          ?hostname:None ~now:(Ptime_clock.now ()) ()
         |> Result.map (fun _ -> ())
       in
       check (result unit request_err) "should be equal" expected computed)
@@ -172,38 +168,36 @@ let test_request_ip_addr_hostname =
 let test_request_invalid_ip_addr_hostname =
   let open Alcotest in
   test_case "request an invalid IP address as hostname" `Quick (fun () ->
-      let expected = Error Protocol.NotADomainName in
+      let expected = Error Protocol.Invalid_domain_name in
       let computed =
         Protocol.make_request ~port:1917
-          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~client_port:23654 ~tls_version:`TLS_1_3
-          ~client_request:"gemini://80.120..170.11" ?hostname:None
-          ~now:(Ptime_clock.now ()) ()
+          ~client:(Ipaddr.of_string_exn "80.120.170.10", 23654)
+          ~tls_version:`TLS_1_3 ~client_request:"gemini://80.120..170.11"
+          ?hostname:None ~now:(Ptime_clock.now ()) ()
       in
       check (result pass request_err) "should be equal" expected computed)
 
 let test_request_relative_uri_path =
   let open Alcotest in
   test_case "request URI with a relative path test" `Quick (fun () ->
-      let expected = Error Protocol.RelativePath in
+      let expected = Error Protocol.Relative_path in
       let computed = mock_request "gemini://hello.foo" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_user_info =
   let open Alcotest in
   test_case "request with URL containing userinfo" `Quick (fun () ->
-      let expected = Error Protocol.UserInfoNotAllowed in
+      let expected = Error Protocol.User_info_not_allowed in
       let computed = mock_request "gemini://tim:mdp@example.com/" in
       check (result reject request_err) "should be equal" expected computed)
 
 let test_request_wrong_port =
   let open Alcotest in
   test_case "request with URL wrong port" `Quick (fun () ->
-      let expected = Error Protocol.WrongPort in
+      let expected = Error Protocol.Wrong_port in
       let computed =
         Protocol.make_request
-          ~client_ip:(Ipaddr.of_string_exn "80.120.170.10")
-          ~client_port:1254
+          ~client:(Ipaddr.of_string_exn "80.120.170.10", 1254)
           ~hostname:Domain_name.(of_string_exn "localhost" |> host_exn)
           ~tls_version:`TLS_1_3 ~port:1917
           ~client_request:"gemini://heyplzlookat.me:1848/"
@@ -214,7 +208,7 @@ let test_request_wrong_port =
 let test_request_wrong_scheme =
   let open Alcotest in
   test_case "request with URL wrong scheme" `Quick (fun () ->
-      let expected = Error Protocol.WrongScheme in
+      let expected = Error Protocol.Wrong_scheme in
       let computed = mock_request "https://heyplzlookat.me/" in
       check (result reject request_err) "should be equal" expected computed)
 
