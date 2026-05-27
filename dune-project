@@ -15,6 +15,8 @@
 
 (homepage "https://github.com/Psi-Prod/Mehari")
 
+(maintenance_intent "(latest)")
+
 (generate_opam_files true)
 
 (package
