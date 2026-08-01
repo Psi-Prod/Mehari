@@ -8,13 +8,18 @@
   mehari
   mehari-mirage
   cmdliner
+  logs.cli
+  logs.fmt
+  fmt.cli
   mkernel
   mirage-crypto-rng-mkernel
-  mirage-ptime.solo5
   mnet
+  mnet-cli
   mnet-tls
-  gmp
-  tls))
+  tls
+  mfat
+  mirage-ptime.solo5
+  gmp))
 
 (rule
  (targets manifest.c)

@@ -24,20 +24,28 @@ module Make (R : Runtime.S) = struct
     | `Connection_closed ]
 
   let log_error err =
-    Logs.err ~src:Logger.src @@ fun log ->
+    let error msgf = Logs.err ~src:Logger.src msgf in
     match err with
-    | `Handshake_failed -> log "Not able to complete TLS handshake with client."
+    | `Handshake_failed ->
+        error (fun log -> log "Not able to complete TLS handshake with client.")
     | `Tls_alert alert ->
-        log "A TLS alert has been received during client request reading: ."
-        (* %s *)
-        (*   (Tls.Packet.alert_type_to_string alert) *)
+        error (fun log ->
+            log
+              "A TLS alert has been received during client request reading: %s."
+              (Tls.Packet.alert_type_to_string alert))
     | `Tls_failure fail ->
-        log "A TLS protocol error has occured during client request reading: ."
-        (* %a Tls.Engine.pp_failure fail *)
-    | `End_of_file -> log "Premature EOF during client request reading."
-    | `Timeout -> log "Timeout during client request reading."
+        error (fun log ->
+            log
+              "A TLS protocol error has occured during client request reading: \
+               %a."
+              Tls.Engine.pp_failure fail)
+    | `End_of_file ->
+        error (fun log -> log "Premature EOF during client request reading.")
+    | `Timeout ->
+        error (fun log -> log "Timeout during client request reading.")
     | `Connection_closed ->
-        log "Connection was closed by client during response sending."
+        error (fun log ->
+            log "Connection was closed by client during response sending.")
 
   let read_char =
     let buf = Bytes.create 1 in

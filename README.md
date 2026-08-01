@@ -29,7 +29,6 @@ opam install mehari
 - Rate limit
 - Virtual hosting using TLS SNI
 - CGI support
-- Long-running TCP connection
 
 ## Important links
 
@@ -43,8 +42,7 @@ opam install mehari
 Setup dev environment:
 ```bash
 $ opam install mehari-mirage solo5 ocaml-solo5
-$ opam pin vif.dev git+https://github.com/robur-coop/vif.git#3fb86c53bc56d3af78ce5df76b285a2b476e39ad
-$ opam pin vifu.dev git+https://github.com/robur-coop/vif.git#3fb86c53bc56d3af78ce5df76b285a2b476e39ad
+$ opam install ca-certs-nss dns dns-client mfat
 $ opam pin zarith.dev git+https://github.com/mirage/Zarith.git#df8969d9bb95cffca13e31a615189ab27ada0684
 ```
 
@@ -80,11 +78,18 @@ $ cat >dune-workspace<<EOF
 EOF
 ```
 
+
+```bash
+$ mfat make -s 2048 certs.img
+$ mfat write certs.img key.pem key.pem
+$ mfat write certs.img certs.pem cert.pem
+```
+
 Compile and run the unikernel:
 
 ```bash
 $ dune build --profile=release
-$ solo5-hvt --net:service=tap0 -- ./_build/solo5/unikernel/unikernel.exe --ipv4=10.0.0.2/24
+$ solo5-hvt --net:service=tap0 --block:certs=certs.img -- ./_build/solo5/unikernel/unikernel.exe --solo5:quiet --ipv4=10.0.0.2/8
 ```
 
 ## License
