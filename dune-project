@@ -1,4 +1,4 @@
-(lang dune 3.23)
+(lang dune 3.21)
 
 (version 0.5)
 
@@ -17,7 +17,7 @@
 
 (maintenance_intent "(latest)")
 
-(generate_opam_files true)
+(generate_opam_files)
 
 (package
  (name mehari)
@@ -38,7 +38,7 @@
   (mirage-ptime
    (>= 5.2.0))
   (tls
-   (>= 2.0.4))
+   (>= 2.1.2))
   (uri
    (>= 4.4.0))
   (alcotest :with-test)
@@ -55,7 +55,7 @@
   (mehari
    (= :version))
   (tls-miou-unix
-   (>= 2.0.4))))
+   (>= 2.1.2))))
 
 (package
  (name mehari-mirage)
@@ -64,8 +64,8 @@
   (mehari
    (= :version))
   (mkernel
-   (>= 0.0.2))
+   (>= 0.0.3))
   (mnet
-   (>= 0.0.2))
+   (>= 0.0.4))
   (mnet-tls
-   (>= 0.0.2))))
+   (>= 0.0.4))))
