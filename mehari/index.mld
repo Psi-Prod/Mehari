@@ -4,7 +4,7 @@ Mehari is a cross-platform library for building Gemini servers. It fully
 implements the
 {{:https://geminiprotocol.net/docs/protocol-specification.gmi} Gemini protocol specification}.
 It offers a simple and clean interface to create complete Gemini web apps.
-It takes heavy inspiration from {{:https://github.com/aantron/dream} Dream}, a
+It takes inspiration from {{:https://github.com/aantron/dream} Dream}, a
 tidy, feature-complete Web framework.
 
 Consult the {!section-tutorial} and
@@ -20,44 +20,29 @@ Mehari provides several packages:
   - {!Mehari} provides the core abstraction, it does not depend on any platform
     code, and does not interact with the environment.
 
-  - {{:../mehari-mirage/index.html} Mehari_mirage} exposes an OS-independent
-    interface.
+  - {{:../mehari-mirage/index.html} Mehari_mirage} is a server implementation
+    compatible with Mirage.
 
-  - {{:../mehari-lwt-unix/index.html} Mehari_lwt_unix} uses the
-    {{:https://ocsigen.org/lwt/} Lwt} library, and specifically the UNIX
-    bindings. Contains also extra features based on UNIX filesystem such as
-    CGI.
-
-  - {{:../mehari-eio/index.html} Mehari_eio} uses the
-    {{:https://github.com/ocaml-multicore/eio} Eio} OCaml 5.0+ library.
-
-{2 Implementation choice}
-
-IO implementations of Mehari are roughly equivalent in terms of features.
-However, some differences exist, e.g. {{:Mehari_eio/index.html} Mehari_eio}
-supports concurrent connections and should be preferred for a high performance
-server.
+  - {{:../mehari-miou/index.html} Mehari_miou} uses the
+    {{:https://robur-coop.github.io/miou/} Miou} library, and
+    specifically the UNIX bindings.
 
 {1:tutorial Tutorial}
 
-In these tutorials, {!Mehari_eio} will be used so as not to complicate
-the snippets with a monadic interface but they can easily be adapted
-into a {!Mehari_mirage} version.
-
 {2 Respond to request}
 
-The first form of abstraction is the {!type:Mehari.NET.handler}
-which is essentially an asynchronous function
+The first form of abstraction is the {!type:Mehari.handler} which is essentially
+an asynchronous function
 from {!type:Mehari.request} to {!type:Mehari.response}.
 This is the simplest possible handler that responds
 to all requests in the same way:
 
-{@ocaml[(fun _ -> Mehari.response_text "Hello from Mehari")]}
+{@ocaml[(fun req -> Mehari.Response.text "Hello from Mehari")]}
 
 As handlers take a {!Mehari.type-request} in parameter we can operate on them.
 Here we retrieve the URL of the client's request and return it:
 
-{@ocaml[(fun req -> Mehari.uri req |> Uri.to_string |> Mehari.response_text)]}
+{@ocaml[(fun req -> Mehari.Request.uri req |> Uri.to_string |> Mehari.Response.text)]}
 
 See {!Mehari.section-request} section to consult all client request related
 functions.
@@ -66,60 +51,64 @@ functions.
 
 Mehari provides its own representation of status codes as described in the
 {{:Gemini protocol specification} gemini specification}. Take a look at the
-signature of {!val:Mehari.response}:
+signature of {!val:Mehari.Response.respond}:
 
-{@ocaml[val response : 'a status -> 'a -> response]}
+{@ocaml[val respond : 'a status -> 'a -> response]}
 
 Furthermore, the status [input] and [success] are defined as follows:
 
 {@ocaml[val input : string status]}
-{@ocaml[val success : body -> mime status]}
+{@ocaml[val success : Body.t -> Mime.t status]}
 
-The inhabitant type of {!Mehari.type-status} carries the information of what
+The inhabitant type of {!Mehari.Status.t} carries the information of what
 is necessary for the creation of an associated response. In the case of an
 input response, a [string] is needed:
 
 {@ocaml[
 let input_resp =
-  Mehari.(response input) "Enter a message"
+  Mehari.(Response.respond Status.input) "Enter a message"
 ]}
 
-In the same way, a {!type:Mehari.body} and a {!type:Mehari.mime} are required
+In the same way, a {!type:Mehari.Body.t} and a {!type:Mehari.Mime.t} are required
 to make a successful response:
 
 {@ocaml[
+open Mehari
+
 let successful_resp =
-  let body = Mehari.string "A successful response" in
-  Mehari.(response (success body) (gemini ()))
+  let body = Body.string "A successful response" in
+  Response.respond (Status.success body) (Mime.gemini ())
 ]}
 
 See {!Mehari.section-status} for the complete list of status. Other functions
 described in {!Mehari.section-response} section are mostly convenient functions
-built on top of {!val:Mehari.response}.
+built on top of {!val:Mehari.Response.respond}.
 
 {3 Body}
 
-Successful responses are accompanied by a {!type:Mehari.body}.
+Successful responses are accompanied by a {!type:Mehari.Body.t}.
 They are many methods to create a body, for example from a string:
 
 {@ocaml[
-let body = Mehari.string "A response body"
+let body = Mehari.Body.string "A response body"
 ]}
 
 Or from a Gemtext object:
 {@ocaml[
 let body =
-  Mehari.(gemtext Gemtext.[
-    heading `H1 "Thought on Gemtext markup";
-    list_item "Date: February 2021";
-    list_item "Tags: gemini, reviews";
-    newline;
-    heading `H2 "Introduction";
-    newline;
-    quote "The format permits richer typographic possibilities than the plain text of Gopher, but remains extremely easy to parse.";
-    text "Here is an example of a Python parser that demonstrates the truth of that statement:";
-    preformat "..." ~alt:"python"
-  ])
+  let open Mehari in
+  Response.gemtext
+    Gemtext.[
+      heading `H1 "Thought on Gemtext markup";
+      list_item "Date: February 2021";
+      list_item "Tags: gemini, reviews";
+      newline;
+      heading `H2 "Introduction";
+      newline;
+      quote "The format permits richer typographic possibilities than the plain text of Gopher, but remains extremely easy to parse.";
+      text "Here is an example of a Python parser that demonstrates the truth of that statement:";
+      preformat "..." ~alt:"python"
+    ]
 ]}
 
 Which is rendered as the following Gemtext document:
@@ -142,83 +131,74 @@ Here is an example of a Python parser that demonstrates the truth of that statem
 
 Mehari offers ways to keep client connections open forever and stream data in
 real time. Be sure to read this quick warning about this approach:
-{!Mehari.section-"note-on-data-stream-response"}.
+{!Mehari.Response.Body.section-"note-on-data-stream-response"}.
 
 {3 Mime}
 
-{!type:Mehari.mime} describes how the response body
+{!type:Mehari.Mime.t} describes how the response body
 must be interpreted by the client.
-You can build your own mime with {!val:Mehari.make_mime} and specify the
+You can build your own mime with {!val:Mehari.Mime.make} and specify the
 data encoding with the parameter [charset]:
 
 {@ocaml[
-let mp3 = Mehari.make_mime "audio/mp3"
+let mp3 = Mehari.Mime.make "audio/mp3"
 ]}
 
-Some common MIME type are predefined. See {!Mehari.section-"mime"} section.
+Some common MIME type are predefined. See {!Mehari.section-mime} section.
 
 The [text/gemini] MIME type allows an additional parameter [lang] to specify
 the languages used in the document according to the
 {{:https://geminiprotocol.net/docs/protocol-specification.gmi} Gemini specification}:
 
 {@ocaml[
-let french_ascii_gemini = Mehari.gemini ~charset:"ascii" ~lang:["fr"] ()
+let french_ascii_gemini = Mehari.Mime.gemini ~charset:"ascii" ~lang:["fr"] ()
 ]}
 
 {4 Inference}
 
-{!val:Mehari.from_filename} enables MIME type infering from a filename.
+{!val:Mehari.Mime.from_filename} enables MIME type infering from a filename.
 
 Mehari also provides an experimental
 {{:https://github.com/mirage/conan} Conan} integration via
-{!val:Mehari.from_content} to infer MIME type from a string.
+{!val:Mehari.Mime.from_content} to infer MIME type from a string.
 
 {2:route Routing}
 
 Obviously, the path of a route corresponds to the "path" component of the url
-requested by the client. Currently, two types of route exist: "raw" route which
-are interpreted literally and route supplied as a Perl style regex. Note that
-routes are "raw" by default:
+requested by the client. :
 
-{@ocaml[Mehari_eio.route "/var/gemini" (fun _ -> ...)]}
+{@ocaml[Mehari.(Router.route Path.(~/"var"/"gemini") (fun _ -> ...))]}
 
-In the following snippet, {!val:Mehari.param} retrieves the first group of the
-regex starting from index [1]. It is possible to have as many groups as desired
-in the route path.
+In the following snippet, we construct a path to group all URL of form "/articles/xxx":
 
 {@ocaml[
-Mehari_eio.route ~regex:true "/articles/([a-z][A-Z])+" (fun req ->
-  Mehari.param req 1
-  |> Printf.sprintf "Get article %S"
-  |> Mehari.response_text)
+Mehari.(Router.route Path.(~/"articles" /: string) (fun article req ->
+  Response.text (Printf.sprintf "Get article %S" article)))
 ]}
 
-It is the purpose of {!val:Mehari.NET.router} to group routes together to
+Each path variable used is passed to the handler, this allows type safe routing.
+Predefined path variable are provided for all common standard data type
+and it is possible to define path variable for your own type with {!Mehari.Path.variables}.
+See the full documentation of {!Mehari.Path} for more information.
+
+It is the purpose of {!val:Mehari.Router.router} to group routes together to
 produce a bigger handler:
 
 {@ocaml[
-Mehari_eio.router [
-  Mehari_eio.route "/" index_handler;
-  Mehari_eio.route "/gemlog" gemlog_handler
-]
-]}
-
-In the same way {!val:Mehari.NET.scope} groups several routes in one under the
-given prefix:
-
-{@ocaml[
-Mehari_eio.scope "/blog" [
-  Mehari_eio.route "/articles" articles_handler;
-  Mehari_eio.route "/gemlog" gemlog_handler
-]
+let router =
+  let open Mehari in
+  Router.router [
+    Router.route Path.root index_handler;
+    Router.route Path.(~/"gemlog") gemlog_handler;
+  ]
 ]}
 
 {2 Advanced routing}
 
 {3 Middleware}
 
-{!type:Mehari.NET.middleware} allows to run code before and after the execution
-of another handler and produces a “bigger” {!type:Mehari.NET.handler}.
+{!type:Mehari.Middleware.t} allows to run code before and after the execution
+of another handler and produces a “bigger” {!type:Mehari.handler}.
 
 This example of an incrementable counter shows how to use them:
 
@@ -230,76 +210,68 @@ let incr_count handler req =
   handler req
 
 let router =
-  Mehari_eio.router [
-      Mehari_eio.route "/" (fun _ ->
-        Printf.sprintf "Value %i" !counter |> Mehari.response_text);
-      Mehari_eio.route "/incr" ~mw:incr_count (fun _ ->
-          Mehari.response Mehari.redirect_temp "/");
+  let open Mehari in
+  Router.router [
+      Router.route Path.root (fun _ ->
+        Response.text (Printf.sprintf "Value %i" !counter));
+      Router.route Path.(~/"incr") ~middlewares:[incr_count] (fun _ ->
+          Response.respond Status.redirect_temp "/");
     ]
 ]}
 
 {3 Rate limit}
 
-This road is limited to 3 accesses every 5 minutes:
+This route is limited to 3 accesses every 5 minutes:
 
 {@ocaml[
-let limit = Mehari_eio.make_rate_limit ~period:3 5 `Minute
+open Mehari
 
-let limited_route = Mehari_eio.route "/stats" ~rate_limit:limit (fun _ -> ...)
+let limit = Rate_limit.make ~period:3 5 `Minute
+
+let limited_route = Router.route Path.(~/"stats") ~rate_limit:limit (fun req -> ...)
 ]}
 
-They are described in depth in section {!Mehari.NET.section-rate_limit}.
-
-In the same way as shown in section {!section:route}, these features can be
-mutualized at the scale of several routes using {!val:Mehari.NET.scope}.
+They are described in depth in section {!Mehari.section-rate_limit}.
 
 {2 Hosting}
 
-By default, the server runs on port [1965] on IP [localhost] (usually [127.0.0.1]).
+By default, the server runs on port [1965].
 
-This command generate certificates ([cert.pem] and [key.pem]),
-set server common name to [localhost] and it should work:
+Use the [openssl] utility to generate a certificate and its associated private key ([cert.pem]
+and [key.pem]) for the domain name [localhost]:
 
 {@bash[
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes --subj "/CN=localhost"
 ]}
 
-Here is what you have to do to start the server:
-
-Using {!Mehari_lwt_unix}:
+Here is what you have to do to start the server using {!Mehari_miou}:
 
 {@ocaml[
-let ( >>= ) = Lwt.Infix.( >>= )
-
-let main () =
-  X509_lwt.private_of_pems ~cert:"cert.pem" ~priv_key:"key.pem" >>= fun cert ->
-  |> Mehari_io.run_lwt router ~certchains:[ cert ]
-
-let () = Lwt_main.run (main ())
-]}
-
-Using {!Mehari_eio}:
-
-{@ocaml[
-let main ~net ~cwd =
-  let certchains =
-    Eio.Path.
-      [
-        X509_eio.private_of_pems ~cert:(cwd / "cert.pem")
-          ~priv_key:(cwd / "key.pem");
-      ]
+let load_certs ~cert ~priv_key =
+  let certs =
+    let pem = In_channel.(with_open_text cert input_all) in
+    match X509.Certificate.decode_pem_multiple pem with
+    | Ok cs -> cs
+    | Error (`Msg m) -> invalid_arg ("failed to parse certificates " ^ m)
+  and priv_key =
+    let pem = In_channel.(with_open_text priv_key input_all) in
+    match X509.Private_key.decode_pem pem with
+    | Ok key -> key
+    | Error (`Msg m) -> invalid_arg ("failed to parse private key " ^ m)
   in
-  Mehari_eio.run net ~certchains router
+  [ (certs, priv_key) ]
 
 let () =
-  Eio_main.run @@ fun env ->
-  Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env @@ fun () ->
-  main ~net:env#net ~cwd:env#cwd
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  let ip = Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost)) in
+  Mehari_miou.run ~certs ip router
 ]}
 
 {3 Virtual hosting}
 
-Mehari supports virtual hosting using "server name indication" (SNI).
-{!val:Mehari.NET.virtual_hosts} takes a list composed of a couple which
+Mehari supports virtual hosting using "server name indication" (TLS SNI extension).
+{!val:Mehari.Router.virtual_host} takes a list composed of a couple which
 represent a domain and his associated handler and produces a "biggest"
-{!type:Mehari.NET.handler}.
+{!type:Mehari.handler}.

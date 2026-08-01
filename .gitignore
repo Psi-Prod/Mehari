@@ -1,38 +1,10 @@
-*.annot
-*.cmo
-*.cma
-*.cmi
-*.a
-*.o
-*.cmx
-*.cmxs
-*.cmxa
-
-# ocamlbuild working directory
 _build/
+_opam
 
-# ocamlbuild targets
-*.byte
-*.native
+compile_commands.json
+dune
+dune-workspace
+vendors/
 
-# oasis generated files
-setup.data
-setup.log
-
-# Merlin configuring file for Vim and Emacs
-.merlin
-
-# Dune generated files
-*.install
-
-# Local OPAM switch
-_opam/
-.DS_Store
-
-# Certificates
 *.key
 *.pem
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace

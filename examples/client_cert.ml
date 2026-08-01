@@ -1,18 +1,27 @@
+open Mehari
+
 let router =
-  Mehari_eio.router
+  Router.router
     [
-      Mehari_eio.route "/" (fun req ->
-          match Mehari.client_cert req with
-          | [] -> Mehari.(response client_cert_req) "Certificate plz"
-          | hd :: _ ->
-              X509.Certificate.encode_pem hd
-              |> Cstruct.to_string
-              |> Printf.sprintf "Client certificate ~nyoron\n%s"
-              |> Mehari.response_text);
+      Router.route Path.root (fun req ->
+          match Request.client_cert req with
+          | None -> Response.respond Status.client_cert_req "Certificate plz"
+          | Some cert ->
+              let pem = X509.Certificate.encode_pem cert in
+              let common_name =
+                X509.Certificate.subject cert
+                |> X509.Distinguished_name.common_name
+                |> Option.value ~default:"None"
+              in
+              Printf.sprintf "Ur client certificate ~nyoron\n%sCommon name: %s"
+                pem common_name
+              |> Response.text);
     ]
 
-let main ~net ~cwd =
-  let certchains = Common.Eio.load_certchains cwd in
-  Mehari_eio.run net ~certchains router
-
-let () = Common.Eio.run_server main
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)
