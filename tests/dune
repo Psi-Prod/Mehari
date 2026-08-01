@@ -1,0 +1,3 @@
+(test
+ (name tests)
+ (libraries alcotest conan-database.light mehari mirage-ptime))

@@ -1,95 +1,37 @@
-open Mehari.Private
+open Mehari
 
-module type IO_RESPONSE = sig
-  val respond : 'a Mehari.status -> 'a -> Mehari.response Lwt.t
-  val respond_body : Mehari.body -> Mehari.mime -> Mehari.response Lwt.t
-  val respond_text : string -> Mehari.response Lwt.t
+module Runtime = struct
+  type stack = Mnet.TCP.state
+  type listener = Mnet.TCP.listen
 
-  val respond_gemtext :
-    ?charset:string ->
-    ?lang:string list ->
-    Mehari.Gemtext.t ->
-    Mehari.response Lwt.t
+  let listen = Mnet.TCP.listen
 
-  val respond_raw :
-    [ `Body of string | `Full of int * string * string ] ->
-    Mehari.response Lwt.t
-end
+  module TLS = struct
+    include Mnet_tls
 
-module type S = sig
-  module IO = Lwt
+    let peer flow = file_descr flow |> Mnet.TCP.peers |> snd
 
-  include
-    Mehari.NET
-      with module IO := IO
-       and type addr = Ipaddr.t
-       and type clock := unit
+    let really_read fd ?off ?len buf =
+      try Ok (really_read fd ?off ?len buf) with
+      | Tls_alert a -> Error (`Tls_alert a)
+      | Tls_failure f -> Error (`Tls_failure f)
 
-  val make_rate_limit :
-    ?period:int -> int -> [ `Second | `Minute | `Hour | `Day ] -> rate_limiter
+    let write flow ?off ?len s =
+      try Ok (write flow ?off ?len s)
+      with Closed_by_peer -> Error `Connection_closed
 
-  val logger : handler -> handler
-
-  include IO_RESPONSE
-  include Server_impl.S with module IO := IO
-end
-
-module Make
-    (PClock : Mirage_clock.PCLOCK)
-    (Stack : Tcpip.Stack.V4V6)
-    (Time : Mirage_time.S) : S with type stack = Stack.t = struct
-  module IO = Lwt
-  module Addr = Ipaddr
-
-  module Clock = struct
-    type t = unit
-
-    let now_d_ps () = PClock.now_d_ps ()
+    let close flow = Mnet_tls.shutdown flow `read_write
   end
 
-  module RateLimiter = Rate_limiter_impl.Make (Clock) (IO) (Addr)
+  module TCP = struct
+    type t = Mnet.TCP.flow
 
-  module Logger =
-    Logger_impl.Make
-      (Clock)
-      (struct
-        include Lwt
+    let accept = Mnet.TCP.accept
+    let tls_upgrade config flow = Mnet_tls.server_of_fd config flow
+  end
 
-        let finally = try_bind
-      end)
-      (Addr)
-
-  module Router = Router_impl.Make (RateLimiter) (Logger)
-  module Server = Server_impl.Make (Stack) (Time) (Logger)
-
-  type addr = Addr.t
-  type handler = Router.handler
-  type middleware = handler -> handler
-  type route = Router.route
-  type rate_limiter = RateLimiter.t
-  type stack = Stack.t
-
-  let respond s i = Mehari.response s i |> IO.return
-  let respond_body b m = Mehari.response_body b m |> IO.return
-  let respond_text t = Mehari.response_text t |> IO.return
-
-  let respond_gemtext ?charset ?lang g =
-    Mehari.response_gemtext ?charset ?lang g |> IO.return
-
-  let respond_raw g = Mehari.response_raw g |> IO.return
-  let set_log_lvl = Logger.set_level
-  let logger = Logger.logger ()
-  let debug = Logger.debug
-  let info = Logger.info
-  let warning = Logger.warning
-  let error = Logger.error
-  let no_middleware = Router.no_middleware
-  let pipeline = Router.pipeline
-  let router = Router.router
-  let route = Router.route
-  let scope = Router.scope
-  let no_route = Router.no_route
-  let virtual_hosts = Router.virtual_hosts
-  let make_rate_limit = RateLimiter.make ()
-  let run = Server.run
+  let now = Mirage_ptime.now
+  let sleep secs = Mkernel.sleep (Int.of_float (1_000_000_000. *. secs))
 end
+
+include Server.Make (Runtime)

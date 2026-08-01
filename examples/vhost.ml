@@ -1,20 +1,28 @@
+(** To generate correct certificates to test this example, run:
+
+    {@bash[
+      mkcert localhost foo.localhost bar.localhost
+    ]} *)
+
+open Mehari
+
+let respond_msg msg _req =
+  Format.kasprintf Response.text "Requesting subdomain %s" msg
+
 let router =
-  Mehari_eio.virtual_hosts
+  Router.virtual_host
     [
-      ("localhost.foo", fun _ -> Mehari.response_text "Requesting subdomain foo");
-      ("localhost.bar", fun _ -> Mehari.response_text "Requesting subdomain bar");
+      Router.domain "localhost" (fun _ ->
+          Response.text "No subdomain requested");
+      Router.domain "foo.localhost" (respond_msg "foo")
+        ~all:(respond_msg "*.foo");
+      Router.domain "bar.localhost" (respond_msg "bar");
     ]
 
-let main ~net ~cwd =
-  let certchains =
-    let ( / ) = Eio.Path.( / ) in
-    [
-      X509_eio.private_of_pems ~cert:(cwd / "cert_foo.pem")
-        ~priv_key:(cwd / "key_foo.pem");
-      X509_eio.private_of_pems ~cert:(cwd / "cert_bar.pem")
-        ~priv_key:(cwd / "key_bar.pem");
-    ]
-  in
-  Mehari_eio.run net ~certchains router
-
-let () = Common.Eio.run_server main
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

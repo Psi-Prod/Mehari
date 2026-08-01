@@ -1,9 +1,11 @@
+open Mehari
+
 let book =
   object
     val mutable entries = []
 
     method add_entry ~addr msg =
-      entries <- (Ptime_clock.now (), addr, msg) :: entries
+      entries <- (Mirage_ptime.now (), addr, msg) :: entries
 
     method print =
       let buf = Buffer.create 4096 in
@@ -17,15 +19,12 @@ let book =
       Buffer.contents buf
   end
 
-module M = Mehari_lwt_unix
-open Lwt.Syntax
-
-let main () =
-  let* certchains = Common.Lwt.load_certchains () in
-  M.router
+let router =
+  let open Router in
+  router
     [
-      M.route "/" (fun _ ->
-          Mehari.Gemtext.
+      route Path.root (fun _ ->
+          Gemtext.
             [
               heading `H1 "Guestbook";
               newline;
@@ -34,14 +33,21 @@ let main () =
               heading `H2 "Entries:";
               text book#print;
             ]
-          |> M.respond_gemtext);
-      M.route "/submit" (fun req ->
-          match Mehari.query req with
-          | None -> M.respond Mehari.input "Enter your message"
+          |> Response.gemtext);
+      route
+        Path.(~/"submit")
+        (fun req ->
+          match Request.query req with
+          | None -> Response.respond Status.input "Enter your message"
           | Some msg ->
-              book#add_entry ~addr:(Mehari.ip req) msg;
-              M.respond Mehari.redirect_temp "/");
+              book#add_entry ~addr:(Request.ip req) msg;
+              Response.respond Status.redirect_temp "/");
     ]
-  |> M.run_lwt ~certchains
 
-let () = Lwt_main.run (main ())
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

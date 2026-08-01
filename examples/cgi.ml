@@ -1,10 +1,14 @@
-module M = Mehari_lwt_unix
-open Lwt.Syntax
+open Mehari
 
-let main () =
-  let* certchains = Common.Lwt.load_certchains () in
-  M.router
-    [ M.route "/cgi" (fun req -> M.run_cgi "./examples/cgi_script.py" req) ]
-  |> M.run_lwt ~certchains
+let router =
+  let open Router in
+  router
+    [ route Path.(~/"cgi") (Mehari_miou.run_cgi "./examples/cgi_script.py") ]
 
-let () = Lwt_main.run (main ())
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)

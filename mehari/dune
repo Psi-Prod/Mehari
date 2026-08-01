@@ -1,7 +1,15 @@
 (library
  (name mehari)
  (public_name mehari)
- (libraries conan.string conan-database.bindings logs tls uri x509))
+ (modules_without_implementation handler mehari runtime)
+ (libraries
+  conan.string
+  conan-database.bindings
+  ipaddr
+  flux
+  mirage-ptime
+  tls
+  uri))
 
 (documentation
  (package mehari))

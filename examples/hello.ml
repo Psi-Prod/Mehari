@@ -1,8 +1,9 @@
-open Lwt.Syntax
+open Mehari
 
-let main () =
-  let* certchains = Common.Lwt.load_certchains () in
-  (fun _ -> Mehari_lwt_unix.respond_text "Hello")
-  |> Mehari_lwt_unix.run_lwt ~certchains
-
-let () = Lwt_main.run (main ())
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (fun _ -> Response.text "Hello")

@@ -1,43 +1,103 @@
-module type S = sig
-  type addr
+type t = {
+  auth_type : string;
+  content_length : string;
+  content_type : string;
+  gateway_interface : string;
+  path_info : string;
+  path_translated : string;
+  query_string : string;
+  remote_addr : string;
+  remote_host : string;
+  remote_ident : string;
+  remote_user : string;
+  request_method : string;
+  script_name : string;
+  server_name : string;
+  server_port : string;
+  server_protocol : string;
+  server_software : string;
+  tls_client_hash : string;
+  tls_client_subject : string;
+  tls_client_issuer : string;
+}
 
-  val make_env :
-    addr Request.t -> fullpath:string -> path:string -> string array
-end
+let or_empty = Option.value ~default:""
 
-module Make (Addr : Types.ADDR) : S with type addr := Addr.t = struct
-  let make_env req ~fullpath ~path =
-    let empty = "" in
-    let empty_by_default = Option.value ~default:"" in
-    let common_name_cert =
-      match Request.client_cert req with
-      | [] -> None
-      | c :: _ ->
-          (* We pick the first one. *)
-          Option.map
-            (fun (_, d) -> Domain_name.to_string d)
-            (X509.Certificate.hostnames c |> X509.Host.Set.choose_opt)
-    in
-    let client_addr = Format.asprintf "%a" Addr.pp (Request.ip req) in
-    [|
-      ( "AUTH_TYPE",
-        Option.fold common_name_cert ~none:"" ~some:(fun _ -> "CERTIFICATE") );
-      ("CONTENT_LENGTH", empty);
-      ("CONTENT_TYPE", empty);
-      ("GATEWAY_INTERFACE", "CGI/1.1");
-      ("PATH_INFO", Request.target req |> Uri.pct_decode);
-      ("PATH_TRANSLATED", path);
-      ("QUERY_STRING", Request.query req |> empty_by_default);
-      ("REMOTE_ADDR", client_addr);
-      ("REMOTE_HOST", client_addr);
-      ("REMOTE_IDENT", empty);
-      ("REQUEST_METHOD", empty);
-      ("REMOTE_USER", empty_by_default common_name_cert);
-      ("SCRIPT_NAME", fullpath);
-      ("SERVER_NAME", Request.uri req |> Uri.host |> empty_by_default);
-      ("SERVER_PORT", Request.port req |> Int.to_string);
-      ("SERVER_PROTOCOL", "GEMINI");
-      ("SERVER_SOFTWARE", "Mehari/%%VERSION%%");
-    |]
-    |> Array.map (fun (name, value) -> Printf.sprintf "%s=%s" name value)
-end
+let make ?server_addr ~script_path req =
+  let client_cert = Request.client_cert req in
+  let auth_type =
+    client_cert |> Option.map (fun _ -> "Certificate") |> or_empty
+  in
+  let path_info = Request.target req |> Uri.pct_decode in
+  let query_string = Request.query req |> or_empty in
+  let client_addr = Request.ip req |> Ipaddr.to_string in
+  let remote_addr =
+    Printf.sprintf "%s:%i" client_addr @@ Request.Private.client_port req
+  in
+  let server_name =
+    match Request.uri req |> Uri.host with
+    | Some hostname -> hostname
+    | None -> Option.fold server_addr ~none:"" ~some:Ipaddr.to_string
+  in
+  let server_port = Request.port req |> Int.to_string in
+  let tls_client_hash, tls_client_subject, tls_client_issuer =
+    match client_cert with
+    | None -> ("", "", "")
+    | Some c ->
+        let hash = X509.Certificate.fingerprint `SHA256 c in
+        let subject =
+          X509.Certificate.subject c |> X509.Distinguished_name.common_name
+          |> or_empty
+        in
+        let issuer =
+          X509.Certificate.issuer c |> X509.Distinguished_name.common_name
+          |> or_empty
+        in
+        (hash, subject, issuer)
+  in
+  {
+    auth_type;
+    content_length = "";
+    content_type = "";
+    gateway_interface = "CGI/1.1";
+    path_info;
+    path_translated = path_info;
+    query_string;
+    remote_addr;
+    remote_host = client_addr;
+    remote_ident = "";
+    remote_user = "";
+    request_method = "";
+    script_name = script_path;
+    server_name;
+    server_port;
+    server_protocol = "GEMINI";
+    server_software = "Mehari/%%VERSION%%";
+    tls_client_hash;
+    tls_client_subject;
+    tls_client_issuer;
+  }
+
+let to_env t =
+  [|
+    ("AUTH_TYPE", t.auth_type);
+    ("CONTENT_LENGTH", t.content_length);
+    ("CONTENT_TYPE", t.content_type);
+    ("GATEWAY_INTERFACE", t.gateway_interface);
+    ("PATH_INFO", t.path_info);
+    ("PATH_TRANSLATED", t.path_translated);
+    ("QUERY_STRING", t.query_string);
+    ("REMOTE_ADDR", t.remote_addr);
+    ("REMOTE_HOST", t.remote_host);
+    ("REMOTE_IDENT", t.remote_ident);
+    ("REMOTE_USER", t.remote_user);
+    ("REQUEST_METHOD", t.request_method);
+    ("SCRIPT_NAME", t.script_name);
+    ("SERVER_NAME", t.server_name);
+    ("SERVER_PORT", t.server_port);
+    ("SERVER_PROTOCOL", t.server_protocol);
+    ("SERVER_SOFTWARE", t.server_software);
+    ("TLS_CLIENT_HASH", t.tls_client_hash);
+    ("TLS_CLIENT_SUBJECT", t.tls_client_subject);
+    ("TLS_CLIENT_ISSUER", t.tls_client_issuer);
+  |]

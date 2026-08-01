@@ -1,6 +1,6 @@
-(lang dune 3.0)
+(lang dune 3.21)
 
-(version 0.4)
+(version 0.5)
 
 (name mehari)
 
@@ -15,84 +15,60 @@
 
 (homepage "https://github.com/Psi-Prod/Mehari")
 
-(generate_opam_files true)
+(maintenance_intent "(latest)")
+
+(generate_opam_files)
 
 (package
  (name mehari)
- (synopsis "A cross-platform library for building Gemini servers")
+ (synopsis "A library for building Gemini servers")
  (description
-  "Mehari is a cross-platform library for building Gemini servers.\nIt fully implements the Gemini protocol specification.\nIt takes heavy inspiration from Dream, a tidy, feature-complete Web framework.")
+  "Mehari is a library for building Gemini servers.\nIt fully implements the Gemini protocol specification.\nIt takes heavy inspiration from Dream, a tidy, feature-complete Web framework.")
  (depends
   (ocaml
-   (>= 4.14))
+   (>= 5.4))
   (conan
-   (>= 0.0.5))
+   (>= 0.0.7))
   (conan-database
-   (>= 0.0.5))
+   (>= 0.0.7))
+  (ipaddr
+   (>= 5.6.2))
   (logs
-   (>= 0.7.0))
-  (re
-   (>= 1.10.4))
+   (>= 0.10.0))
+  (flux
+   (>= 0.0.1~beta7))
+  (mirage-ptime
+   (>= 5.2.0))
   (tls
-   (>= 0.16.0))
+   (>= 2.1.2))
   (uri
-   (>= 4.2.0))
-  (x509
-   (>= 0.16.2))))
+   (>= 4.4.0))
+  (alcotest :with-test)
+  (utop :with-dev-setup)
+  (ocamlformat :with-dev-setup)
+  (ocp-indent :with-dev-setup)
+  (merlin :with-dev-setup)
+  (ocaml-lsp-server :with-dev-setup)))
+
+(package
+ (name mehari-miou)
+ (synopsis "Mehari server implementation using Miou")
+ (depends
+  (mehari
+   (= :version))
+  (tls-miou-unix
+   (>= 2.1.2))
+ (alcotest :with-test)))
 
 (package
  (name mehari-mirage)
- (synopsis "Mehari IO implementation for MirageOS")
+ (synopsis "Mehari server implementation for Mirage")
  (depends
   (mehari
    (= :version))
-  (ipaddr
-   (>= 5.3.1))
-  (lwt
-   (>= 5.6.1))
-  (mirage-channel
-   (>= 4.1.0))
-  (mirage-time
-   (>= 3.0.0))
-  (tcpip
-   (>= 7.1.2))
-  (tls-mirage
-   (>= 0.15.4))
-  (tls-lwt
-   (>= 0.16.0))))
-
-(package
- (name mehari-lwt-unix)
- (synopsis "Mehari IO implementation using Lwt and Unix bindings")
- (depends
-  (mehari
-   (= :version))
-  (mehari-mirage
-   (= :version))
-  (lwt
-   (>= 5.6.1))
-  (mirage-clock-unix
-   (>= 4.2.0))
-  (mirage-flow-unix
-   (>= 3.0.0))
-  (mirage-time-unix
-   (>= 3.0.0))
-  (tcpip
-   (>= 7.1.2))))
-
-(package
- (name mehari-eio)
- (synopsis "Mehari IO implementation using Eio")
- (depends
-  (ocaml
-   (>= 5.0.0))
-  (mehari
-   (= :version))
-  (eio
-   (>= 1.0))
-  (logs
-   (>= 0.7.0))
-  (tls
-   (>= 0.15.4))
-  (tls-eio
-   (>= 0.15.5))))
+  (mkernel
+   (>= 0.0.3))
+  (mnet
+   (>= 0.0.4))
+  (mnet-tls
+   (>= 0.0.4))))

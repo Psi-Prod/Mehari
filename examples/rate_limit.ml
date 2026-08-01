@@ -1,18 +1,25 @@
-module M = Mehari_lwt_unix
-open Lwt.Syntax
+open Mehari
 
-let low_limit = M.make_rate_limit 5 `Minute
-let high_limit = M.make_rate_limit ~period:10 2 `Second
+let low_limit = Rate_limit.make 5 `Minute
+let high_limit = Rate_limit.make ~period:10 2 `Second
 
-let main () =
-  let* certchains = Common.Lwt.load_certchains () in
-  M.router
+let router =
+  Router.router
     [
-      M.route "/low" ~rate_limit:low_limit (fun _ ->
-          M.respond_text "5 requests per minute authorized");
-      M.route "/high" ~rate_limit:high_limit (fun _ ->
-          M.respond_text "2 requests per 10 seconds authorized");
+      Router.route
+        Path.(~/"low")
+        ~rate_limit:low_limit
+        (fun _ -> Response.text "5 requests per minute authorized");
+      Router.route
+        Path.(~/"high")
+        ~rate_limit:high_limit
+        (fun _ -> Response.text "2 requests per 10 seconds authorized");
     ]
-  |> M.run_lwt ~certchains
 
-let () = Lwt_main.run (main ())
+let () =
+  Miou_unix.run @@ fun () ->
+  Mirage_crypto_rng_unix.use_default ();
+  let certs = Common.load_certs ~cert:"cert.pem" ~priv_key:"key.pem" in
+  Mehari_miou.run ~certs
+    Ipaddr.(V4 (V4.Prefix.make 8 V4.localhost))
+    (Logger.logger router)
