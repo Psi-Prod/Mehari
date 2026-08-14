@@ -3,6 +3,7 @@
  (public_name mehari)
  (modules_without_implementation handler mehari runtime)
  (libraries
+  angstrom
   conan.string
   conan-database.bindings
   ipaddr

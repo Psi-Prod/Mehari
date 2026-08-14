@@ -26,7 +26,9 @@
   "Mehari is a library for building Gemini servers.\nIt fully implements the Gemini protocol specification.\nIt takes heavy inspiration from Dream, a tidy, feature-complete Web framework.")
  (depends
   (ocaml
-   (>= 5.4))
+   (>= 5.5))
+  (angstrom
+   (>= 0.16.1))
   (conan
    (>= 0.0.7))
   (conan-database
@@ -58,7 +60,7 @@
    (= :version))
   (tls-miou-unix
    (>= 2.1.2))
- (alcotest :with-test)))
+  (alcotest :with-test)))
 
 (package
  (name mehari-mirage)

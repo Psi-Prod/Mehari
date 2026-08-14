@@ -40,144 +40,97 @@ let paragraph gemtext s =
   let doc = ref [] in
   let cr = ref false in
   let buf = Buffer.create (String.length s) in
-  for i = 0 to String.length s - 1 do
-    match String.unsafe_get s i with
-    | '\r' -> cr := true
-    | '\n' when !cr ->
-        let line = Buffer.contents buf in
-        Buffer.reset buf;
-        doc := gemtext line :: !doc;
-        cr := false
-    | '\n' ->
-        let line = Buffer.contents buf in
-        Buffer.reset buf;
-        doc := gemtext line :: !doc;
-        cr := false
-    | c ->
-        if !cr then Buffer.add_char buf '\r';
-        Buffer.add_char buf c;
-        cr := false
-  done;
+  String.iteri
+    (fun i -> function
+      | '\r' -> cr := true
+      | '\n' when !cr ->
+          let line = Buffer.contents buf in
+          Buffer.reset buf;
+          doc := gemtext line :: !doc;
+          cr := false
+      | '\n' ->
+          let line = Buffer.contents buf in
+          Buffer.reset buf;
+          doc := gemtext line :: !doc;
+          cr := false
+      | c ->
+          if !cr then Buffer.add_char buf '\r';
+          Buffer.add_char buf c;
+          cr := false)
+    s;
   List.rev
   @@ match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc
 
-module Regex = struct
-  let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
+module Parser = struct
+  open Angstrom
 
-  let line prefix =
-    Re.compile Re.(seq [ bol; prefix; spaces; group (rep1 any) ])
+  let is_space = function ' ' | '\t' -> true | _ -> false
+  let spaces = skip_while is_space
 
-  let h1 = line (Re.char '#')
-  let h2 = line (Re.str "##")
-  let h3 = line (Re.str "###")
-  let item = line (Re.str "* ")
-  let quote = Re.compile Re.(seq [ bol; Re.char '>'; group (rep any) ])
+  let eol =
+    string "\r\n" <|> string "\r" <|> string "\n" <|> end_of_input *> return ""
+
+  let until_eol = take_till (function '\r' | '\n' -> true | _ -> false) <* eol
+
+  let until_eol_feed =
+    let line = take_till (function '\r' | '\n' -> true | _ -> false) in
+    both line eol
+
+  let text = until_eol >>| text
+
+  let heading lvl =
+    let prefix =
+      String.make (match lvl with `H1 -> 1 | `H2 -> 2 | `H3 -> 3) '#'
+    in
+    let+ text = string prefix *> spaces *> until_eol in
+    Heading (lvl, text)
+
+  let list_item = string "* " *> until_eol >>| list_item
+  let quote = char '>' *> until_eol >>| quote
 
   let link =
-    Re.compile
-      Re.(
-        seq
-          [
-            str "=>";
-            spaces;
-            group (rep1 (compl [ space ]));
-            opt (seq [ spaces; group (rep1 any) ]);
-          ])
+    let+ raw_link = string "=>" *> spaces *> until_eol in
+    let url, raw_name = String.cut_first_while (Fun.negate is_space) raw_link in
+    let name =
+      match String.drop_first_while is_space raw_name with
+      | "" -> None
+      | name -> Some name
+    in
+    Link { url; name }
+
+  let close_preformat =
+    let* line = until_eol in
+    if String.starts_with ~prefix:"```" line then return ()
+    else fail "not a closing fence"
+
+  let join lines =
+    let len = List.length lines in
+    let lines =
+      List.mapi
+        (fun i (line, feed) -> if i < len - 1 then line ^ feed else line)
+        lines
+    in
+    String.concat "" lines
+
+  let preformat =
+    let* alt =
+      string "```" *> until_eol >>| function "" -> None | alt -> Some alt
+    in
+    let+ lines = many_till until_eol_feed close_preformat in
+    Preformat { text = join lines; alt }
+
+  let line =
+    preformat <|> heading `H3 <|> heading `H2 <|> heading `H1 <|> link
+    <|> list_item <|> quote <|> text
+
+  let gemtext = many_till line end_of_input
 end
 
-type line_feed = LF | CRLF
-
-(* Preserve line feed information to not erase it in pre-formatted blocks. *)
-let string_of_line_feed = function
-  | None -> ""
-  | Some LF -> "\n"
-  | Some CRLF -> "\r\n"
-
-let split_lines text =
-  let buf = Buffer.create 8192 in
-  let acc = ref [] in
-  let cr = ref false in
-  for i = 0 to String.length text - 1 do
-    match String.unsafe_get text i with
-    | '\r' when !cr -> Buffer.add_char buf '\r'
-    | '\r' -> cr := true
-    | '\n' when !cr ->
-        let content = Buffer.contents buf in
-        Buffer.reset buf;
-        cr := false;
-        acc := (content, Some CRLF) :: !acc
-    | '\n' ->
-        let content = Buffer.contents buf in
-        Buffer.reset buf;
-        acc := (content, Some LF) :: !acc
-    | c when !cr ->
-        cr := false;
-        Buffer.add_char buf '\r';
-        Buffer.add_char buf c
-    | c -> Buffer.add_char buf c
-  done;
-  if !cr then Buffer.add_char buf '\r';
-  acc := (Buffer.contents buf, None) :: !acc;
-  List.rev !acc
-
-let of_string text =
-  let rec loop acc preformat = function
-    | [] -> List.rev acc
-    | (line, feed) :: lines -> (
-        match (String.starts_with ~prefix:"```" line, preformat) with
-        | true, Some (alt, preformat) ->
-            let text =
-              match Buffer.contents preformat with
-              | "" -> ""
-              | s -> String.sub s 0 (String.length s - 1)
-            in
-            loop (Preformat { alt; text } :: acc) None lines
-        | true, None ->
-            let alt =
-              match String.sub line 3 (String.length line - 3) with
-              | "" -> None
-              | alt -> Some alt
-            in
-            loop acc (Some (alt, Buffer.create 4096)) lines
-        | false, (Some (_, preformat) as pf) ->
-            Buffer.add_string preformat line;
-            Buffer.add_string preformat (string_of_line_feed feed);
-            loop acc pf lines
-        | false, None ->
-            if line = "" then loop (Text "" :: acc) preformat lines
-            else
-              let line =
-                try
-                  let grp = Re.exec Regex.h3 line in
-                  Heading (`H3, Re.Group.get grp 1)
-                with Not_found -> (
-                  try
-                    let grp = Re.exec Regex.h2 line in
-                    Heading (`H2, Re.Group.get grp 1)
-                  with Not_found -> (
-                    try
-                      let grp = Re.exec Regex.h1 line in
-                      Heading (`H1, Re.Group.get grp 1)
-                    with Not_found -> (
-                      try
-                        let grp = Re.exec Regex.item line in
-                        List_item (Re.Group.get grp 1)
-                      with Not_found -> (
-                        try
-                          let grp = Re.exec Regex.quote line in
-                          Quote (Re.Group.get grp 1)
-                        with Not_found -> (
-                          try
-                            let grp = Re.exec Regex.link line in
-                            let url, name =
-                              (Re.Group.get grp 1, Re.Group.get_opt grp 2)
-                            in
-                            Link { url; name }
-                          with Not_found -> Text line)))))
-              in
-              loop (line :: acc) preformat lines)
-  in
-  split_lines text |> loop [] None
+let of_string s =
+  match Angstrom.parse_string ~consume:Prefix Parser.gemtext s with
+  | Ok lines ->
+      if String.ends_with ~suffix:"\n" s then lines @ [ text "" ] else lines
+  | Error msg -> failwith msg
 
 let equal_line l l' =
   match (l, l') with

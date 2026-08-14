@@ -13,7 +13,8 @@ homepage: "https://github.com/Psi-Prod/Mehari"
 bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.21"}
-  "ocaml" {>= "5.4"}
+  "ocaml" {>= "5.5"}
+  "angstrom" {>= "0.16.1"}
   "conan" {>= "0.0.7"}
   "conan-database" {>= "0.0.7"}
   "ipaddr" {>= "5.6.2"}
