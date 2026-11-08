@@ -11,6 +11,7 @@ let router =
               let common_name =
                 X509.Certificate.subject cert
                 |> X509.Distinguished_name.common_name
+                |> Option.map X509.Distinguished_name.Common_name.to_string
                 |> Option.value ~default:"None"
               in
               Printf.sprintf "Ur client certificate ~nyoron\n%sCommon name: %s"

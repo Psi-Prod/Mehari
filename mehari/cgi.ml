@@ -47,10 +47,12 @@ let make ?server_addr ~script_path req =
         let hash = X509.Certificate.fingerprint `SHA256 c in
         let subject =
           X509.Certificate.subject c |> X509.Distinguished_name.common_name
+          |> Option.map X509.Distinguished_name.Common_name.to_string
           |> or_empty
         in
         let issuer =
           X509.Certificate.issuer c |> X509.Distinguished_name.common_name
+          |> Option.map X509.Distinguished_name.Common_name.to_string
           |> or_empty
         in
         (hash, subject, issuer)

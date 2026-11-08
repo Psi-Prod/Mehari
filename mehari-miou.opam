@@ -10,7 +10,7 @@ bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.21"}
   "mehari" {= version}
-  "tls-miou-unix" {>= "2.1.2"}
+  "tls-miou-unix" {>= "2.1.5"}
   "alcotest" {with-test}
   "odoc" {with-doc}
 ]

@@ -26,7 +26,7 @@ opam install mehari
 - Type safe route API
 - Static files serving
 - MIME type inference from file content (using experimental [Conan](https://github.com/mirage/conan/) support)
-- Rate limit
+- Rate limiting
 - Virtual hosting using TLS SNI
 - CGI support
 

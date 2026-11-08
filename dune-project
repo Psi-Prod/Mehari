@@ -38,11 +38,11 @@
   (logs
    (>= 0.10.0))
   (flux
-   (>= 0.0.1~beta7))
+   (>= 0.0.1~beta8))
   (mirage-ptime
    (>= 5.2.0))
   (tls
-   (>= 2.1.2))
+   (>= 2.1.5))
   (uri
    (>= 4.4.0))
   (alcotest :with-test)
@@ -59,7 +59,7 @@
   (mehari
    (= :version))
   (tls-miou-unix
-   (>= 2.1.2))
+   (>= 2.1.5))
   (alcotest :with-test)))
 
 (package
@@ -69,8 +69,8 @@
   (mehari
    (= :version))
   (mkernel
-   (>= 0.0.3))
+   (>= 0.0.5))
   (mnet
-   (>= 0.0.4))
+   (>= 0.0.9))
   (mnet-tls
-   (>= 0.0.4))))
+   (>= 0.0.9))))

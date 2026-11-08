@@ -10,9 +10,9 @@ bug-reports: "https://github.com/Psi-Prod/Mehari/issues"
 depends: [
   "dune" {>= "3.21"}
   "mehari" {= version}
-  "mkernel" {>= "0.0.3"}
-  "mnet" {>= "0.0.4"}
-  "mnet-tls" {>= "0.0.4"}
+  "mkernel" {>= "0.0.5"}
+  "mnet" {>= "0.0.9"}
+  "mnet-tls" {>= "0.0.9"}
   "odoc" {with-doc}
 ]
 build: [

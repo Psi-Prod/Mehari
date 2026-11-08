@@ -24,9 +24,9 @@ module Runtime = struct
   end
 
   module TCP = struct
-    type t = Mnet.TCP.flow
+    type t = Mnet.TCP.(direct flow)
 
-    let accept = Mnet.TCP.accept
+    let accept = Mnet.TCP.(accept ~kind:direct)
     let tls_upgrade config flow = Mnet_tls.server_of_fd config flow
   end
 

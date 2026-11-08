@@ -19,9 +19,9 @@ depends: [
   "conan-database" {>= "0.0.7"}
   "ipaddr" {>= "5.6.2"}
   "logs" {>= "0.10.0"}
-  "flux" {>= "0.0.1~beta7"}
+  "flux" {>= "0.0.1~beta8"}
   "mirage-ptime" {>= "5.2.0"}
-  "tls" {>= "2.1.2"}
+  "tls" {>= "2.1.5"}
   "uri" {>= "4.4.0"}
   "alcotest" {with-test}
   "utop" {with-dev-setup}

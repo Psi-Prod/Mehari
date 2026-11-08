@@ -11,4 +11,4 @@
   rate_limit
   stream
   vhost)
- (libraries mehari mehari-miou mirage-crypto-rng-miou-unix logs.fmt))
+ (libraries mehari mehari-miou mirage-crypto-rng.unix logs.fmt))
