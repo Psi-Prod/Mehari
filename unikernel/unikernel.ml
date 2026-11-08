@@ -1,7 +1,7 @@
 module Blk = struct
   type t = Mkernel.Block.t
 
-  let pagesize = Mkernel.Block.pagesize
+  let pagesize = Mkernel.Block.length
   let read = Mkernel.Block.atomic_read
   let write = Mkernel.Block.atomic_write
 end
@@ -30,8 +30,6 @@ let load_certchains fs =
       List.filter_map (Fun.compose Result.to_option read_certchains) entries
   | Error _ -> []
 
-open Mehari
-
 let book =
   object
     val mutable entries = []
@@ -51,6 +49,7 @@ let book =
   end
 
 let router =
+  let open Mehari in
   let open Router in
   router
     [
@@ -75,12 +74,11 @@ let router =
               Response.respond Status.redirect_temp "/");
     ]
 
-let run () (cidrv4, gateway, ipv6) port =
+let run _quiet stack port =
   let devices =
     let open Mkernel in
     let rng =
       map (fun () -> Mirage_crypto_rng_mkernel.initialize (module Rng)) []
-    and net = Mnet.stack ~name:"service" ?gateway ~ipv6 cidrv4
     and fs =
       map
         (fun blk () ->
@@ -89,7 +87,7 @@ let run () (cidrv4, gateway, ipv6) port =
           |> Result.error_to_failure)
         [ block "certs" ]
     in
-    [ rng; net; fs ]
+    [ rng; stack; fs ]
   in
   Mkernel.run devices @@ fun rng (daemon, tcp, _) fs () ->
   Fun.protect ~finally:(fun () ->
@@ -97,7 +95,7 @@ let run () (cidrv4, gateway, ipv6) port =
       Mnet.kill daemon)
   @@ fun () ->
   let certs = load_certchains fs in
-  Mehari_mirage.run ?port ~certs tcp (Logger.logger router)
+  Mehari_mirage.run ?port ~certs tcp (Mehari.Logger.logger router)
 
 open Cmdliner
 
@@ -106,36 +104,9 @@ let port =
   let open Arg in
   value & opt (some int) None & info [ "p"; "port" ] ~doc ~docv:"PORT"
 
-let reporter ppf =
-  let report src level ~over k msgf =
-    let k _ =
-      over ();
-      k ()
-    in
-    let pp header k ppf fmt =
-      let timestamp = Mirage_ptime.now () in
-      Fmt.kpf k ppf
-        ("[%a]%a[%s]: " ^^ fmt ^^ "\n%!")
-        (Ptime.pp_human ()) timestamp Logs_fmt.pp_header (level, header)
-        (Logs.Src.name src)
-    in
-    match level with
-    | Logs.Debug -> k ()
-    | _ -> msgf (fun ?header ?tags fmt -> pp header k ppf fmt)
-  in
-  { Logs.report }
-
-let setup_logs =
-  let setup level =
-    Fmt.set_utf_8 Fmt.stdout true;
-    Logs.set_level level;
-    Logs.set_reporter (reporter Fmt.stdout)
-  in
-  Term.(const setup $ Logs_cli.level ~docs:"OUTPUT OPTIONS" ())
-
 let term =
   let open Term in
-  const run $ setup_logs $ Mnet_cli.setup $ port
+  const run $ Mnet_cli.setup_logs $ Mnet_cli.setup "service" $ port
 
 let cmd =
   let info = Cmd.info "mehari" in

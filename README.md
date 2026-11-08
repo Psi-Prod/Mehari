@@ -36,19 +36,18 @@ opam install mehari
 - Tutorial: https://docs.heyplzlookat.me/mehari/index.html#tutorial
 - Issues: https://github.com/Psi-Prod/Mehari/issues
 
-
 ## Building the unikernel
 
 Setup dev environment:
 ```bash
-$ opam install mehari-mirage solo5 ocaml-solo5
-$ opam install ca-certs-nss dns dns-client mfat
-$ opam pin zarith.dev git+https://github.com/mirage/Zarith.git#df8969d9bb95cffca13e31a615189ab27ada0684
+$ opam install mehari-mirage solo5 ocaml-solo5 unic mfetch
 ```
 
 Vendor dependencies:
 ```bash
-$ ./unikernel/vendor.sh
+$ cd unikernel/
+$ unic infer -r . -x _build -x vendors -o _mfetch
+$ mfetch --with-dune-file
 ```
 
 Setup network bridge:
@@ -61,24 +60,7 @@ $ ip link set service up
 $ ip link set tap0 up
 ```
 
-Create `dune` and `dune-workspace` files at the root of the repo:
-
-``` bash
-$ cat >dune<<EOF
-(vendored_dirs vendors)
-EOF
-$ cat >dune-workspace<<EOF
-(lang dune 3.23)
-(context (default))
-(context (default
- (name solo5)
- (host default)
- (toolchain solo5)
- (disable_dynamically_linked_foreign_archives true)))
-EOF
-```
-
-
+Setup an image containing our certchain:
 ```bash
 $ mfat make -s 2048 certs.img
 $ mfat write certs.img key.pem key.pem

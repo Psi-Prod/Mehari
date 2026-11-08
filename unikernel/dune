@@ -1,4 +1,6 @@
 (executable
+ (enabled_if
+  (= %{context_name} "solo5"))
  (name unikernel)
  (link_flags :standard -cclib "-z solo5-abi=hvt")
  (foreign_stubs
@@ -7,18 +9,14 @@
  (libraries
   mehari
   mehari-mirage
-  cmdliner
-  logs.cli
-  logs.fmt
-  fmt.cli
   mkernel
-  mirage-crypto-rng-mkernel
   mnet
   mnet-cli
   mnet-tls
-  tls
   mfat
+  mirage-crypto-rng-mkernel
   mirage-ptime.solo5
+  cmdliner
   gmp))
 
 (rule
@@ -35,3 +33,6 @@
   (= %{context_name} "solo5"))
  (action
   (run solo5-elftool gen-manifest manifest.json manifest.c)))
+
+(vendored_dirs vendors)
+
