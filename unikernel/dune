@@ -14,6 +14,7 @@
   mnet-cli
   mnet-tls
   mfat
+  mfat.bos
   mirage-crypto-rng-mkernel
   mirage-ptime.solo5
   cmdliner
@@ -35,4 +36,3 @@
   (run solo5-elftool gen-manifest manifest.json manifest.c)))
 
 (vendored_dirs vendors)
-

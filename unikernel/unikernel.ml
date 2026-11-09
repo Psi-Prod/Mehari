@@ -1,34 +1,38 @@
-module Blk = struct
-  type t = Mkernel.Block.t
-
-  let pagesize = Mkernel.Block.length
-  let read = Mkernel.Block.atomic_read
-  let write = Mkernel.Block.atomic_write
-end
-
-module Fat = Mfat.Make (Blk)
 module Rng = Mirage_crypto_rng.Fortuna
 
+module Fat = Mfat_bos.Make (struct
+  type t = Mkernel.Block.t
+
+  let pagesize = Mkernel.Block.sector_size
+  let read = Mkernel.Block.atomic_read
+  let write = Mkernel.Block.atomic_write
+end)
+
 let load_certchains fs =
-  let read_certchains = function
-    | { Mfat.name; is_dir = true; _ } ->
-        let open Result.Syntax in
-        let decode filename decode =
-          let path = Filename.concat name filename in
-          if Fat.exists fs path then
-            let* content = Fat.read fs path in
-            decode content
-          else Fmt.kstr (fun msg -> Error (`Msg msg)) "%s does not exist" path
-        in
-        let+ pk = decode "pk.pem" X509.Private_key.decode_pem
-        and+ certs = decode "certs.pem" X509.Certificate.decode_pem_multiple in
-        (certs, pk)
-    | _ -> Error (`Msg "Not a directory")
+  let open Result.Syntax in
+  let read_certchains path =
+    let from_filename fname decode =
+      let* content = Fat.File.read fs Fpath.(path / fname) in
+      decode content
+    in
+    let+ key = from_filename "key.pem" X509.Private_key.decode_pem
+    and+ certs =
+      from_filename "cert.pem" X509.Certificate.decode_pem_multiple
+    in
+    (certs, key)
   in
-  match Fat.ls fs "" with
-  | Ok entries ->
-      List.filter_map (Fun.compose Result.to_option read_certchains) entries
-  | Error _ -> []
+  let* entries = Fat.Dir.contents fs (Fpath.v "/") in
+  match entries with
+  | [] -> Error (`Msg "fat image doesn't contains any certchains")
+  | paths ->
+      let+ certchains =
+        List.fold_left
+          (fun acc path ->
+            let+ acc and* certchain = read_certchains path in
+            certchain :: acc)
+          (Ok []) paths
+      in
+      List.rev certchains
 
 let book =
   object
@@ -75,26 +79,24 @@ let router =
     ]
 
 let run _quiet stack port =
-  let devices =
-    let open Mkernel in
-    let rng =
-      map (fun () -> Mirage_crypto_rng_mkernel.initialize (module Rng)) []
-    and fs =
-      map
-        (fun blk () ->
-          Fat.create blk
-          |> Result.map_error (fun (`Msg msg) -> msg)
-          |> Result.error_to_failure)
-        [ block "certs" ]
-    in
-    [ rng; stack; fs ]
+  let rng =
+    Mkernel.map
+      (fun () -> Mirage_crypto_rng_mkernel.(initialize (module Pfortuna)))
+      []
+  and certchains =
+    Mkernel.map
+      (fun blk () ->
+        match Result.bind (Fat.create blk) load_certchains with
+        | Ok certs -> certs
+        | Error (`Msg msg) -> failwith msg)
+      [ Mkernel.block "certs" ]
   in
-  Mkernel.run devices @@ fun rng (daemon, tcp, _) fs () ->
-  Fun.protect ~finally:(fun () ->
-      Mirage_crypto_rng_mkernel.kill rng;
-      Mnet.kill daemon)
-  @@ fun () ->
-  let certs = load_certchains fs in
+  Mkernel.run [ rng; stack; certchains ] @@ fun rng (daemon, tcp, _) certs () ->
+  let finally () =
+    Mirage_crypto_rng_mkernel.kill rng;
+    Mnet.kill daemon
+  in
+  Fun.protect ~finally @@ fun () ->
   Mehari_mirage.run ?port ~certs tcp (Mehari.Logger.logger router)
 
 open Cmdliner
@@ -112,4 +114,4 @@ let cmd =
   let info = Cmd.info "mehari" in
   Cmd.v info term
 
-let () = Cmd.(exit @@ eval cmd)
+let () = Cmd.(exit (eval cmd))

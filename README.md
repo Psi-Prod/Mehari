@@ -22,57 +22,19 @@ opam install mehari
 
 ## Features
 
-- Mirage OS friendly
 - Type safe route API
 - Static files serving
 - MIME type inference from file content (using experimental [Conan](https://github.com/mirage/conan/) support)
 - Rate limiting
 - Virtual hosting using TLS SNI
-- CGI support
+- CGI scripts support
+- Mirage OS friendly (see [the dedicated example](unikernel/README.md))
 
 ## Important links
 
 - API documentation: https://docs.heyplzlookat.me/mehari/
 - Tutorial: https://docs.heyplzlookat.me/mehari/index.html#tutorial
 - Issues: https://github.com/Psi-Prod/Mehari/issues
-
-## Building the unikernel
-
-Setup dev environment:
-```bash
-$ opam install mehari-mirage solo5 ocaml-solo5 unic mfetch
-```
-
-Vendor dependencies:
-```bash
-$ cd unikernel/
-$ unic infer -r . -x _build -x vendors -o _mfetch
-$ mfetch --with-dune-file
-```
-
-Setup network bridge:
-```bash
-$ ip link add name service type bridge
-$ ip addr add 10.0.0.1/24 dev service
-$ ip tuntap add name tap0 mode tap
-$ ip link set tap0 master service
-$ ip link set service up
-$ ip link set tap0 up
-```
-
-Setup an image containing our certchain:
-```bash
-$ mfat make -s 2048 certs.img
-$ mfat write certs.img key.pem key.pem
-$ mfat write certs.img certs.pem cert.pem
-```
-
-Compile and run the unikernel:
-
-```bash
-$ dune build --profile=release
-$ solo5-hvt --net:service=tap0 --block:certs=certs.img -- ./_build/solo5/unikernel/unikernel.exe --solo5:quiet --ipv4=10.0.0.2/8
-```
 
 ## License
 
